@@ -2,11 +2,6 @@
   publish = "public"
   functions = "netlify/functions"
 
-# Root serves the marketing page
-[[redirects]]
-  from = "/"
-  to = "/marketing/index.html"
-  status = 200
 
 [[headers]]
   for = "/*.html"
