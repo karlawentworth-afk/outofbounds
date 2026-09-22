@@ -1,99 +1,66 @@
 # Gaps — not yet built
 
-## From the v1 build brief
+Updated 22 September 2026, after Checkpoint 5 + course library + scorecard reader.
 
-1. **Player invite form (self-registration)**
-   Players opening the invite link can enter name, email, handicap and add themselves.
-   The `event_invites` table exists but the form and `invite-join` function are not built.
+## Scoring (player view)
 
-2. **"Add me" button on organiser player list**
-   UI button exists but needs to split the organiser's display name into first/last and
-   add them as a player.
+1. **Scorer takeover logging** — handover works but is not logged to score_edits.
+2. **Handicap lock after first score** — player view warns but server does not enforce.
+3. **Offline buffer flush on visibilitychange** — coded but not tested on a real phone offline.
 
-3. **Score editing by organiser (org-score-edit function)**
-   The organiser UI has the edit modal but there is no `org-score-edit` Netlify function
-   to persist the change and log it to `score_edits`.
+## Organiser view
 
-4. **Organiser score edit: change handicap after scores exist**
-   Spec says a reason is required and it must be logged. The `org-players` PATCH exists
-   but does not enforce the reason requirement when scores exist.
+4. **Score editing function (org-score-edit)** — UI modal exists, backend function not built.
+5. **Handicap edit with reason** — org-players PATCH exists but does not require a reason when scores exist.
+6. **Group status dots (amber/red)** — UI shows groups but does not compute 40-min timeout or gap detection.
+7. **"Run it again" clone** — button and stub exist, not tested end-to-end.
+8. **"Add me" as player** — button exists, needs to split organiser display_name into first/last.
+9. **Player invite form (self-registration)** — event_invites table exists, no join form or function.
+10. **Add player after go-live (99p Checkout)** — not implemented, players can be added free.
+11. **Secondary format allowance** — field exists, organiser setup UI does not expose it.
+12. **Course review/confirm UI** — functions built (course-save-card, course-from-photo-background), organiser UI not wired up. The "Snap the scorecard" button, review screen, tee set tabs, amber cell flow, photo pinch-to-zoom, "This card is right" confirmation — all need building in /o/.
+13. **Course report-a-card UI** — function built (course-report), player leaderboard tab link not added.
+14. **Straighten-and-crop before upload** — spec calls for four-corner drag on skewed photos.
 
-5. **Scorer takeover logging**
-   "Take over scoring" on the non-scorer phone works but the handover is not logged
-   to `score_edits` or an equivalent audit table.
+## Board
 
-6. **Group status dots (amber/red) on organiser live view**
-   The spec defines: amber = no scorer or no score in 40 minutes, red = gap in card.
-   The organiser UI shows groups but does not compute these states from the data.
+15. **Board blocked for Play events** — should 404 with "The big screen scoreboard is part of Pro".
+16. **Sponsor slide data loading** — board code renders slides but the array is always empty (no fetch from event_slides).
+17. **Leaderboard/results footer: course data line** — "Course data: club, tee, slope, rating. Checked by organiser on date" not yet shown.
 
-7. **"Run it again" clone action**
-   Button exists in the UI. The `org-events` function has a `clone` action stub but
-   it is not tested end-to-end.
+## Pro tier (all gated behind plan check)
 
-8. **CSV export (Pro only)**
-   Button is greyed out with "Pro" label. The `org-export` function is not built.
+18. **Branding page** — logo upload, colour picker, live preview. Not built.
+19. **Sponsor slides management** — add/edit/reorder/upload in organiser UI. Not built.
+20. **Helper logins** — invite/revoke helpers. Table exists, no UI.
+21. **CSV export** — button greyed with "Pro" label. Function not built.
 
-9. **Branding page (Pro only)**
-   Not built. Pro organisers cannot yet upload a logo or set colours from the UI.
+## Auth and payments
 
-10. **Sponsor slides management (Pro only)**
-    The `event_slides` table exists and the board rotates slides, but there is no
-    organiser UI to add/edit/reorder slides.
+22. **Google OAuth consent screen** — in Testing mode, needs verification for public launch.
+23. **Apple Sign-In redirect URLs** — need configuring in Apple Developer portal with Supabase callback.
+24. **Payment receipt** — Stripe sends its own; spec wants "Something wrong? Email us" line.
+25. **Refund guard** — no refund once any score exists. Not enforced (manual anyway).
 
-11. **Helper logins (Pro only)**
-    The `organiser_users` table supports owner/organiser/helper roles but there is no
-    UI to invite helpers or manage their access.
+## Email
 
-12. **Board route blocked for Play events**
-    Spec says `/board` should 404 for Play events with "The big screen scoreboard is
-    part of Pro". Currently the board works for all events.
+26. **No email sending yet** — Resend key set, no functions built. Needed for: player invite links, results published notification, organiser receipts.
 
-13. **Email sending (Resend)**
-    `RESEND_API_KEY` is set but no functions send email. Needed for: player invite
-    emails, results published notification, organiser receipts.
+## Course library
 
-14. **Handicap lock after first score**
-    Spec says playing handicap is locked once a score exists. The player view shows
-    "Ask the organiser to change this" but the server does not enforce the lock.
+27. **GolfCourseAPI** — searches work, but free tier returns no tee/hole data. Useful for club name/location lookup only. Pro tier may have data; not tested.
+28. **Course verified flag in search results** — courses added by Play users should show "unverified" until an organiser confirms.
+29. **Two-photo merge on review screen** — front+back reads merge by tee set. Logic designed, UI not built.
 
-15. **Secondary format handicap allowance**
-    The `secondary_allowance` field exists but the organiser setup UI does not expose it.
-    It defaults to the primary allowance.
+## PWA and native
 
-## From the Play tier brief
-
-16. **Adding a player after go-live (99p Checkout)**
-    Spec says adding a player after go-live triggers a 99p Stripe Checkout.
-    Not implemented — players can be added free after go-live.
-
-17. **Payment receipt with "Something wrong? Email us"**
-    Stripe sends its own receipt but the spec wants a custom line.
-
-18. **Refund guard: no refund once any score exists**
-    Not enforced. Refunds are manual anyway.
-
-## From the PWA brief
-
-19. **Web manifest, service worker, add-to-home-screen prompt**
-    Not built. No `manifest.json`, no service worker, no install prompt.
-
-20. **Capacitor native wrap (Phase 2)**
-    Not started. Depends on Checkpoint 5 completion.
-
-## From the sponsor slides / secondary format additions
-
-21. **Sponsor slide placement = 'player'**
-    The leaderboard tab on the player view should show a sponsor banner at the top
-    for Pro events. Not implemented.
-
-22. **Board sponsor slide rotation**
-    The board code has slide rendering but the data loading (`event_slides`) is
-    stubbed out — slides array is always empty.
+30. **Web manifest, service worker, add-to-home-screen prompt** — not built.
+31. **Capacitor native wrap (Phase 2)** — not started.
 
 ## Smaller items
 
-23. **OG image is SVG not PNG.** Works in most places but some platforms want PNG.
-24. **Old hash URL redirect for results.** `/r/#/org/event` should redirect to `/r/org/event`.
-25. **QR code on go-live** uses a canvas grid, not a real QR encoder. Needs `qrcode-generator` library or similar.
-26. **Google OAuth consent screen** is in Testing mode — needs verification for public launch.
-27. **Course search "unverified" flag** — courses added by Play users should be flagged.
+32. **OG image is SVG not PNG** — works in most places but some platforms prefer PNG.
+33. **Hash URL redirect for results** — /r/#/org/event should redirect to /r/org/event.
+34. **QR code on go-live** — uses a canvas grid, not a real QR encoder.
+35. **course_holes migration** — 014_holes_per_tee.sql written but may not be run yet. Adds tee_id to course_holes so par/SI differ by rating_gender.
+36. **course_tees tee_set→rating_gender migration** — 013_tee_rating_gender.sql written but may not be run yet.

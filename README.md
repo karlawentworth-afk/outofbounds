@@ -41,6 +41,8 @@ greyed out, never hidden entirely.
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_...`) |
 | `RESEND_API_KEY` | Resend email API key |
 | `RESEND_FROM` | `noreply@outofboundsevents.com` |
+| `ANTHROPIC_API_KEY` | Claude API key (for scorecard photo reader) |
+| `GOLFCOURSEAPI_KEY` | GolfCourseAPI key (course name lookup, free tier) |
 
 ---
 
@@ -168,8 +170,10 @@ These are non-negotiable across the codebase:
   config-get, player-context, player-nominate, score-save,
   leaderboard, event-players, org-auth, org-events, org-players,
   org-groups, org-courses, stripe-checkout, stripe-webhook,
-  results-page, results-og
-/sql            numbered migration files (001-009)
+  results-page, results-og, course-search, course-import,
+  course-report, course-save-card, course-from-photo-background,
+  scorecard-read-status
+/sql            numbered migration files (001-014)
 /tests          engine tests, tenancy tests
 /scripts        apple-secret generator
 ```
