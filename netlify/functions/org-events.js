@@ -136,7 +136,7 @@ exports.handler = async function (event) {
         // Get original event full data
         var origEvents = await sb.sbGet(
           'events?id=eq.' + body.event_id +
-          '&select=*&limit=1'
+          '&select=organiser_id,name,course_id,tee_id,format,handicap_allowance,max_handicap,starting_mode,leaderboard_freeze_hole&limit=1'
         );
         if (!origEvents || !origEvents.length) {
           return sb.respond(404, { error: 'Event not found' });
@@ -155,8 +155,6 @@ exports.handler = async function (event) {
           max_handicap: orig.max_handicap,
           starting_mode: orig.starting_mode,
           leaderboard_freeze_hole: orig.leaderboard_freeze_hole,
-          default_tee_id: orig.default_tee_id || null,
-          default_rating_gender: orig.default_rating_gender || null,
           status: 'draft'
         };
 
