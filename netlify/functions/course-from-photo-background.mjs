@@ -1,5 +1,5 @@
 // Background function — runs up to 15 minutes, returns 202 immediately.
-// Netlify background functions must use .mjs extension or export default.
+// Two-pass scorecard reader: layout first, then extraction.
 
 import https from 'https';
 
@@ -12,14 +12,10 @@ function sbRequest(method, path, body) {
     const payload = body ? JSON.stringify(body) : null;
     const headers = {
       'apikey': key, 'Authorization': 'Bearer ' + key,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
+      'Content-Type': 'application/json', 'Prefer': 'return=representation'
     };
     if (payload) headers['Content-Length'] = Buffer.byteLength(payload);
-    const req = https.request({
-      hostname: SB_HOST, port: 443,
-      path: '/rest/v1/' + path, method, headers
-    }, res => {
+    const req = https.request({ hostname: SB_HOST, port: 443, path: '/rest/v1/' + path, method, headers }, res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => {
@@ -46,17 +42,13 @@ function fetchPhoto(path) {
   return new Promise((resolve, reject) => {
     const req = https.request({
       hostname: SB_HOST, port: 443,
-      path: '/storage/v1/object/scorecards/' + path,
-      method: 'GET',
+      path: '/storage/v1/object/scorecards/' + path, method: 'GET',
       headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
     }, res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => {
-        if (res.statusCode !== 200) {
-          reject(new Error('Storage ' + res.statusCode));
-          return;
-        }
+        if (res.statusCode !== 200) { reject(new Error('Storage ' + res.statusCode)); return; }
         resolve(Buffer.concat(chunks));
       });
     });
@@ -65,78 +57,13 @@ function fetchPhoto(path) {
   });
 }
 
-function callClaude(base64Image, mediaType) {
+function callClaude(messages) {
   const key = process.env.ANTHROPIC_API_KEY;
-
-  const prompt = `You are reading a golf club scorecard photograph.
-Return ONLY valid JSON, no markdown fences, no explanation.
-
-IMPORTANT: WHS scorecards often print TWO course ratings and TWO slope ratings
-for each tee colour — one row labelled M (men) and one labelled L (ladies/women).
-These are DIFFERENT numbers for the SAME tee. You MUST return BOTH when present.
-
-Extract this structure:
-{
-  "club_name": "string or null",
-  "course_name": "string or null",
-  "tee_sets": [
-    {
-      "tee_name": "string (e.g. White, Yellow, Red)",
-      "colour": "string or null",
-      "rating_men": number or null,
-      "slope_men": number or null,
-      "rating_women": number or null,
-      "slope_women": number or null,
-      "par_total": number,
-      "confidence": number 0-1,
-      "check_holes": [hole numbers where read was unsure],
-      "holes": [
-        {"hole": 1, "par": number, "stroke_index": number, "yards": number or null}
-      ]
-    }
-  ]
-}
-
-Rules:
-- For EACH tee colour, look at the rating/slope box at the top of the card.
-  Cards typically show rows like:
-    Course  Slope
-    73.7    136      (this is for one tee, e.g. Blue)
-    73.1    135      (White)
-    71.6    133      (Yellow)
-    68.4    131   M  (Red, men's rating — look for M or similar marker)
-    73.8    132   L  (Red, ladies' rating — look for L or similar marker)
-  When a tee has TWO rating rows (marked M and L, or men and ladies),
-  return rating_men/slope_men from the M row and rating_women/slope_women
-  from the L row.
-- When a tee has only ONE rating row with no M/L marker, return it under
-  "rating_unlabelled" and "slope_unlabelled" instead, and add a warning
-  in check_holes as [-1] to flag it.
-- Tees used only by men (Blue, White, Yellow typically) often have just one
-  rating — put it under rating_men/slope_men, set women's to null.
-- Tees used by women (Red typically) almost always have two rating rows.
-- stroke_index is the handicap/SI column, NOT the hole number.
-- par is always 3, 4, 5, or rarely 6.
-- stroke_index values must be 1-18 each used exactly once per tee set (or 1-9 for 9-hole).
-- If you cannot read a value, set null and add hole number to check_holes.
-- Slope typically 55-155. Course rating typically 50-85.
-- If a tee has separate men's and ladies' pars or SIs (different columns on
-  the card), return them as separate tee_sets with the same tee_name.
-- Prioritise pars and stroke_indexes over yardages. If running long, omit yards.
-- Return null for anything not visible. Never guess.`;
-
   const body = JSON.stringify({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } },
-        { type: 'text', text: prompt }
-      ]
-    }]
+    max_tokens: 8192,
+    messages: messages
   });
-
   return new Promise((resolve, reject) => {
     const req = https.request({
       hostname: ANTHROPIC_HOST, port: 443, path: '/v1/messages', method: 'POST',
@@ -149,16 +76,13 @@ Rules:
       res.on('data', c => chunks.push(c));
       res.on('end', () => {
         const raw = Buffer.concat(chunks).toString();
-        if (res.statusCode !== 200) {
-          reject(new Error('Anthropic ' + res.statusCode + ': ' + raw.slice(0, 300)));
-          return;
-        }
+        if (res.statusCode !== 200) { reject(new Error('Anthropic ' + res.statusCode + ': ' + raw.slice(0, 300))); return; }
         try {
           const parsed = JSON.parse(raw);
           let text = '';
           (parsed.content || []).forEach(b => { if (b.type === 'text') text += b.text; });
           resolve(text);
-        } catch (e) { reject(new Error('Bad response from Anthropic')); }
+        } catch (e) { reject(new Error('Bad Anthropic response')); }
       });
     });
     req.on('error', reject);
@@ -167,124 +91,245 @@ Rules:
   });
 }
 
-function validate(card) {
+function parseJSON(text) {
+  const clean = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  return JSON.parse(clean);
+}
+
+// ── PASS 1: Layout ──────────────────────────────────────────────
+const PASS1_PROMPT = `You are analysing a golf club scorecard photograph.
+Return ONLY valid JSON, no markdown fences, no explanation.
+
+Describe the LAYOUT of this card:
+{
+  "orientation": "portrait" | "landscape_fold",
+  "tee_colours": ["Blue", "White", "Yellow", "Red", "Green"],
+  "tee_colours_order": "top_to_bottom",
+  "par_si_style": "per_tee_column" | "shared_rows",
+  "par_si_detail": "explain: does each tee colour have its own par/SI column, or are there shared 'Men\\'s Par', 'Men\\'s SI', 'Women\\'s Par', 'Women\\'s SI' rows that apply to ALL tees?",
+  "rating_boxes": {
+    "men": {
+      "label": "what the box is labelled, e.g. '(M) Course Ratings'",
+      "columns_count": number,
+      "columns_filled": ["which tee colours have a value, left to right by colour swatch"],
+      "columns_empty": ["which tee colours are blank"]
+    },
+    "women": {
+      "label": "e.g. '(W) Course Ratings'",
+      "columns_count": number,
+      "columns_filled": ["which tee colours have a value"],
+      "columns_empty": ["which tee colours are blank"]
+    }
+  },
+  "holes_visible": "1-18" | "1-9" | "10-18",
+  "unclear": ["list anything hard to read: shadows, glare, cut off edges"]
+}
+
+Rules:
+- tee_colours: list every tee colour row visible, in order from top to bottom.
+- par_si_style: "per_tee_column" if each tee row has its own par and SI column (like Carden Park). "shared_rows" if there are separate labelled rows like "Men's Par", "Men's SI", "Women's Par", "Women's SI" that apply across all tees.
+- rating_boxes: the small box(es) at the bottom showing Course Rating and Slope. They have one column per tee colour, matched by colour swatch position. Some columns may be blank. List which are filled and which are empty BY COLOUR, not by compacting.
+- landscape_fold means holes 1-9 on one side, 10-18 on the other, visible together.`;
+
+// ── PASS 2: Extraction ──────────────────────────────────────────
+function makePass2Prompt(layout) {
+  const style = layout.par_si_style;
+  const colours = (layout.tee_colours || []).join(', ');
+  const menFilled = (layout.rating_boxes && layout.rating_boxes.men && layout.rating_boxes.men.columns_filled) || [];
+  const womenFilled = (layout.rating_boxes && layout.rating_boxes.women && layout.rating_boxes.women.columns_filled) || [];
+
+  return `You are extracting data from a golf scorecard photograph.
+The layout analysis says:
+- Tee colours (top to bottom): ${colours}
+- Par/SI style: ${style}
+- Men's ratings exist for: ${menFilled.join(', ') || 'unknown'}
+- Women's ratings exist for: ${womenFilled.join(', ') || 'unknown'}
+
+Return ONLY valid JSON, no markdown fences:
+{
+  "tees": [
+    {
+      "colour": "Blue",
+      "yards": [yard1, yard2, ... yard18],
+      "yards_out": number, "yards_in": number, "yards_total": number,
+      "rating_men": number or null, "slope_men": number or null,
+      "rating_women": number or null, "slope_women": number or null
+    }
+  ],
+  "par_si": [
+    {
+      "label": "men" | "women",
+      "pars": [par1, par2, ... par18],
+      "pars_out": number, "pars_in": number, "pars_total": number,
+      "sis": [si1, si2, ... si18],
+      "confidence": 0-1,
+      "check_holes": [hole numbers where read was unsure]
+    }
+  ]
+}
+
+CRITICAL RULES:
+1. RATINGS: Read the rating/slope boxes POSITIONALLY by colour swatch column.
+   The men's box (M) has ${(layout.rating_boxes && layout.rating_boxes.men && layout.rating_boxes.men.columns_count) || '?'} columns, one per tee colour in order: ${colours}.
+   The women's box (W) has ${(layout.rating_boxes && layout.rating_boxes.women && layout.rating_boxes.women.columns_count) || '?'} columns, same order.
+   If a column is BLANK for a tee colour, return null — do NOT slide values left.
+   Blue and White have no women's rating on this card = null.
+
+2. PAR AND SI:
+${style === 'shared_rows' ?
+  `   This card has SHARED par/SI rows labelled "Men's Par", "Men's SI", "Women's Par", "Women's SI".
+   These apply to ALL tees. Return them in par_si as two entries: one for "men", one for "women".
+   Do NOT duplicate them per tee. The pars and SIs are the SAME for every tee colour within a gender.` :
+  `   Each tee has its own par and SI columns. Return one par_si entry per tee.`}
+
+3. YARDS: One row per tee colour. Read the printed yard values for all 18 holes.
+   If a tee colour's yards appear twice on the card (e.g. Red printed in both men's and women's sections), it is ONE tee — use either row, they are the same.
+
+4. stroke_index is the SI/handicap column, NOT the hole number. Values must be exactly 1-18 each used once.
+5. par is always 3, 4, 5, or rarely 6.
+6. Read the printed OUT, IN and TOTAL sums and return them so we can cross-check.
+7. Return null for anything not legible. Never guess.`;
+}
+
+// ── Validation ──────────────────────────────────────────────────
+function validate(result) {
   const warnings = [];
-  (card.tee_sets || []).forEach((ts, ti) => {
-    const holes = ts.holes || [];
-    const n = holes.length;
-    if (n !== 9 && n !== 18) warnings.push({ tee: ti, issue: 'Expected 9 or 18 holes, got ' + n });
-    let parSum = 0;
+
+  // Validate par_si entries
+  (result.par_si || []).forEach((ps, pi) => {
+    const pars = ps.pars || [];
+    const sis = ps.sis || [];
+    const n = pars.length;
+    const label = ps.label || 'entry ' + pi;
+
+    if (n !== 9 && n !== 18)
+      warnings.push({ par_si: pi, issue: label + ': expected 9 or 18 holes, got ' + n });
+
+    // Par range
+    pars.forEach((p, hi) => {
+      if (p != null && (p < 3 || p > 6))
+        warnings.push({ par_si: pi, hole: hi + 1, field: 'par', value: p, issue: label + ': par must be 3-6' });
+    });
+
+    // Par sums
+    const parSum = pars.reduce((s, p) => s + (p || 0), 0);
+    if (ps.pars_total != null && parSum > 0 && ps.pars_total !== parSum)
+      warnings.push({ par_si: pi, field: 'pars_total', issue: label + ': par total ' + ps.pars_total + ' does not match sum ' + parSum });
+    const outSum = pars.slice(0, 9).reduce((s, p) => s + (p || 0), 0);
+    if (ps.pars_out != null && outSum > 0 && ps.pars_out !== outSum)
+      warnings.push({ par_si: pi, field: 'pars_out', issue: label + ': OUT pars ' + ps.pars_out + ' does not match sum ' + outSum });
+    const inSum = pars.slice(9).reduce((s, p) => s + (p || 0), 0);
+    if (ps.pars_in != null && inSum > 0 && ps.pars_in !== inSum)
+      warnings.push({ par_si: pi, field: 'pars_in', issue: label + ': IN pars ' + ps.pars_in + ' does not match sum ' + inSum });
+
+    // SI uniqueness
     const siSeen = {};
-    const maxSI = n;
-    holes.forEach((h, hi) => {
-      const hn = hi + 1;
-      if (h.par != null && (h.par < 3 || h.par > 6))
-        warnings.push({ tee: ti, hole: hn, field: 'par', value: h.par, issue: 'Par must be 3-6' });
-      if (h.par != null) parSum += h.par;
-      if (h.stroke_index != null) {
-        if (h.stroke_index < 1 || h.stroke_index > maxSI)
-          warnings.push({ tee: ti, hole: hn, field: 'stroke_index', value: h.stroke_index, issue: 'SI must be 1-' + maxSI });
-        if (siSeen[h.stroke_index])
-          warnings.push({ tee: ti, hole: hn, field: 'stroke_index', value: h.stroke_index, issue: 'Duplicate SI' });
-        siSeen[h.stroke_index] = true;
+    const maxSI = n || 18;
+    sis.forEach((si, hi) => {
+      if (si != null) {
+        if (si < 1 || si > maxSI)
+          warnings.push({ par_si: pi, hole: hi + 1, field: 'si', value: si, issue: label + ': SI must be 1-' + maxSI });
+        if (siSeen[si])
+          warnings.push({ par_si: pi, hole: hi + 1, field: 'si', value: si, issue: label + ': duplicate SI' });
+        siSeen[si] = true;
       }
     });
-    if (ts.par_total != null && parSum > 0 && ts.par_total !== parSum)
-      warnings.push({ tee: ti, field: 'par_total', value: ts.par_total, issue: 'Par total ' + ts.par_total + ' does not match sum ' + parSum });
-
-    // Validate each rating/slope pair
-    var pairs = [
-      ['slope_men', 'rating_men', 'men'],
-      ['slope_women', 'rating_women', 'women'],
-      ['slope_unlabelled', 'rating_unlabelled', 'unlabelled']
-    ];
-    pairs.forEach(function(p) {
-      var slope = ts[p[0]], rating = ts[p[1]], label = p[2];
-      if (slope != null && (slope < 55 || slope > 155))
-        warnings.push({ tee: ti, field: p[0], value: slope, issue: label + ' slope should be 55-155' });
-      if (rating != null && (rating < 50 || rating > 85))
-        warnings.push({ tee: ti, field: p[1], value: rating, issue: label + ' rating should be 50-85' });
-    });
-
-    // Women's rating lower than men's on the same tee = likely misread
-    if (ts.rating_women != null && ts.rating_men != null && ts.rating_women < ts.rating_men)
-      warnings.push({ tee: ti, field: 'rating_women', issue: 'Women\'s rating (' + ts.rating_women + ') is lower than men\'s (' + ts.rating_men + ') on the same tee — check this' });
-
-    // Unlabelled rating warning
-    if (ts.rating_unlabelled != null)
-      warnings.push({ tee: ti, field: 'rating_unlabelled', issue: 'Card shows one rating for this tee. Which is it?' });
-
     for (let s = 1; s <= maxSI; s++) {
-      if (!siSeen[s]) warnings.push({ tee: ti, field: 'stroke_index', issue: 'Missing SI ' + s });
+      if (!siSeen[s]) warnings.push({ par_si: pi, field: 'si', issue: label + ': missing SI ' + s });
     }
   });
+
+  // Validate tees
+  (result.tees || []).forEach((tee, ti) => {
+    // Yard sums
+    const yards = tee.yards || [];
+    const yardSum = yards.reduce((s, y) => s + (y || 0), 0);
+    if (tee.yards_total != null && yardSum > 0 && Math.abs(tee.yards_total - yardSum) > 2)
+      warnings.push({ tee: ti, field: 'yards_total', issue: tee.colour + ': yard total ' + tee.yards_total + ' does not match sum ' + yardSum });
+
+    // Rating range checks
+    ['rating_men', 'rating_women'].forEach(f => {
+      if (tee[f] != null && (tee[f] < 50 || tee[f] > 85))
+        warnings.push({ tee: ti, field: f, value: tee[f], issue: tee.colour + ': ' + f + ' should be 50-85' });
+    });
+    ['slope_men', 'slope_women'].forEach(f => {
+      if (tee[f] != null && (tee[f] < 55 || tee[f] > 155))
+        warnings.push({ tee: ti, field: f, value: tee[f], issue: tee.colour + ': ' + f + ' should be 55-155' });
+    });
+
+    // Women's rating lower than men's = likely misread
+    if (tee.rating_women != null && tee.rating_men != null && tee.rating_women < tee.rating_men)
+      warnings.push({ tee: ti, issue: tee.colour + ': women\'s rating (' + tee.rating_women + ') lower than men\'s (' + tee.rating_men + ') — check this' });
+  });
+
+  // Check filled rating column count matches tee count
+  const teesWithMenRating = (result.tees || []).filter(t => t.rating_men != null).length;
+  const teesWithWomenRating = (result.tees || []).filter(t => t.rating_women != null).length;
+  if (teesWithMenRating === 0)
+    warnings.push({ issue: 'No men\'s ratings found on any tee' });
+
   return warnings;
 }
 
-// Background function handler — Netlify calls this, returns 202 immediately,
-// then this runs for up to 15 minutes.
+// ── Main handler ────────────────────────────────────────────────
 export default async (req) => {
   let body;
-  try {
-    body = await req.json();
-  } catch (e) {
-    console.error('Bad request body');
-    return;
-  }
-
+  try { body = await req.json(); } catch (e) { console.error('Bad body'); return; }
   const readId = body.read_id;
   if (!readId) { console.error('Missing read_id'); return; }
 
   const start = Date.now();
 
   try {
-    // Mark as processing
     await sbPatch('scorecard_reads?id=eq.' + readId, { status: 'processing' });
 
-    // Fetch the read row to get photo_path
     const rows = await sbGet('scorecard_reads?id=eq.' + readId + '&select=photo_path&limit=1');
     if (!rows || !rows.length) throw new Error('Read row not found');
-    const photoPath = rows[0].photo_path;
 
-    // Fetch photo from storage
-    const photoBuffer = await fetchPhoto(photoPath);
+    const photoBuffer = await fetchPhoto(rows[0].photo_path);
     const b64 = photoBuffer.toString('base64');
     console.log('Photo: ' + b64.length + ' b64 chars');
 
-    // Call Claude
-    const responseText = await callClaude(b64, 'image/jpeg');
+    const imageBlock = { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } };
 
-    // Parse JSON
-    const jsonText = responseText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    let card;
-    try {
-      card = JSON.parse(jsonText);
-    } catch (e) {
-      const elapsed = Date.now() - start;
-      await sbPatch('scorecard_reads?id=eq.' + readId, {
-        status: 'failed',
-        error_message: 'Could not read the scorecard clearly. Try a flatter, well-lit photo.',
-        duration_ms: elapsed,
-        completed_at: new Date().toISOString()
-      });
-      return;
-    }
+    // ── PASS 1: Layout ────────────────────────────────────────
+    console.log('Pass 1: layout...');
+    const layoutText = await callClaude([{
+      role: 'user',
+      content: [imageBlock, { type: 'text', text: PASS1_PROMPT }]
+    }]);
+    let layout;
+    try { layout = parseJSON(layoutText); }
+    catch (e) { throw new Error('Pass 1 failed to parse: ' + layoutText.slice(0, 200)); }
+    console.log('Layout:', JSON.stringify(layout).slice(0, 300));
+
+    // ── PASS 2: Extraction ────────────────────────────────────
+    console.log('Pass 2: extraction...');
+    const extractPrompt = makePass2Prompt(layout);
+    const extractText = await callClaude([{
+      role: 'user',
+      content: [imageBlock, { type: 'text', text: extractPrompt }]
+    }]);
+    let result;
+    try { result = parseJSON(extractText); }
+    catch (e) { throw new Error('Pass 2 failed to parse: ' + extractText.slice(0, 200)); }
 
     // Validate
-    const warnings = validate(card);
+    const warnings = validate(result);
     const elapsed = Date.now() - start;
 
     // Write result
     await sbPatch('scorecard_reads?id=eq.' + readId, {
       status: 'done',
-      result: JSON.stringify(card),
+      result: JSON.stringify(result),
       warnings: JSON.stringify(warnings),
       duration_ms: elapsed,
       completed_at: new Date().toISOString()
     });
 
     console.log('Read ' + readId + ' done in ' + (elapsed / 1000).toFixed(1) + 's, ' +
-      (card.tee_sets || []).length + ' tee sets, ' + warnings.length + ' warnings');
+      (result.tees || []).length + ' tees, ' + (result.par_si || []).length + ' par/si sets, ' +
+      warnings.length + ' warnings');
 
   } catch (err) {
     const elapsed = Date.now() - start;
@@ -292,11 +337,13 @@ export default async (req) => {
     try {
       await sbPatch('scorecard_reads?id=eq.' + readId, {
         status: 'failed',
-        error_message: 'Something went wrong reading the card. Try again or add by hand.',
+        error_message: err.message.indexOf('TIMEOUT') !== -1
+          ? 'Reading the card took too long. Try a clearer, well-lit photo.'
+          : 'Something went wrong reading the card. Try again or add by hand.',
         duration_ms: elapsed,
         completed_at: new Date().toISOString()
       });
-    } catch (e) { console.error('Failed to update read row:', e.message); }
+    } catch (e) { console.error('Failed to update row:', e.message); }
   }
 };
 
