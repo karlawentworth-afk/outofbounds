@@ -70,6 +70,11 @@ function callClaude(base64Image, mediaType) {
 
   const prompt = `You are reading a golf club scorecard photograph.
 Return ONLY valid JSON, no markdown fences, no explanation.
+
+IMPORTANT: WHS scorecards often print TWO course ratings and TWO slope ratings
+for each tee colour — one row labelled M (men) and one labelled L (ladies/women).
+These are DIFFERENT numbers for the SAME tee. You MUST return BOTH when present.
+
 Extract this structure:
 {
   "club_name": "string or null",
@@ -78,10 +83,11 @@ Extract this structure:
     {
       "tee_name": "string (e.g. White, Yellow, Red)",
       "colour": "string or null",
-      "gender": "female | male | null",
-      "slope_rating": number or null,
-      "course_rating": number or null,
-      "par_total": number or null,
+      "rating_men": number or null,
+      "slope_men": number or null,
+      "rating_women": number or null,
+      "slope_women": number or null,
+      "par_total": number,
       "confidence": number 0-1,
       "check_holes": [hole numbers where read was unsure],
       "holes": [
@@ -92,12 +98,30 @@ Extract this structure:
 }
 
 Rules:
+- For EACH tee colour, look at the rating/slope box at the top of the card.
+  Cards typically show rows like:
+    Course  Slope
+    73.7    136      (this is for one tee, e.g. Blue)
+    73.1    135      (White)
+    71.6    133      (Yellow)
+    68.4    131   M  (Red, men's rating — look for M or similar marker)
+    73.8    132   L  (Red, ladies' rating — look for L or similar marker)
+  When a tee has TWO rating rows (marked M and L, or men and ladies),
+  return rating_men/slope_men from the M row and rating_women/slope_women
+  from the L row.
+- When a tee has only ONE rating row with no M/L marker, return it under
+  "rating_unlabelled" and "slope_unlabelled" instead, and add a warning
+  in check_holes as [-1] to flag it.
+- Tees used only by men (Blue, White, Yellow typically) often have just one
+  rating — put it under rating_men/slope_men, set women's to null.
+- Tees used by women (Red typically) almost always have two rating rows.
 - stroke_index is the handicap/SI column, NOT the hole number.
 - par is always 3, 4, 5, or rarely 6.
 - stroke_index values must be 1-18 each used exactly once per tee set (or 1-9 for 9-hole).
-- If you cannot read a value, set null and add hole to check_holes.
-- slope_rating typically 55-155, course_rating typically 50-85.
-- Separate men's and ladies' sections = separate tee_sets with gender set.
+- If you cannot read a value, set null and add hole number to check_holes.
+- Slope typically 55-155. Course rating typically 50-85.
+- If a tee has separate men's and ladies' pars or SIs (different columns on
+  the card), return them as separate tee_sets with the same tee_name.
 - Prioritise pars and stroke_indexes over yardages. If running long, omit yards.
 - Return null for anything not visible. Never guess.`;
 
@@ -167,10 +191,29 @@ function validate(card) {
     });
     if (ts.par_total != null && parSum > 0 && ts.par_total !== parSum)
       warnings.push({ tee: ti, field: 'par_total', value: ts.par_total, issue: 'Par total ' + ts.par_total + ' does not match sum ' + parSum });
-    if (ts.slope_rating != null && (ts.slope_rating < 55 || ts.slope_rating > 155))
-      warnings.push({ tee: ti, field: 'slope_rating', value: ts.slope_rating, issue: 'Slope should be 55-155' });
-    if (ts.course_rating != null && (ts.course_rating < 50 || ts.course_rating > 85))
-      warnings.push({ tee: ti, field: 'course_rating', value: ts.course_rating, issue: 'Rating should be 50-85' });
+
+    // Validate each rating/slope pair
+    var pairs = [
+      ['slope_men', 'rating_men', 'men'],
+      ['slope_women', 'rating_women', 'women'],
+      ['slope_unlabelled', 'rating_unlabelled', 'unlabelled']
+    ];
+    pairs.forEach(function(p) {
+      var slope = ts[p[0]], rating = ts[p[1]], label = p[2];
+      if (slope != null && (slope < 55 || slope > 155))
+        warnings.push({ tee: ti, field: p[0], value: slope, issue: label + ' slope should be 55-155' });
+      if (rating != null && (rating < 50 || rating > 85))
+        warnings.push({ tee: ti, field: p[1], value: rating, issue: label + ' rating should be 50-85' });
+    });
+
+    // Women's rating lower than men's on the same tee = likely misread
+    if (ts.rating_women != null && ts.rating_men != null && ts.rating_women < ts.rating_men)
+      warnings.push({ tee: ti, field: 'rating_women', issue: 'Women\'s rating (' + ts.rating_women + ') is lower than men\'s (' + ts.rating_men + ') on the same tee — check this' });
+
+    // Unlabelled rating warning
+    if (ts.rating_unlabelled != null)
+      warnings.push({ tee: ti, field: 'rating_unlabelled', issue: 'Card shows one rating for this tee. Which is it?' });
+
     for (let s = 1; s <= maxSI; s++) {
       if (!siSeen[s]) warnings.push({ tee: ti, field: 'stroke_index', issue: 'Missing SI ' + s });
     }
