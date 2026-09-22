@@ -48,7 +48,7 @@ function callClaude(base64Image, mediaType) {
   ].join('\n');
 
   var body = {
-    model: 'claude-sonnet-4-6-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 4096,
     messages: [{
       role: 'user',
