@@ -12,17 +12,15 @@
   --primary: #1B2A4A;
   --accent: #2E7D32;
   --text-on-primary: #FFFFFF;
-  --bg: #0A0E14;
-  --surface: #141B24;
-  --card: #1A2332;
-  --ink: #F0F2F5;
-  --muted: #7B8794;
-  --rule: #243040;
-  --gold: #FFD700;
-  --silver: #C0C0C0;
-  --bronze: #CD7F32;
-  --highlight: rgba(46, 125, 50, 0.12);
-  --glow-gold: rgba(255, 215, 0, 0.15);
+  --bg: #FFFFFF;
+  --surface: #F8F9FA;
+  --ink: #1A1A1A;
+  --muted: #6B7280;
+  --light: #9CA3AF;
+  --rule: #E5E7EB;
+  --accent-light: #E8F5E9;
+  --leader: #1B5E20;
+  --moved: #F0FFF4;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -35,161 +33,163 @@ body {
   flex-direction: column;
 }
 
-/* ── Header ── */
-.header {
+/* ── Header bar ── */
+.top-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 40px 0; flex-shrink: 0;
+  padding: 12px 24px;
+  background: var(--primary); color: var(--text-on-primary);
 }
-.header-left { display: flex; align-items: center; gap: 16px; }
-.header-left img { height: 40px; display: none; }
-.header-right { display: flex; align-items: center; gap: 20px; }
-.header-right img { height: 32px; display: none; opacity: 0.8; }
+.top-bar-left { display: flex; align-items: center; gap: 12px; }
+.top-bar-left img { height: 32px; display: none; }
+.top-bar-left .org-name { font-size: 13px; font-weight: 700; letter-spacing: 0.03em; }
+.top-bar-right { display: flex; align-items: center; gap: 12px; }
+.top-bar-right img { height: 24px; display: none; }
+.top-bar-right .updated { font-size: 11px; opacity: 0.7; }
 
-.event-name {
-  font-size: 14px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: var(--muted);
+/* ── Event info ── */
+.event-bar {
+  padding: 16px 24px 12px; border-bottom: 1px solid var(--rule);
 }
-.event-title {
-  font-size: 28px; font-weight: 900; letter-spacing: -0.02em;
-  padding: 4px 40px 0; flex-shrink: 0;
+.event-title { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--ink); }
+.event-headline { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+.event-format { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── Sponsor banner ── */
+.sponsor-banner {
+  display: none; padding: 0; border-bottom: 1px solid var(--rule);
+  text-align: center; background: var(--surface);
 }
-.headline-bar {
-  padding: 4px 40px 0; font-size: 14px; color: var(--accent);
-  font-weight: 600; flex-shrink: 0;
-}
-.format-bar {
-  padding: 8px 40px 16px; font-size: 12px; color: var(--muted);
-  font-weight: 500; flex-shrink: 0;
-  border-bottom: 1px solid var(--rule);
+.sponsor-banner img { max-height: 80px; max-width: 100%; }
+
+/* ── Leaderboard heading ── */
+.lb-heading {
+  padding: 12px 24px 8px;
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--muted);
 }
 
-/* ── Board ── */
+/* ── Table ── */
 .board { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
 .table-head {
-  display: flex; align-items: center; padding: 12px 40px;
+  display: flex; align-items: center; padding: 8px 24px;
+  background: var(--surface); border-bottom: 2px solid var(--rule);
   font-size: 10px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.12em;
+  text-transform: uppercase; letter-spacing: 0.1em;
 }
-.col-pos { width: 52px; text-align: center; }
-.col-name { flex: 1; }
-.col-thru { width: 80px; text-align: center; }
-.col-pts { width: 90px; text-align: right; padding-right: 8px; }
+.col-pos { width: 44px; text-align: center; }
+.col-name { flex: 1; padding-left: 8px; }
+.col-thru { width: 56px; text-align: center; }
+.col-pts { width: 64px; text-align: center; }
 
 .rows { flex: 1; overflow: hidden; }
 
 .row {
-  display: flex; align-items: center; padding: 0 40px; height: 56px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.6s ease;
+  display: flex; align-items: center; padding: 0 24px; height: 44px;
+  border-bottom: 1px solid var(--rule);
 }
-.row:nth-child(odd) { background: rgba(255,255,255,0.02); }
-.row.moved { background: var(--highlight); }
-.row.top3 { background: var(--glow-gold); }
+.row:nth-child(even) { background: var(--surface); }
+.row.moved { background: var(--moved); }
+.row.leader { border-left: 3px solid var(--accent); }
 
-/* Position badges */
+/* Position */
 .pos {
-  width: 52px; text-align: center; font-weight: 900; font-size: 18px;
+  width: 44px; text-align: center; font-weight: 800; font-size: 14px;
   color: var(--muted);
 }
-.pos-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 50%; font-size: 14px; font-weight: 900;
-}
-.pos-badge.p1 { background: var(--gold); color: #1a1a00; }
-.pos-badge.p2 { background: var(--silver); color: #1a1a1a; }
-.pos-badge.p3 { background: var(--bronze); color: #fff; }
+.pos.p1 { color: var(--leader); font-size: 16px; }
+.pos.p2 { color: var(--ink); }
+.pos.p3 { color: var(--ink); }
 
-/* Name column */
-.name-col { flex: 1; padding: 0 8px; }
+/* Names */
+.name-col { flex: 1; padding-left: 8px; overflow: hidden; }
 .player-names {
-  font-size: 17px; font-weight: 700; letter-spacing: -0.01em;
+  font-size: 14px; font-weight: 600; color: var(--ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.cb { font-size: 10px; color: var(--muted); margin-top: 1px; font-weight: 500; }
+.row.leader .player-names { color: var(--leader); font-weight: 800; }
+.cb { font-size: 9px; color: var(--light); margin-top: 1px; }
 
-/* Through column */
-.thru {
-  width: 80px; text-align: center; font-size: 13px;
-  color: var(--muted); font-weight: 600;
-}
-.thru .finished {
-  display: inline-block; padding: 2px 10px; border-radius: 10px;
-  background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
-  letter-spacing: 0.05em;
+/* Through */
+.thru { width: 56px; text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
+.thru .fin {
+  display: inline-block; padding: 1px 6px; border-radius: 3px;
+  background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
 }
 
-/* Points column */
+/* Points */
 .pts {
-  width: 90px; text-align: right; padding-right: 8px;
-  font-size: 26px; font-weight: 900; color: var(--ink);
+  width: 64px; text-align: center;
+  font-size: 18px; font-weight: 900; color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.row.top3 .pts { color: var(--gold); }
+.row.leader .pts { color: var(--leader); }
 
 /* ── Footer ── */
-.footer {
+.footer-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 40px; border-top: 1px solid var(--rule); flex-shrink: 0;
+  padding: 8px 24px; border-top: 1px solid var(--rule);
+  background: var(--surface);
 }
-.footer .pager { font-size: 12px; color: var(--muted); font-weight: 600; }
-.footer .updated { font-size: 11px; color: var(--muted); }
-.footer .powered {
-  font-size: 10px; color: rgba(255,255,255,0.2); font-weight: 600;
-  letter-spacing: 0.05em;
-}
+.pager { font-size: 11px; color: var(--muted); font-weight: 600; }
+.brand { font-size: 9px; color: var(--light); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* ── Empty state ── */
+/* ── Empty / loading ── */
 .empty-state {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
+  align-items: center; justify-content: center; gap: 6px; padding: 40px;
 }
-.empty-state .title { font-size: 20px; font-weight: 700; }
-.empty-state .sub { font-size: 14px; color: var(--muted); }
+.empty-state .title { font-size: 16px; font-weight: 700; color: var(--ink); }
+.empty-state .sub { font-size: 13px; color: var(--muted); }
+
+/* ── Section title (secondary) ── */
+.section-title {
+  padding: 12px 24px 6px; font-size: 14px; font-weight: 800;
+  color: var(--accent);
+}
 
 /* ── Sponsor slide ── */
 .slide {
   display: none; flex: 1; flex-direction: column;
-  align-items: center; justify-content: center; padding: 60px; text-align: center;
+  align-items: center; justify-content: center; padding: 40px; text-align: center;
+  background: var(--surface);
 }
 .slide.active { display: flex; }
-.slide img { max-width: 50%; max-height: 40vh; margin-bottom: 32px; }
-.slide .slide-headline { font-size: 36px; font-weight: 900; margin-bottom: 12px; }
-.slide .slide-message { font-size: 18px; color: var(--muted); }
+.slide img { max-width: 50%; max-height: 40vh; margin-bottom: 24px; }
+.slide .slide-headline { font-size: 28px; font-weight: 900; color: var(--ink); }
+.slide .slide-message { font-size: 16px; color: var(--muted); margin-top: 8px; }
 
-/* ── Section title for secondary ── */
-.section-title {
-  padding: 16px 40px 8px; font-size: 18px; font-weight: 800;
-  color: var(--accent); letter-spacing: -0.01em;
-  border-bottom: 1px solid var(--rule);
-}
-
-/* ── Tee time list (empty state) ── */
-.tee-list { padding: 16px 40px; }
+/* ── Tee times (before scores) ── */
 .tee-row {
-  display: flex; align-items: center; padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 15px;
+  display: flex; align-items: center; padding: 10px 24px;
+  border-bottom: 1px solid var(--rule); font-size: 13px;
 }
-.tee-time { width: 70px; font-weight: 700; color: var(--accent); }
-.tee-group { font-weight: 600; }
-.tee-names { flex: 1; color: var(--muted); font-weight: 500; margin-left: 16px; }
+.tee-row:nth-child(even) { background: var(--surface); }
+.tee-time { width: 60px; font-weight: 800; color: var(--accent); }
+.tee-group { width: 80px; font-weight: 600; color: var(--muted); }
+.tee-names { flex: 1; color: var(--ink); font-weight: 500; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
+<div class="top-bar">
+  <div class="top-bar-left">
     <img id="org-logo" alt="">
-    <span class="event-name" id="event-name"></span>
+    <span class="org-name" id="orgName"></span>
   </div>
-  <div class="header-right">
+  <div class="top-bar-right">
     <img id="sponsor-logo" alt="">
+    <span class="updated" id="updated"></span>
   </div>
 </div>
-<div class="event-title" id="eventTitle"></div>
-<div class="headline-bar" id="headline"></div>
-<div class="format-bar" id="formatLine"></div>
+
+<div class="event-bar">
+  <div class="event-title" id="eventTitle"></div>
+  <div class="event-headline" id="headline"></div>
+  <div class="event-format" id="formatLine"></div>
+</div>
+
+<div class="lb-heading" id="lbHeading">Leaderboard</div>
 
 <div class="board" id="board">
   <div class="empty-state">
@@ -197,15 +197,14 @@ body {
   </div>
 </div>
 
-<div class="footer">
+<div class="footer-bar">
   <span class="pager" id="pager"></span>
-  <span class="powered">OUT OF BOUNDS</span>
-  <span class="updated" id="updated"></span>
+  <span class="brand">Out of Bounds</span>
+  <span class="updated" id="updated2"></span>
 </div>
 
 <script src="/shared/engine.js"></script>
 <script src="/shared/api.js"></script>
-<script src="/shared/theme.js"></script>
 <script>
 (function () {
   'use strict';
@@ -231,7 +230,7 @@ body {
   var FORMAT_LABELS = {
     'individual_stableford': 'Individual Stableford',
     'better_ball_pairs': 'Better ball pairs Stableford',
-    'better_ball_2from4': 'Better ball Stableford — best 2 from 4'
+    'better_ball_2from4': 'Better ball Stableford \u2014 best 2 from 4'
   };
 
   function esc(s) {
@@ -247,14 +246,15 @@ body {
       var org = config.organiser || {};
       var ev = config.event || {};
 
-      // Apply branding
       if (org.primary_colour) document.documentElement.style.setProperty('--primary', org.primary_colour);
-      if (org.accent_colour) document.documentElement.style.setProperty('--accent', org.accent_colour);
+      if (org.accent_colour) {
+        document.documentElement.style.setProperty('--accent', org.accent_colour);
+        document.documentElement.style.setProperty('--leader', org.accent_colour);
+      }
 
       var logoEl = document.getElementById('org-logo');
       if (logoEl && org.logo_url) { logoEl.src = org.logo_url; logoEl.style.display = ''; }
-
-      document.getElementById('event-name').textContent = org.name || '';
+      document.getElementById('orgName').textContent = org.name || '';
       document.getElementById('eventTitle').textContent = ev.name || '';
 
       var sponsorEl = document.getElementById('sponsor-logo');
@@ -278,43 +278,35 @@ body {
     if (!eventId) return;
     try {
       data = await OOB.api('leaderboard', { query: { event: eventId, mode: 'board' } });
-      document.getElementById('updated').textContent =
-        'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      var t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('updated').textContent = t;
+      document.getElementById('updated2').textContent = 'Updated ' + t;
       buildRotation();
       renderCurrentView();
-    } catch (err) {
-      console.error('Refresh error:', err);
-    }
+    } catch (err) { console.error(err); }
   }
 
   function buildRotation() {
     rotationItems = [];
     if (!data) return;
-
     var entries = (data.entries || []).filter(function (e) { return e.hasPlayed; });
     var totalPages = Math.max(1, Math.ceil(entries.length / rowsPerPage));
 
     for (var p = 0; p < totalPages; p++) {
       rotationItems.push({ type: 'leaderboard', page: p, entries: entries });
-      if (slides.length > 0) {
-        rotationItems.push({ type: 'slide', slide: slides[p % slides.length] });
-      }
+      if (slides.length > 0) rotationItems.push({ type: 'slide', slide: slides[p % slides.length] });
     }
 
-    // Secondary format
     if (data.secondary && data.secondary.entries) {
-      var secEntries = data.secondary.entries.filter(function (e) { return e.hasPlayed; });
-      if (secEntries.length > 0) {
-        var secPages = Math.max(1, Math.ceil(secEntries.length / rowsPerPage));
-        for (var sp = 0; sp < secPages; sp++) {
-          rotationItems.push({ type: 'secondary', page: sp, entries: secEntries, title: data.secondary.title });
+      var sec = data.secondary.entries.filter(function (e) { return e.hasPlayed; });
+      if (sec.length > 0) {
+        var sp = Math.max(1, Math.ceil(sec.length / rowsPerPage));
+        for (var i = 0; i < sp; i++) {
+          rotationItems.push({ type: 'secondary', page: i, entries: sec, title: data.secondary.title });
         }
       }
     }
-
-    if (rotationItems.length === 0) {
-      rotationItems.push({ type: 'empty' });
-    }
+    if (rotationItems.length === 0) rotationItems.push({ type: 'empty' });
   }
 
   function startRotation() {
@@ -328,12 +320,14 @@ body {
   }
 
   function renderCurrentView() {
-    if (rotationItems.length === 0) return;
+    if (!rotationItems.length) return;
     var item = rotationItems[rotationIndex];
     if (item.type === 'leaderboard') {
-      renderBoard(item, data.format, data.allowancePct, false);
+      document.getElementById('lbHeading').textContent = 'LEADERBOARD';
+      renderBoard(item, data.format, data.allowancePct);
     } else if (item.type === 'secondary') {
-      renderBoard(item, data.secondary.format, data.secondary.allowancePct, true);
+      document.getElementById('lbHeading').textContent = item.title ? item.title.toUpperCase() : 'LEADERBOARD';
+      renderBoard(item, data.secondary.format, data.secondary.allowancePct);
     } else if (item.type === 'slide') {
       renderSlide(item.slide);
     } else {
@@ -341,7 +335,7 @@ body {
     }
   }
 
-  function renderBoard(item, format, allowancePct, isSecondary) {
+  function renderBoard(item, format, pct) {
     var entries = item.entries;
     var page = item.page;
     var start = page * rowsPerPage;
@@ -349,41 +343,29 @@ body {
     var freezeHole = data ? data.freezeHole : 18;
 
     document.getElementById('formatLine').textContent =
-      (FORMAT_LABELS[format] || format) + ', ' + allowancePct + '% handicap allowance';
+      (FORMAT_LABELS[format] || format) + ', ' + pct + '% handicap allowance';
 
-    var html = '';
-    if (isSecondary) {
-      html += '<div class="section-title">' + esc(item.title) + '</div>';
-    }
-
-    html += '<div class="table-head">' +
+    var html = '<div class="table-head">' +
       '<div class="col-pos">Pos</div>' +
-      '<div class="col-name">Name</div>' +
+      '<div class="col-name">Player</div>' +
       '<div class="col-thru">Thru</div>' +
-      '<div class="col-pts">Points</div>' +
+      '<div class="col-pts">Pts</div>' +
       '</div><div class="rows">';
 
     pageEntries.forEach(function (e, i) {
       var rank = start + i + 1;
       var key = e.memberIds.join(',');
       var moved = prevRanks[key] != null && prevRanks[key] !== rank;
-      var isTop3 = rank <= 3;
+      var isLeader = rank === 1;
       var finished = e.thru >= freezeHole;
+      var posClass = rank <= 3 ? ' p' + rank : '';
 
-      var posHtml;
-      if (rank <= 3) {
-        var pc = rank === 1 ? 'p1' : rank === 2 ? 'p2' : 'p3';
-        posHtml = '<span class="pos-badge ' + pc + '">' + rank + '</span>';
-      } else {
-        posHtml = rank;
-      }
-
-      html += '<div class="row' + (moved ? ' moved' : '') + (isTop3 ? ' top3' : '') + '">';
-      html += '<div class="pos">' + posHtml + '</div>';
+      html += '<div class="row' + (moved ? ' moved' : '') + (isLeader ? ' leader' : '') + '">';
+      html += '<div class="pos' + posClass + '">' + rank + '</div>';
       html += '<div class="name-col"><div class="player-names">' + esc(e.names) + '</div>';
       if (e.countback) html += '<div class="cb">' + esc(e.countback) + '</div>';
       html += '</div>';
-      html += '<div class="thru">' + (finished ? '<span class="finished">IN</span>' : e.thru) + '</div>';
+      html += '<div class="thru">' + (finished ? '<span class="fin">F</span>' : e.thru) + '</div>';
       html += '<div class="pts">' + e.points + '</div>';
       html += '</div>';
     });
@@ -391,12 +373,9 @@ body {
     html += '</div>';
     document.getElementById('board').innerHTML = html;
 
-    var totalEntries = entries.length;
-    var totalPages = Math.ceil(totalEntries / rowsPerPage);
-    document.getElementById('pager').textContent =
-      totalPages > 1 ? 'Page ' + (page + 1) + ' of ' + totalPages : '';
+    var tp = Math.ceil(entries.length / rowsPerPage);
+    document.getElementById('pager').textContent = tp > 1 ? 'Page ' + (page + 1) + ' of ' + tp : '';
 
-    // Store ranks for move detection
     prevRanks = {};
     entries.forEach(function (e, i) { prevRanks[e.memberIds.join(',')] = i + 1; });
   }
@@ -413,25 +392,18 @@ body {
   }
 
   function renderEmpty() {
-    if (!data) return;
-    var entries = data.entries || [];
-    if (entries.length === 0) {
+    if (!data || !data.entries || data.entries.length === 0) {
       document.getElementById('board').innerHTML =
         '<div class="empty-state"><div class="title">Waiting for scores</div><div class="sub">The leaderboard will appear when play begins</div></div>';
       return;
     }
-
-    // Show tee times for groups not yet started
-    var html = '<div class="tee-list">';
-    entries.forEach(function (e) {
+    var html = '';
+    data.entries.forEach(function (e) {
       var time = e.teeTime ? e.teeTime.slice(0, 5) : '';
-      html += '<div class="tee-row">';
-      html += '<span class="tee-time">' + esc(time) + '</span>';
-      html += '<span class="tee-group">Group ' + (e.groupNumber || '') + '</span>';
-      html += '<span class="tee-names">' + esc(e.names) + '</span>';
-      html += '</div>';
+      html += '<div class="tee-row"><span class="tee-time">' + esc(time) + '</span>' +
+        '<span class="tee-group">Group ' + (e.groupNumber || '') + '</span>' +
+        '<span class="tee-names">' + esc(e.names) + '</span></div>';
     });
-    html += '</div>';
     document.getElementById('board').innerHTML = html;
   }
 
