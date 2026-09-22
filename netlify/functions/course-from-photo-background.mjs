@@ -191,6 +191,56 @@ ${style === 'shared_rows' ?
 7. Return null for anything not legible. Never guess.`;
 }
 
+// ── Yard array fix ──────────────────────────────────────────────
+// If Claude returns more yards than expected (e.g. 19 for an 18-hole card),
+// find the 9+9 split that matches the printed OUT and IN totals.
+function fixYards(result) {
+  (result.tees || []).forEach(tee => {
+    const yards = tee.yards || [];
+    const expected = 18; // could be 9 for a 9-hole card
+    if (yards.length === expected) return; // fine
+
+    tee._yards_original_count = yards.length;
+
+    if (yards.length > expected && tee.yards_out != null && tee.yards_in != null) {
+      // Try every possible split of the array into front 9 + back 9
+      // that matches the printed OUT and IN totals
+      let bestFront = null, bestBack = null;
+
+      for (let split = 8; split <= yards.length - 8; split++) {
+        // Try front = yards[0..split], back = yards[split+1..end]
+        // We need exactly 9 in each half
+        for (let fStart = 0; fStart <= yards.length - 18; fStart++) {
+          const front = yards.slice(fStart, fStart + 9);
+          const back = yards.slice(fStart + 9, fStart + 18);
+          if (front.length !== 9 || back.length !== 9) continue;
+          const fSum = front.reduce((s, y) => s + (y || 0), 0);
+          const bSum = back.reduce((s, y) => s + (y || 0), 0);
+          if (fSum === tee.yards_out && bSum === tee.yards_in) {
+            bestFront = front;
+            bestBack = back;
+            break;
+          }
+        }
+        if (bestFront) break;
+      }
+
+      if (bestFront && bestBack) {
+        tee.yards = bestFront.concat(bestBack);
+        tee._yards_fixed = true;
+      } else {
+        // Fallback: just truncate to 18
+        tee.yards = yards.slice(0, expected);
+        tee._yards_truncated = true;
+      }
+    } else if (yards.length < expected) {
+      // Pad with nulls
+      while (tee.yards.length < expected) tee.yards.push(null);
+      tee._yards_padded = true;
+    }
+  });
+}
+
 // ── Validation ──────────────────────────────────────────────────
 function validate(result) {
   const warnings = [];
@@ -241,6 +291,14 @@ function validate(result) {
 
   // Validate tees
   (result.tees || []).forEach((tee, ti) => {
+    // Yard fixes
+    if (tee._yards_fixed)
+      warnings.push({ tee: ti, field: 'yards', issue: tee.colour + ': yardages checked against the card totals (had ' + tee._yards_original_count + ' values, corrected to 18)' });
+    if (tee._yards_truncated)
+      warnings.push({ tee: ti, field: 'yards', issue: tee.colour + ': yardages truncated from ' + tee._yards_original_count + ' to 18 — could not match OUT/IN totals, check these' });
+    if (tee._yards_padded)
+      warnings.push({ tee: ti, field: 'yards', issue: tee.colour + ': only ' + tee._yards_original_count + ' yardages read, missing holes set to null' });
+
     // Yard sums
     const yards = tee.yards || [];
     const yardSum = yards.reduce((s, y) => s + (y || 0), 0);
@@ -313,6 +371,9 @@ export default async (req) => {
     let result;
     try { result = parseJSON(extractText); }
     catch (e) { throw new Error('Pass 2 failed to parse: ' + extractText.slice(0, 200)); }
+
+    // Fix yard arrays: must be exactly 18 (or 9) entries
+    fixYards(result);
 
     // Validate
     const warnings = validate(result);
