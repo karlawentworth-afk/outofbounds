@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{PAGE_TITLE}}</title>
+<meta name="description" content="{{OG_DESC}}">
+<meta property="og:title" content="{{OG_TITLE}}">
+<meta property="og:description" content="{{OG_DESC}}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{OG_URL}}">
+<meta property="og:image" content="{{OG_IMAGE}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{OG_TITLE}}">
+<meta name="twitter:description" content="{{OG_DESC}}">
+<meta name="twitter:image" content="{{OG_IMAGE}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --navy:#10344E; --green:#2F7A45; --ink:#1B2430; --muted:#5B6672; --line:#E3E7EB; --off-white:#F7F5F0; --white:#FFFFFF; --green-light:#E8F5E9; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--off-white);-webkit-font-smoothing:antialiased;line-height:1.5}
+.top{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.top img{height:28px}
+.top span{font-family:Poppins,sans-serif;font-weight:700;font-size:15px}
+.wrap{max-width:600px;margin:0 auto;padding:0 16px}
+.event-header{padding:24px 0 16px;text-align:center;border-bottom:1px solid var(--line)}
+.event-header h1{font-family:Poppins,sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;margin-bottom:4px}
+.event-header .date{font-size:14px;color:var(--muted)}
+.format-line{text-align:center;padding:10px 0;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.lb-heading{padding:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)}
+.lb-table{width:100%;border-collapse:collapse;font-size:14px}
+.lb-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 4px;border-bottom:2px solid var(--line)}
+.lb-table th.r{text-align:right}
+.lb-table th.c{text-align:center}
+.lb-table td{padding:10px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.lb-table td.pos{font-weight:800;color:var(--muted);width:36px}
+.lb-table td.pos.p1{color:var(--green)}
+.lb-table td.name{font-weight:600}
+.lb-table td.thru{text-align:center;color:var(--muted);width:44px}
+.lb-table td.pts{text-align:right;font-family:Poppins,sans-serif;font-weight:700;font-size:16px;width:44px}
+.lb-table td.pts.p1{color:var(--green)}
+.tied-note{font-size:11px;color:var(--muted);padding:4px 4px 4px 40px;border-bottom:1px solid var(--line)}
+.share-bar{padding:20px 0;display:flex;flex-direction:column;gap:10px}
+.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:12px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:inherit;width:100%}
+.share-whatsapp{background:#25D366;color:#fff}
+.share-copy{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+.share-generic{background:var(--navy);color:#fff}
+.promo{text-align:center;padding:24px 0 32px;border-top:1px solid var(--line);margin-top:12px}
+.promo p{font-size:14px;color:var(--muted)}
+.promo a{color:var(--green);font-weight:600;text-decoration:none}
+.footer{background:var(--navy);color:rgba(255,255,255,0.5);padding:16px;text-align:center;font-size:12px}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
+</style>
+</head>
+<body>
+
+<div class="top"><img src="/img/icon-white.png" alt="OB"><span>Out of Bounds</span></div>
+
+<div class="wrap">
+  <div id="content"><div class="loading">Loading results...</div></div>
+</div>
+
+<div class="footer">&copy; 2026 Out of Bounds Events</div>
+
+<script src="/shared/engine.js"></script>
+<script src="/shared/api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // Read from path /r/<org>/<event> or fallback to hash #/<org>/<event>
+  var pathParts = location.pathname.replace(/^\/r\/?/, '').split('/').filter(Boolean);
+  if (pathParts.length < 2) pathParts = (location.hash || '').replace(/^#\/?/, '').split('/');
+  var orgSlug = pathParts[0] || '{{ORG_SLUG}}';
+  var eventSlug = pathParts[1] || '{{EVENT_SLUG}}';
+
+  if (!orgSlug || !eventSlug) {
+    document.getElementById('content').innerHTML = '<div class="loading">No event specified.</div>';
+    return;
+  }
+
+  var FORMAT_LABELS = {
+    'individual_stableford': 'Individual Stableford',
+    'better_ball_pairs': 'Better ball pairs Stableford',
+    'better_ball_2from4': 'Better ball Stableford \u2014 best 2 from 4'
+  };
+
+  var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso + 'T12:00:00');
+    return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function toSurnames(names) {
+    return (names || '').split(' & ').map(function (n) {
+      var p = n.trim().split(' ');
+      return p.length > 1 ? p[p.length - 1] : p[0];
+    }).join(' / ');
+  }
+
+  // Countback actually separates two entries?
+  function cbSeparates(a, b) {
+    if (a.cb9 !== b.cb9) return true;
+    if (a.cb6 !== b.cb6) return true;
+    if (a.cb3 !== b.cb3) return true;
+    if (a.cb1 !== b.cb1) return true;
+    return false;
+  }
+
+  function buildCountbackNote(e) {
+    var parts = [];
+    if (e.cb9) parts.push('Last 9: ' + e.cb9);
+    if (e.cb6) parts.push('Last 6: ' + e.cb6);
+    if (e.cb3) parts.push('Last 3: ' + e.cb3);
+    if (e.cb1) parts.push('18th: ' + e.cb1);
+    return parts.length > 0 ? parts.join(' / ') : '';
+  }
+
+  function renderTable(entries, heading, colLabel) {
+    var html = '<div class="lb-heading">' + esc(heading) + '</div>';
+    html += '<table class="lb-table"><thead><tr>' +
+      '<th>Pos</th><th>' + esc(colLabel) + '</th><th class="c">Thru</th><th class="r">Pts</th>' +
+      '</tr></thead><tbody>';
+
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      var rank = i + 1;
+      var posClass = rank === 1 ? ' p1' : '';
+      var nameDisplay = colLabel === 'Player' ? (e.names || '') : toSurnames(e.names);
+
+      html += '<tr>';
+      html += '<td class="pos' + posClass + '">' + rank + '</td>';
+      html += '<td class="name">' + esc(nameDisplay) + '</td>';
+      html += '<td class="thru">' + (e.thru >= 18 ? 'F' : e.thru) + '</td>';
+      html += '<td class="pts' + posClass + '">' + e.points + '</td>';
+      html += '</tr>';
+
+      // Check if tied with next entry
+      if (i + 1 < entries.length && entries[i + 1].points === e.points) {
+        // Find the end of the tie group
+        var tieEnd = i + 1;
+        while (tieEnd + 1 < entries.length && entries[tieEnd + 1].points === e.points) tieEnd++;
+
+        // Only show countback once, after the last row in the tie group
+        if (i === tieEnd || (i < tieEnd && entries[i + 1].points !== e.points)) {
+          // Not the last in the group yet — skip, handled below
+        }
+      }
+    }
+
+    html += '</tbody></table>';
+
+    // Now add countback/tied notes between tie groups
+    // Re-render with tie annotations
+    html = '<div class="lb-heading">' + esc(heading) + '</div>';
+    html += '<table class="lb-table"><thead><tr>' +
+      '<th>Pos</th><th>' + esc(colLabel) + '</th><th class="c">Thru</th><th class="r">Pts</th>' +
+      '</tr></thead><tbody>';
+
+    var idx = 0;
+    while (idx < entries.length) {
+      var e = entries[idx];
+      var rank = idx + 1;
+      var posClass = rank === 1 ? ' p1' : '';
+      var nameDisplay = colLabel === 'Player' ? (e.names || '') : toSurnames(e.names);
+
+      // Find tie group
+      var tieStart = idx;
+      var tieEnd = idx;
+      while (tieEnd + 1 < entries.length && entries[tieEnd + 1].points === e.points) tieEnd++;
+      var isTied = tieEnd > tieStart;
+
+      // Render all rows in the tie group
+      for (var t = tieStart; t <= tieEnd; t++) {
+        var te = entries[t];
+        var tRank = t + 1;
+        var tPosClass = tRank === 1 ? ' p1' : '';
+        var tName = colLabel === 'Player' ? (te.names || '') : toSurnames(te.names);
+
+        html += '<tr>';
+        html += '<td class="pos' + tPosClass + '">' + tRank + '</td>';
+        html += '<td class="name">' + esc(tName) + '</td>';
+        html += '<td class="thru">' + (te.thru >= 18 ? 'F' : te.thru) + '</td>';
+        html += '<td class="pts' + tPosClass + '">' + te.points + '</td>';
+        html += '</tr>';
+      }
+
+      // After the tie group, show countback or "Tied"
+      if (isTied) {
+        // Check if countback actually separates any of them
+        var anySeparated = false;
+        for (var c = tieStart; c < tieEnd; c++) {
+          if (cbSeparates(entries[c], entries[c + 1])) { anySeparated = true; break; }
+        }
+
+        if (anySeparated) {
+          // Show countback for each tied entry
+          for (var c = tieStart; c <= tieEnd; c++) {
+            var cbText = buildCountbackNote(entries[c]);
+            if (cbText) {
+              var cbName = colLabel === 'Player' ? (entries[c].names || '') : toSurnames(entries[c].names);
+              html += '<tr><td colspan="4" class="tied-note">' + esc(cbName) + ': ' + esc(cbText) + '</td></tr>';
+            }
+          }
+        } else {
+          html += '<tr><td colspan="4" class="tied-note">Tied</td></tr>';
+        }
+      }
+
+      idx = tieEnd + 1;
+    }
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  async function load() {
+    try {
+      var config = await OOB.api('config-get', { query: { org: orgSlug, event: eventSlug } });
+      var ev = config.event || {};
+      var org = config.organiser || {};
+
+      if (!ev.id) {
+        document.getElementById('content').innerHTML = '<div class="loading">Event not found.</div>';
+        return;
+      }
+
+      document.title = (ev.name || 'Results') + ' \u2014 Out of Bounds';
+      var ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.content = ev.name + ' Results';
+
+      // Use organiser mode so freeze is ignored for finished events
+      var data = await OOB.api('leaderboard', { query: { event: ev.id, mode: 'organiser' } });
+      var entries = (data.entries || []).filter(function (e) { return e.hasPlayed; });
+
+      var formatLabel = FORMAT_LABELS[data.format] || data.format;
+      var shareUrl = location.href;
+
+      // Build winner text for sharing
+      var winnerSurnames = entries.length > 0 ? toSurnames(entries[0].names) : '';
+      var winnerPts = entries.length > 0 ? entries[0].points : 0;
+      var winVerb = entries.length > 0 && entries[0].names.indexOf(' & ') !== -1 ? 'win' : 'wins';
+
+      // OG description with surnames
+      if (entries.length > 0) {
+        var ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.content = winnerSurnames + ' ' + winVerb + ' with ' + winnerPts + ' points at ' + (ev.name || '');
+      }
+
+      // WhatsApp share text
+      var waText = 'Results from ' + (ev.name || 'golf event') + ': ' +
+        winnerSurnames + ' ' + winVerb + ' with ' + winnerPts + ' pts. Full leaderboard: ' + shareUrl;
+
+      var html = '';
+
+      // Header
+      html += '<div class="event-header">';
+      html += '<h1>' + esc(ev.name) + '</h1>';
+      if (ev.event_date) html += '<div class="date">' + esc(formatDate(ev.event_date)) + '</div>';
+      html += '</div>';
+
+      // Format
+      html += '<div class="format-line">' + esc(formatLabel) + ', ' + data.allowancePct + '% handicap allowance</div>';
+
+      // Share buttons — WhatsApp first, full width, above the fold
+      html += '<div class="share-bar">';
+      var waMsg = encodeURIComponent(waText);
+      html += '<button class="share-btn share-whatsapp" onclick="window.open(\'https://wa.me/?text=' + waMsg + '\',\'_blank\')">Share on WhatsApp</button>';
+      html += '<button class="share-btn share-copy" id="btn-copy">Copy link</button>';
+      if ('share' in navigator) {
+        html += '<button class="share-btn share-generic" id="btn-share">Share</button>';
+      }
+      html += '</div>';
+
+      // Primary leaderboard
+      var colLabel = data.format === 'individual_stableford' ? 'Player' : 'Team';
+      html += renderTable(entries, 'Final Results', colLabel);
+
+      // Secondary format
+      if (data.secondary && data.secondary.entries) {
+        var secEntries = data.secondary.entries.filter(function (e) { return e.hasPlayed; });
+        if (secEntries.length > 0) {
+          var secCol = data.secondary.format === 'individual_stableford' ? 'Player' : 'Team';
+          html += renderTable(secEntries, data.secondary.title || 'Individual', secCol);
+        }
+      }
+
+      // Promo
+      html += '<div class="promo"><p>Scored with <strong>Out of Bounds</strong>.<br>Run your own for \u00A39.99. <a href="https://outofboundsevents.com/#pricing">Find out more</a></p></div>';
+
+      document.getElementById('content').innerHTML = html;
+
+      // Wire up copy button
+      var copyBtn = document.getElementById('btn-copy');
+      if (copyBtn) {
+        copyBtn.onclick = function () {
+          navigator.clipboard.writeText(shareUrl).then(function () {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 2000);
+          });
+        };
+      }
+
+      // Wire up native share
+      var shareBtn = document.getElementById('btn-share');
+      if (shareBtn) {
+        shareBtn.onclick = function () {
+          navigator.share({
+            title: ev.name + ' Results',
+            text: waText,
+            url: shareUrl
+          }).catch(function () {});
+        };
+      }
+
+    } catch (err) {
+      document.getElementById('content').innerHTML = '<div class="loading">Failed to load results: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>

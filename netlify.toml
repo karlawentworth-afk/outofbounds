@@ -17,3 +17,14 @@
   for = "/shared/*"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Results page: SSR with OG tags
+[[redirects]]
+  from = "/r/:org/:event/og.png"
+  to = "/.netlify/functions/results-og"
+  status = 200
+
+[[redirects]]
+  from = "/r/:org/:event"
+  to = "/.netlify/functions/results-page"
+  status = 200
