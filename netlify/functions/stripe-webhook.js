@@ -81,7 +81,51 @@ exports.handler = async function (event) {
     return sb.respond(400, { error: 'Missing event_id' });
   }
 
+  // Top-up payments: just log, don't change event status
+  var isTopUp = session.metadata && session.metadata.top_up === 'true';
+  if (isTopUp) {
+    try {
+      await sb.sbPatch(
+        'payments?stripe_checkout_id=eq.' + encodeURIComponent(session.id),
+        { status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent: session.payment_intent || null }
+      );
+      console.log('Top-up payment logged for event ' + eventId);
+      return sb.respond(200, { received: true });
+    } catch (err) {
+      console.error('Top-up webhook error:', err);
+      return sb.respond(500, { error: err.message });
+    }
+  }
+
   try {
+    // Verify amount matches what we expect
+    var expectedAmount = session.metadata && session.metadata.expected_amount;
+    var actualAmount = session.amount_total;
+    if (expectedAmount && actualAmount && parseInt(expectedAmount) !== actualAmount) {
+      console.error('Webhook amount mismatch: expected ' + expectedAmount + ', got ' + actualAmount + ' for event ' + eventId);
+      // Log but do not apply
+      try {
+        await sb.sbPatch(
+          'payments?stripe_checkout_id=eq.' + encodeURIComponent(session.id),
+          { status: 'amount_mismatch' }
+        );
+      } catch (e) {}
+      return sb.respond(200, { received: true, applied: false, reason: 'amount_mismatch' });
+    }
+
+    // Verify the event exists and belongs to the organiser
+    var evCheck = await sb.sbGet(
+      'events?id=eq.' + eventId + '&select=id,organiser_id,paid&limit=1'
+    );
+    if (!evCheck || !evCheck.length) {
+      console.error('Webhook: event ' + eventId + ' not found');
+      return sb.respond(200, { received: true, applied: false, reason: 'event_not_found' });
+    }
+    if (organiserId && evCheck[0].organiser_id !== organiserId) {
+      console.error('Webhook: organiser mismatch for event ' + eventId);
+      return sb.respond(200, { received: true, applied: false, reason: 'organiser_mismatch' });
+    }
+
     // Mark event as paid and live
     await sb.sbPatch('events?id=eq.' + eventId, {
       paid: true,

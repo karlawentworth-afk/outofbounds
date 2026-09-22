@@ -147,6 +147,7 @@ exports.handler = async function (event) {
           organiser_id: orig.organiser_id,
           slug: makeSlug(orig.name),
           name: orig.name + ' (copy)',
+          event_date: null,
           course_id: orig.course_id,
           tee_id: orig.tee_id,
           format: orig.format,
@@ -154,6 +155,8 @@ exports.handler = async function (event) {
           max_handicap: orig.max_handicap,
           starting_mode: orig.starting_mode,
           leaderboard_freeze_hole: orig.leaderboard_freeze_hole,
+          default_tee_id: orig.default_tee_id || null,
+          default_rating_gender: orig.default_rating_gender || null,
           status: 'draft'
         };
 
@@ -166,6 +169,7 @@ exports.handler = async function (event) {
           '&select=first_name,last_name,display_name,handicap_index'
         );
 
+        var playersCopied = 0;
         if (origPlayers && origPlayers.length > 0) {
           var newPlayers = origPlayers.map(function (p) {
             return {
@@ -173,14 +177,14 @@ exports.handler = async function (event) {
               first_name: p.first_name,
               last_name: p.last_name,
               display_name: p.display_name,
-              handicap_index: p.handicap_index,
-              player_token: genToken()
+              handicap_index: p.handicap_index
             };
           });
           await sb.sbPost('players', newPlayers);
+          playersCopied = newPlayers.length;
         }
 
-        return sb.respond(200, { event: cloned });
+        return sb.respond(200, { event_id: cloned.id, players_copied: playersCopied });
       } catch (err) {
         console.error('org-events clone error:', err);
         return sb.respond(500, { error: err.message });

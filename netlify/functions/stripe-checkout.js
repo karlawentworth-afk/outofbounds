@@ -11,19 +11,39 @@ function createCheckoutSession(params) {
   if (!secretKey) return Promise.reject(new Error('STRIPE_SECRET_KEY not set'));
 
   return new Promise(function (resolve, reject) {
-    var formData = [
+    var lines = [
       'mode=payment',
-      'line_items[0][price_data][currency]=gbp',
-      'line_items[0][price_data][product_data][name]=' + encodeURIComponent('Out of Bounds — Live Scoring'),
-      'line_items[0][price_data][product_data][description]=' + encodeURIComponent(params.description),
-      'line_items[0][price_data][unit_amount]=' + params.amount_pence,
-      'line_items[0][quantity]=1',
       'success_url=' + encodeURIComponent(params.success_url),
       'cancel_url=' + encodeURIComponent(params.cancel_url),
       'metadata[event_id]=' + encodeURIComponent(params.event_id),
       'metadata[organiser_id]=' + encodeURIComponent(params.organiser_id),
-      'metadata[player_count]=' + params.player_count
-    ].join('&');
+      'metadata[player_count]=' + params.player_count,
+      'metadata[expected_amount]=' + params.amount_pence
+    ];
+
+    if (params.top_up) {
+      // Single line item for top-up
+      lines.push('line_items[0][price_data][currency]=gbp');
+      lines.push('line_items[0][price_data][product_data][name]=' + encodeURIComponent('Additional player'));
+      lines.push('line_items[0][price_data][unit_amount]=99');
+      lines.push('line_items[0][quantity]=1');
+      lines.push('metadata[top_up]=true');
+    } else {
+      // Two line items for readable receipt:
+      // 1. "Out of Bounds event fee" £9.99 x1
+      // 2. "Players" £0.99 x player_count
+      lines.push('line_items[0][price_data][currency]=gbp');
+      lines.push('line_items[0][price_data][product_data][name]=' + encodeURIComponent('Out of Bounds event fee'));
+      lines.push('line_items[0][price_data][unit_amount]=999');
+      lines.push('line_items[0][quantity]=1');
+      lines.push('line_items[1][price_data][currency]=gbp');
+      lines.push('line_items[1][price_data][product_data][name]=' + encodeURIComponent('Players'));
+      lines.push('line_items[1][price_data][product_data][description]=' + encodeURIComponent(params.event_name || ''));
+      lines.push('line_items[1][price_data][unit_amount]=99');
+      lines.push('line_items[1][quantity]=' + params.player_count);
+    }
+
+    var formData = lines.join('&');
 
     var payload = Buffer.from(formData);
 
@@ -106,7 +126,7 @@ exports.handler = async function (event) {
 
     var ev = events[0];
 
-    if (ev.paid) {
+    if (ev.paid && !body.top_up) {
       return sb.respond(400, { error: 'Event already paid' });
     }
 
@@ -129,9 +149,38 @@ exports.handler = async function (event) {
 
     var description = ev.name + ' — ' + playerCount + ' player' + (playerCount !== 1 ? 's' : '');
 
+    // Top-up: 99p for one additional player after go-live
+    if (body.top_up) {
+      if (!ev.paid || ev.status !== 'live') {
+        return sb.respond(400, { error: 'Top-up only available for paid, live events' });
+      }
+
+      var topUpSession = await createCheckoutSession({
+        amount_pence: 99,
+        event_name: ev.name,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        event_id: body.event_id,
+        organiser_id: body.organiser_id,
+        player_count: 1,
+        top_up: true
+      });
+
+      await sb.sbPost('payments', {
+        organiser_id: body.organiser_id,
+        event_id: body.event_id,
+        stripe_checkout_id: topUpSession.id,
+        amount_pence: 99,
+        player_count: 1,
+        status: 'pending'
+      });
+
+      return sb.respond(200, { url: topUpSession.url });
+    }
+
     var session = await createCheckoutSession({
       amount_pence: amountPence,
-      description: description,
+      event_name: ev.name,
       success_url: successUrl,
       cancel_url: cancelUrl,
       event_id: body.event_id,

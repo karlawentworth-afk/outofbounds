@@ -160,6 +160,35 @@ exports.handler = async function (event) {
 
       // Recompute playing handicap if index changed
       if (body.handicap_index !== undefined) {
+        // Check if player has existing scores — if so, require a reason
+        var existingScores = await sb.sbGet(
+          'hole_scores?player_id=eq.' + body.id +
+          '&event_id=eq.' + body.event_id +
+          '&select=id&limit=1'
+        );
+        if (existingScores && existingScores.length > 0) {
+          if (!body.reason || !body.reason.trim()) {
+            return sb.respond(400, { error: 'Reason required when changing handicap after scores exist' });
+          }
+          // Fetch old index for audit log
+          var oldPlayer = await sb.sbGet(
+            'players?id=eq.' + body.id + '&select=handicap_index&limit=1'
+          );
+          var oldIndex = (oldPlayer && oldPlayer[0]) ? oldPlayer[0].handicap_index : null;
+          // Log handicap change to score_edits (hole_number 0 = handicap change convention)
+          await sb.sbPost('score_edits', {
+            event_id: body.event_id,
+            player_id: body.id,
+            hole_number: 0,
+            old_gross: oldIndex,
+            new_gross: body.handicap_index,
+            old_picked_up: false,
+            new_picked_up: false,
+            edited_by: body.organiser_id,
+            reason: body.reason.trim()
+          });
+        }
+
         var tee = await getTeeData(ev);
         update.playing_handicap = computePlayingHandicap(
           body.handicap_index,
