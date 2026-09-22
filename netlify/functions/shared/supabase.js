@@ -112,4 +112,8 @@ function respond(statusCode, body) {
   };
 }
 
-module.exports = { sbGet: sbGet, sbPost: sbPost, sbPatch: sbPatch, CORS: CORS, respond: respond };
+function sbDelete(path) {
+  return sbRequest('DELETE', path, null);
+}
+
+module.exports = { sbGet: sbGet, sbPost: sbPost, sbPatch: sbPatch, sbDelete: sbDelete, sbRequest: sbRequest, CORS: CORS, respond: respond };
