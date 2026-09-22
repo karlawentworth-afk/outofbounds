@@ -100,16 +100,16 @@ exports.handler = async function (event) {
     }).join(' | ');
     if (top3) ogDesc += '. ' + top3;
 
-    // Inject OG tags into the template
+    // Inject OG tags into the template (replace all occurrences)
     var html = templateHtml
-      .replace('{{OG_TITLE}}', esc(ogTitle))
-      .replace('{{OG_DESC}}', esc(ogDesc))
-      .replace('{{OG_URL}}', esc(ogUrl))
-      .replace('{{OG_IMAGE}}', esc(ogImage))
-      .replace('{{PAGE_TITLE}}', esc(ogTitle + ' — Out of Bounds'))
-      .replace('{{EVENT_DATE}}', esc(dateFormatted))
-      .replace('{{ORG_SLUG}}', esc(orgSlug))
-      .replace('{{EVENT_SLUG}}', esc(eventSlug));
+      .replace(/\{\{OG_TITLE\}\}/g, esc(ogTitle))
+      .replace(/\{\{OG_DESC\}\}/g, esc(ogDesc))
+      .replace(/\{\{OG_URL\}\}/g, esc(ogUrl))
+      .replace(/\{\{OG_IMAGE\}\}/g, esc(ogImage))
+      .replace(/\{\{PAGE_TITLE\}\}/g, esc(ogTitle + ' \u2014 Out of Bounds'))
+      .replace(/\{\{EVENT_DATE\}\}/g, esc(dateFormatted))
+      .replace(/\{\{ORG_SLUG\}\}/g, esc(orgSlug))
+      .replace(/\{\{EVENT_SLUG\}\}/g, esc(eventSlug));
 
     return {
       statusCode: 200,
