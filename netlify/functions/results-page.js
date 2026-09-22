@@ -2,9 +2,6 @@
 
 var sb = require('./shared/supabase');
 var engine = require('../../public/shared/engine');
-var fs = require('fs');
-var path = require('path');
-
 var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -25,9 +22,7 @@ function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Read the template HTML once (co-located with the function)
-var templatePath = path.join(__dirname, 'results-template.html');
-var templateHtml = null;
+var templateHtml = require('./results-template');
 
 exports.handler = async function (event) {
   // Parse path: /r/<org>/<event>
@@ -104,11 +99,6 @@ exports.handler = async function (event) {
       return (i + 1) + '. ' + toSurnames(e.names) + ' (' + e.points + ' pts)';
     }).join(' | ');
     if (top3) ogDesc += '. ' + top3;
-
-    // Read template
-    if (!templateHtml) {
-      templateHtml = fs.readFileSync(templatePath, 'utf8');
-    }
 
     // Inject OG tags into the template
     var html = templateHtml
