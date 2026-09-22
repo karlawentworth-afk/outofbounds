@@ -69,15 +69,15 @@ html, body {
 .hole-bar .hole-num { font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 700; line-height: 1.1; }
 .hole-bar .hole-meta { font-size: 12px; color: var(--muted); font-weight: 400; }
 
-/* Player rows — 56px each, hairline dividers */
-.player-rows { background: var(--white); }
+/* Player rows — 56px each (48px under 700px height), hairline dividers */
+.player-rows { background: var(--white); flex-shrink: 0; }
 .player-row {
-  display: flex; align-items: center; height: 56px;
+  display: flex; align-items: center; height: var(--row-h, 56px);
   padding: 0 16px; border-bottom: 1px solid var(--line);
   cursor: pointer; position: relative;
 }
 .player-row.selected { background: var(--green-light); border-left: 3px solid var(--green); padding-left: 13px; }
-.player-row .p-name { flex: 1; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.player-row .p-name { flex: 1; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .player-row .p-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .player-row .shot-dots { display: flex; gap: 3px; align-items: center; }
 .shot-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
@@ -89,6 +89,16 @@ html, body {
 }
 .score-box.has-val { background: var(--green); color: #fff; border-color: var(--green); }
 .score-box.pickup { background: var(--muted); color: #fff; border-color: var(--muted); font-size: 18px; }
+
+/* HCP tooltip — shown on name tap for 2s */
+.hcp-tooltip {
+  position: absolute; left: 16px; bottom: -18px; z-index: 10;
+  background: var(--navy); color: #fff; font-size: 11px; font-weight: 500;
+  padding: 3px 8px; border-radius: 4px; white-space: nowrap;
+  opacity: 0; transition: opacity 0.15s;
+  pointer-events: none;
+}
+.hcp-tooltip.show { opacity: 1; }
 
 /* Blinking cursor for selected empty score box */
 .player-row.selected .score-box:not(.has-val):not(.pickup)::after {
@@ -108,11 +118,11 @@ html, body {
 .status-line .sl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .status-line .sr { white-space: nowrap; flex-shrink: 0; margin-left: 8px; }
 
-/* Keypad — fills remaining, min key 56px */
-.keypad-wrap { flex: 1; display: flex; flex-direction: column; background: var(--white); }
+/* Keypad — fills remaining height */
+.keypad-wrap { flex: 1; display: flex; flex-direction: column; background: var(--white); min-height: 0; }
 .keypad {
   flex: 1; display: grid; grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, 1fr); padding: 0;
+  grid-template-rows: repeat(4, 1fr); padding: 0; min-height: 0;
 }
 .kp-key {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -120,22 +130,38 @@ html, body {
   background: var(--white); color: var(--ink); border: none; cursor: pointer;
   border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
   user-select: none; -webkit-user-select: none;
-  min-height: 56px; font-variant-numeric: tabular-nums;
+  min-height: var(--key-h, 52px); font-variant-numeric: tabular-nums;
 }
 .kp-key:nth-child(3n) { border-right: none; }
 .kp-key:nth-child(n+10) { border-bottom: none; }
 .kp-key:active { background: var(--off-white); }
 .kp-key .kp-sub { font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 1px; }
 
-/* Save bar — 56px */
+/* Save bar — 56px + safe area */
 .save-bar {
-  height: 56px; min-height: 56px; display: flex; align-items: center; justify-content: center;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  min-height: calc(56px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
   background: var(--green); color: #fff; font-size: 17px; font-weight: 700;
   font-family: inherit; border: none; cursor: pointer; width: 100%;
-  padding: 0 16px;
+  padding: 0 16px; padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .save-bar[disabled] { background: #94A3B8; cursor: default; }
 .save-bar:active:not([disabled]) { opacity: 0.9; }
+
+/* Small screens: shrink rows and keys to fit */
+@media (max-height: 699px) {
+  :root { --row-h: 48px; --key-h: 44px; }
+  .top-bar { height: 48px; min-height: 48px; }
+  .hole-bar { height: 56px; min-height: 56px; }
+  .hole-bar .hole-num { font-size: 24px; }
+  .status-line { height: 24px; min-height: 24px; font-size: 12px; }
+  .save-bar { height: calc(48px + env(safe-area-inset-bottom, 0px)); min-height: calc(48px + env(safe-area-inset-bottom, 0px)); font-size: 15px; }
+  .kp-key { font-size: 20px; }
+  .player-row .p-name { font-size: 14px; }
+  .score-box { width: 38px; height: 38px; font-size: 18px; }
+}
 
 /* Non-scorer passive view */
 .passive-area {
@@ -930,8 +956,10 @@ html, body {
       if (pu) { boxClass += ' pickup'; boxContent = 'X'; }
       else if (gross) { boxClass += ' has-val'; boxContent = gross; }
 
+      var tipText = 'Index ' + (m.handicap_index != null ? m.handicap_index : '?') + ' \u2192 plays off ' + (m.playing_handicap || '?');
       rowsHtml += '<div class="player-row' + (isSelected ? ' selected' : '') + '" data-idx="' + mIdx + '">' +
-        '<span class="p-name">' + esc(m.display_name) + '</span>' +
+        '<span class="p-name" data-tip="' + esc(tipText) + '">' + esc(m.display_name) + '</span>' +
+        '<span class="hcp-tooltip" id="tip-' + mIdx + '">' + esc(tipText) + '</span>' +
         '<div class="p-right">' +
         '<div class="shot-dots">' + dotsHtml + '</div>' +
         '<div class="' + boxClass + '">' + boxContent + '</div>' +
@@ -939,12 +967,21 @@ html, body {
     });
     document.getElementById('player-rows').innerHTML = rowsHtml;
 
-    // Row tap to select
+    // Row tap to select + tooltip on name tap
     document.getElementById('player-rows').onclick = function (e) {
       var row = e.target.closest('.player-row');
       if (!row) return;
-      selectedIdx = parseInt(row.getAttribute('data-idx'), 10);
+      var idx = parseInt(row.getAttribute('data-idx'), 10);
+      selectedIdx = idx;
       renderHole();
+      // Show tooltip if they tapped the name
+      if (e.target.classList.contains('p-name')) {
+        var tip = document.getElementById('tip-' + idx);
+        if (tip) {
+          tip.classList.add('show');
+          setTimeout(function () { tip.classList.remove('show'); }, 2000);
+        }
+      }
     };
 
     // Status line
@@ -1069,7 +1106,7 @@ html, body {
     var missing = [];
     ms2.forEach(function (m) {
       var sd = getScore(m.id, currentHole);
-      if (!sd || (!sd.gross && !sd.pickedUp)) missing.push(m.display_name);
+      if (!sd || (!sd.gross && !sd.pickedUp)) missing.push(m.first_name || m.display_name.split(' ')[0]);
     });
 
     if (missing.length > 0) {
@@ -1345,8 +1382,11 @@ html, body {
       var played = entries.filter(function (e) { return e.hasPlayed; });
       played.forEach(function (e, i) {
         var isMe = e.memberIds && e.memberIds.indexOf(ctx.player.id) !== -1;
-        // Build surname display: join last names with " / "
-        var nameDisplay = e.names || '';
+        // Surnames joined with " / "
+        var nameDisplay = (e.names || '').split(' & ').map(function (n) {
+          var parts = n.trim().split(' ');
+          return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+        }).join(' / ');
 
         html += '<div class="lb-row' + (isMe ? ' is-me' : '') + '">' +
           '<span class="lb-pos">' + (i + 1) + '</span>' +
