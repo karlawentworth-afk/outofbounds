@@ -956,7 +956,9 @@ html, body {
       if (pu) { boxClass += ' pickup'; boxContent = 'X'; }
       else if (gross) { boxClass += ' has-val'; boxContent = gross; }
 
-      var tipText = 'Index ' + (m.handicap_index != null ? m.handicap_index : '?') + ' \u2192 plays off ' + (m.playing_handicap || '?');
+      var tipText = m.handicap_index != null
+        ? 'Index ' + m.handicap_index + ', plays off ' + (m.playing_handicap || '?')
+        : 'Plays off ' + (m.playing_handicap || '?');
       rowsHtml += '<div class="player-row' + (isSelected ? ' selected' : '') + '" data-idx="' + mIdx + '">' +
         '<span class="p-name" data-tip="' + esc(tipText) + '">' + esc(m.display_name) + '</span>' +
         '<span class="hcp-tooltip" id="tip-' + mIdx + '">' + esc(tipText) + '</span>' +
