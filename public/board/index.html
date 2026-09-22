@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scoreboard</title>
+<style>
+:root {
+  --primary: #1B2A4A;
+  --accent: #2E7D32;
+  --text-on-primary: #FFFFFF;
+  --bg: #0F1318;
+  --surface: #1A1F27;
+  --ink: #EAEDF0;
+  --muted: #8A919A;
+  --rule: #2A3040;
+  --gold: #FBBF24;
+  --silver: #D1D5DB;
+  --bronze: #FB923C;
+  --moved: rgba(46, 125, 50, 0.15);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 32px 12px; flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-left img { height: 36px; display: none; }
+.header-left .event-name { font-size: 20px; font-weight: 800; }
+.header-right { display: flex; align-items: center; gap: 16px; }
+.header-right img { height: 28px; display: none; }
+.header-right .updated { font-size: 12px; color: var(--muted); }
+
+.headline {
+  padding: 0 32px 8px; font-size: 14px; color: var(--muted); flex-shrink: 0;
+}
+
+.format-line {
+  padding: 0 32px 12px; font-size: 13px; color: var(--muted); font-style: italic; flex-shrink: 0;
+}
+
+.board { flex: 1; overflow: hidden; padding: 0 32px; display: flex; flex-direction: column; }
+
+.table-head {
+  display: flex; padding: 8px 16px; font-size: 11px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--rule);
+}
+.col-pos { width: 48px; text-align: center; }
+.col-name { flex: 1; }
+.col-thru { width: 64px; text-align: center; }
+.col-pts { width: 72px; text-align: right; }
+
+.rows { flex: 1; overflow: hidden; }
+
+.row {
+  display: flex; align-items: center; padding: 10px 16px;
+  border-bottom: 1px solid var(--rule); transition: background 0.5s;
+}
+.row.moved { background: var(--moved); }
+
+.pos {
+  width: 48px; text-align: center; font-weight: 800; font-size: 18px; color: var(--muted);
+}
+.pos.p1 { color: var(--gold); }
+.pos.p2 { color: var(--silver); }
+.pos.p3 { color: var(--bronze); }
+
+.name-col { flex: 1; }
+.player-names { font-size: 18px; font-weight: 700; }
+.cb { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.thru { width: 64px; text-align: center; font-size: 14px; color: var(--muted); }
+.thru .in { color: var(--accent); font-weight: 600; }
+
+.pts {
+  width: 72px; text-align: right; font-size: 24px; font-weight: 800; color: var(--accent);
+}
+
+.pager {
+  padding: 12px 32px; text-align: center; font-size: 12px; color: var(--muted); flex-shrink: 0;
+}
+
+.empty-state {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--muted);
+}
+
+/* Sponsor slide */
+.slide {
+  display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; text-align: center;
+}
+.slide.active { display: flex; }
+.slide img { max-width: 60%; max-height: 50vh; margin-bottom: 24px; }
+.slide .slide-headline { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+.slide .slide-message { font-size: 18px; color: var(--muted); }
+
+/* Secondary title */
+.section-title {
+  padding: 12px 32px 8px; font-size: 16px; font-weight: 800; color: var(--accent); flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <img id="org-logo" alt="">
+    <span class="event-name" id="event-name"></span>
+  </div>
+  <div class="header-right">
+    <img id="sponsor-logo" alt="">
+    <span class="updated" id="updated"></span>
+  </div>
+</div>
+<div class="headline" id="headline"></div>
+<div class="format-line" id="formatLine"></div>
+
+<div class="board" id="board">
+  <div class="empty-state" id="emptyState">Loading...</div>
+</div>
+
+<div class="pager" id="pager"></div>
+
+<script src="/shared/engine.js"></script>
+<script src="/shared/api.js"></script>
+<script src="/shared/theme.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // Parse hash: #/<org-slug>/<event-slug>
+  var parts = (location.hash || '').replace(/^#\/?/, '').split('/');
+  var orgSlug = parts[0] || '';
+  var eventSlug = parts[1] || '';
+
+  if (!orgSlug || !eventSlug) {
+    document.getElementById('emptyState').textContent = 'Missing event in URL. Use #/org-slug/event-slug';
+    return;
+  }
+
+  var eventId = null;
+  var slides = [];
+  var lastEntries = null;  // for detecting moved rows
+  var currentPage = 0;
+  var totalPages = 1;
+  var rowsPerPage = 15;
+  var currentView = 'leaderboard'; // 'leaderboard' | 'slide' | 'secondary'
+  var slideIndex = 0;
+  var rotationItems = []; // sequence of { type, data }
+  var rotationIndex = 0;
+  var rotationTimer = null;
+  var data = null;
+
+  var FORMAT_LABELS = {
+    'individual_stableford': 'Individual Stableford',
+    'better_ball_pairs': 'Four-ball better ball Stableford',
+    'better_ball_2from4': 'Four-ball better ball Stableford (best 2 from 4)'
+  };
+
+  function esc(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Load config + event info
+  async function init() {
+    try {
+      var config = await OOB.api('config-get', { query: { org: orgSlug, event: eventSlug } });
+
+      // Apply branding from organiser
+      var org = config.organiser || {};
+      OOB.applyTheme({
+        primary_colour: org.primary_colour,
+        accent_colour: org.accent_colour,
+        text_on_primary: org.text_on_primary,
+        logo_url: org.logo_url,
+        event_name: config.event ? config.event.name : '',
+        sponsor_logo_url: config.event ? config.event.sponsor_logo_url : null
+      });
+
+      var ev = config.event || {};
+      eventId = ev.id;
+      rowsPerPage = ev.board_rows_per_page || 15;
+
+      if (ev.headline_text) {
+        document.getElementById('headline').textContent = ev.headline_text;
+      }
+
+      // Load slides
+      // TODO: add slides endpoint; for now empty
+      slides = [];
+
+      await refresh();
+      setInterval(refresh, 30000);
+      startRotation();
+    } catch (err) {
+      document.getElementById('emptyState').textContent = 'Failed to load: ' + err.message;
+    }
+  }
+
+  async function refresh() {
+    if (!eventId) return;
+    try {
+      data = await OOB.api('leaderboard', { query: { event: eventId, mode: 'board' } });
+      document.getElementById('updated').textContent = 'Updated ' +
+        new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      buildRotation();
+      renderCurrentView();
+    } catch (err) {
+      console.error('Refresh failed:', err);
+    }
+  }
+
+  function buildRotation() {
+    rotationItems = [];
+    if (!data) return;
+
+    var entries = (data.entries || []).filter(function (e) { return e.hasPlayed; });
+    totalPages = Math.max(1, Math.ceil(entries.length / rowsPerPage));
+
+    // Build sequence: LB page, slide, LB page, slide, ...
+    for (var p = 0; p < totalPages; p++) {
+      rotationItems.push({ type: 'leaderboard', page: p, entries: entries, format: data.format, allowancePct: data.allowancePct });
+      if (slides.length > 0) {
+        rotationItems.push({ type: 'slide', slide: slides[p % slides.length] });
+      }
+    }
+
+    // Secondary format
+    if (data.secondary && data.secondary.entries) {
+      var secEntries = data.secondary.entries.filter(function (e) { return e.hasPlayed; });
+      if (secEntries.length > 0) {
+        var secPages = Math.max(1, Math.ceil(secEntries.length / rowsPerPage));
+        for (var sp = 0; sp < secPages; sp++) {
+          rotationItems.push({
+            type: 'secondary',
+            page: sp,
+            entries: secEntries,
+            title: data.secondary.title,
+            format: data.secondary.format,
+            allowancePct: data.secondary.allowancePct
+          });
+          if (slides.length > 0) {
+            rotationItems.push({ type: 'slide', slide: slides[(totalPages + sp) % slides.length] });
+          }
+        }
+      }
+    }
+
+    // If no entries at all, show tee times
+    if (rotationItems.length === 0) {
+      rotationItems.push({ type: 'empty' });
+    }
+  }
+
+  function startRotation() {
+    rotationIndex = 0;
+    renderCurrentView();
+    clearInterval(rotationTimer);
+    rotationTimer = setInterval(function () {
+      rotationIndex = (rotationIndex + 1) % rotationItems.length;
+      renderCurrentView();
+    }, 12000);
+  }
+
+  function renderCurrentView() {
+    if (rotationItems.length === 0) return;
+    var item = rotationItems[rotationIndex];
+
+    if (item.type === 'leaderboard' || item.type === 'secondary') {
+      renderBoard(item);
+    } else if (item.type === 'slide') {
+      renderSlide(item.slide);
+    } else {
+      renderEmpty();
+    }
+  }
+
+  function renderBoard(item) {
+    var entries = item.entries;
+    var page = item.page;
+    var start = page * rowsPerPage;
+    var pageEntries = entries.slice(start, start + rowsPerPage);
+    var formatLabel = FORMAT_LABELS[item.format] || item.format;
+    var isSecondary = item.type === 'secondary';
+
+    document.getElementById('formatLine').textContent =
+      formatLabel + ', ' + item.allowancePct + '% handicap allowance.';
+
+    var html = '';
+
+    if (isSecondary) {
+      html += '<div class="section-title">' + esc(item.title) + '</div>';
+    }
+
+    html += '<div class="table-head">' +
+      '<div class="col-pos">Pos</div>' +
+      '<div class="col-name">Name</div>' +
+      '<div class="col-thru">Thru</div>' +
+      '<div class="col-pts">Pts</div>' +
+      '</div><div class="rows">';
+
+    pageEntries.forEach(function (e, i) {
+      var rank = start + i + 1;
+      var posClass = rank === 1 ? 'p1' : rank === 2 ? 'p2' : rank === 3 ? 'p3' : '';
+      var moved = hasEntryMoved(e, rank);
+      var finished = e.thru >= (data ? data.freezeHole : 18);
+
+      html += '<div class="row' + (moved ? ' moved' : '') + '">';
+      html += '<div class="pos ' + posClass + '">' + rank + '</div>';
+      html += '<div class="name-col"><div class="player-names">' + esc(e.names) + '</div>';
+      if (e.countback) html += '<div class="cb">CB: ' + esc(e.countback) + '</div>';
+      html += '</div>';
+      html += '<div class="thru">' + (finished ? '<span class="in">IN</span>' : e.thru) + '</div>';
+      html += '<div class="pts">' + e.points + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+
+    document.getElementById('board').innerHTML = html;
+
+    var pagerText = entries.length > rowsPerPage
+      ? 'Page ' + (page + 1) + ' of ' + Math.ceil(entries.length / rowsPerPage)
+      : '';
+    document.getElementById('pager').textContent = pagerText;
+
+    // Store for move detection
+    lastEntries = {};
+    entries.forEach(function (e, i) {
+      var key = e.memberIds.join(',');
+      lastEntries[key] = { rank: i + 1, points: e.points };
+    });
+  }
+
+  function hasEntryMoved(entry, currentRank) {
+    if (!lastEntries) return false;
+    var key = entry.memberIds.join(',');
+    var prev = lastEntries[key];
+    if (!prev) return true; // new entry
+    return prev.rank !== currentRank;
+  }
+
+  function renderSlide(slide) {
+    if (!slide) return;
+    var html = '<div class="slide active">';
+    if (slide.image_url) html += '<img src="' + esc(slide.image_url) + '" alt="">';
+    if (slide.headline) html += '<div class="slide-headline">' + esc(slide.headline) + '</div>';
+    if (slide.message) html += '<div class="slide-message">' + esc(slide.message) + '</div>';
+    html += '</div>';
+    document.getElementById('board').innerHTML = html;
+    document.getElementById('pager').textContent = '';
+  }
+
+  function renderEmpty() {
+    document.getElementById('board').innerHTML =
+      '<div class="empty-state">Waiting for scores. Tee times are posted.</div>';
+    document.getElementById('pager').textContent = '';
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
