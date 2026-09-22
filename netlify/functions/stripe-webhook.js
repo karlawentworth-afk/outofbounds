@@ -23,10 +23,10 @@ function verifySignature(payload, sigHeader, secret) {
     .update(signedPayload)
     .digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(expected),
-    Buffer.from(parts.v1)
-  );
+  var expectedBuf = Buffer.from(expected);
+  var actualBuf = Buffer.from(parts.v1);
+  if (expectedBuf.length !== actualBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, actualBuf);
 }
 
 function genToken() {
