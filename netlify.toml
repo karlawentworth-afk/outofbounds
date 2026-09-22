@@ -2,6 +2,13 @@
   publish = "public"
   functions = "netlify/functions"
 
+[functions]
+  # Default 10s is too tight for vision API calls
+  [functions."course-from-photo"]
+    external_node_modules = []
+    included_files = []
+    timeout = 26
+
 
 [[headers]]
   for = "/*.html"

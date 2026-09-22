@@ -72,7 +72,8 @@ function callClaude(base64Image, mediaType) {
   var payload = JSON.stringify(body);
 
   return new Promise(function (resolve, reject) {
-    var timer = setTimeout(function () { reject(new Error('TIMEOUT')); }, 9000);
+    // Vision calls need more time than the standard 9s — Netlify functions allow up to 26s
+    var timer = setTimeout(function () { reject(new Error('TIMEOUT')); }, 25000);
 
     var req = https.request({
       hostname: ANTHROPIC_HOST,
