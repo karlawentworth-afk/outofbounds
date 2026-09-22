@@ -77,9 +77,11 @@ exports.handler = async function (event) {
     var showFull = eventRow.board_show_full || false;
 
     // Organiser mode: never frozen
+    // Finished events: never frozen (results are final)
     // Player/board mode: frozen unless board_show_full
+    var isFinished = eventRow.status === 'finished';
     var maxHole;
-    if (mode === 'organiser') {
+    if (mode === 'organiser' || isFinished) {
       maxHole = 18;
     } else {
       maxHole = showFull ? 18 : freezeHole;
