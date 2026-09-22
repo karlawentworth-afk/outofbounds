@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Results | Out of Bounds</title>
+<meta name="description" content="Golf event results — scored with Out of Bounds">
+<meta property="og:title" content="Results | Out of Bounds">
+<meta property="og:description" content="Golf event results">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --navy:#10344E; --green:#2F7A45; --ink:#1B2430; --muted:#5B6672; --line:#E3E7EB; --off-white:#F7F5F0; --white:#FFFFFF; --green-light:#E8F5E9; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--off-white);-webkit-font-smoothing:antialiased;line-height:1.5}
+.top{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.top img{height:28px}
+.top span{font-family:Poppins,sans-serif;font-weight:700;font-size:15px}
+.wrap{max-width:600px;margin:0 auto;padding:0 16px}
+.event-header{padding:24px 0 16px;text-align:center;border-bottom:1px solid var(--line)}
+.event-header h1{font-family:Poppins,sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;margin-bottom:4px}
+.event-header .date{font-size:14px;color:var(--muted)}
+.format-line{text-align:center;padding:10px 0;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.lb-heading{padding:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)}
+.lb-table{width:100%;border-collapse:collapse;font-size:14px}
+.lb-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 4px;border-bottom:2px solid var(--line)}
+.lb-table th.r{text-align:right}
+.lb-table th.c{text-align:center}
+.lb-table td{padding:10px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.lb-table td.pos{font-weight:800;color:var(--muted);width:36px}
+.lb-table td.pos.p1{color:var(--green)}
+.lb-table td.name{font-weight:600}
+.lb-table td.cb{font-size:10px;color:var(--muted);font-weight:400}
+.lb-table td.thru{text-align:center;color:var(--muted);width:44px}
+.lb-table td.pts{text-align:right;font-family:Poppins,sans-serif;font-weight:700;font-size:16px;width:44px}
+.lb-table td.pts.p1{color:var(--green)}
+.share-bar{padding:20px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.share-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit}
+.share-whatsapp{background:#25D366;color:#fff}
+.share-copy{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+.share-generic{background:var(--navy);color:#fff}
+.promo{text-align:center;padding:24px 0 32px;border-top:1px solid var(--line);margin-top:12px}
+.promo p{font-size:14px;color:var(--muted)}
+.promo a{color:var(--green);font-weight:600;text-decoration:none}
+.footer{background:var(--navy);color:rgba(255,255,255,0.5);padding:16px;text-align:center;font-size:12px}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
+</style>
+</head>
+<body>
+
+<div class="top"><img src="/img/icon-white.png" alt="OB"><span>Out of Bounds</span></div>
+
+<div class="wrap">
+  <div id="content"><div class="loading">Loading results...</div></div>
+</div>
+
+<div class="footer">&copy; 2026 Out of Bounds Events</div>
+
+<script src="/shared/engine.js"></script>
+<script src="/shared/api.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var parts = (location.hash || '').replace(/^#\/?/, '').split('/');
+  var orgSlug = parts[0] || '';
+  var eventSlug = parts[1] || '';
+
+  if (!orgSlug || !eventSlug) {
+    document.getElementById('content').innerHTML = '<div class="loading">No event specified.</div>';
+    return;
+  }
+
+  var FORMAT_LABELS = {
+    'individual_stableford': 'Individual Stableford',
+    'better_ball_pairs': 'Better ball pairs Stableford',
+    'better_ball_2from4': 'Better ball Stableford — best 2 from 4'
+  };
+
+  function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  async function load() {
+    try {
+      var config = await OOB.api('config-get', { query: { org: orgSlug, event: eventSlug } });
+      var ev = config.event || {};
+      var org = config.organiser || {};
+
+      if (!ev.id) {
+        document.getElementById('content').innerHTML = '<div class="loading">Event not found.</div>';
+        return;
+      }
+
+      // Update page meta
+      document.title = (ev.name || 'Results') + ' — Out of Bounds';
+      var ogTitle = document.querySelector('meta[property="og:title"]');
+      if (ogTitle) ogTitle.content = ev.name + ' Results';
+
+      // Load leaderboard (organiser mode = full 18)
+      var data = await OOB.api('leaderboard', { query: { event: ev.id, mode: 'organiser' } });
+      var entries = (data.entries || []).filter(function (e) { return e.hasPlayed; });
+
+      var formatLabel = FORMAT_LABELS[data.format] || data.format;
+      var shareUrl = location.href;
+      var shareText = (ev.name || 'Golf event') + ' results — scored with Out of Bounds';
+
+      // If there's a winner, add to OG description
+      if (entries.length > 0) {
+        var ogDesc = document.querySelector('meta[property="og:description"]');
+        if (ogDesc) ogDesc.content = entries[0].names + ' wins with ' + entries[0].points + ' points — ' + (ev.name || '');
+      }
+
+      var html = '';
+
+      // Header
+      html += '<div class="event-header">';
+      html += '<h1>' + esc(ev.name) + '</h1>';
+      if (ev.event_date) html += '<div class="date">' + esc(ev.event_date) + '</div>';
+      html += '</div>';
+
+      // Format
+      html += '<div class="format-line">' + esc(formatLabel) + ', ' + data.allowancePct + '% handicap allowance</div>';
+
+      // Leaderboard
+      html += '<div class="lb-heading">Final Results</div>';
+      html += '<table class="lb-table"><thead><tr>' +
+        '<th>Pos</th><th>Team</th><th class="c">Thru</th><th class="r">Pts</th>' +
+        '</tr></thead><tbody>';
+
+      entries.forEach(function (e, i) {
+        var rank = i + 1;
+        var posClass = rank === 1 ? ' p1' : '';
+
+        // Surnames for team display
+        var nameDisplay = (e.names || '').split(' & ').map(function (n) {
+          var parts = n.trim().split(' ');
+          return parts.length > 1 ? parts[parts.length - 1] : parts[0];
+        }).join(' / ');
+
+        html += '<tr>';
+        html += '<td class="pos' + posClass + '">' + rank + '</td>';
+        html += '<td class="name">' + esc(nameDisplay);
+        if (e.countback) html += '<br><span class="cb">' + esc(e.countback) + '</span>';
+        html += '</td>';
+        html += '<td class="thru">' + (e.thru >= 18 ? 'F' : e.thru) + '</td>';
+        html += '<td class="pts' + posClass + '">' + e.points + '</td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+
+      // Secondary format
+      if (data.secondary && data.secondary.entries) {
+        var secEntries = data.secondary.entries.filter(function (e) { return e.hasPlayed; });
+        if (secEntries.length > 0) {
+          html += '<div class="lb-heading">' + esc(data.secondary.title || 'Individual') + '</div>';
+          html += '<table class="lb-table"><thead><tr>' +
+            '<th>Pos</th><th>Player</th><th class="c">Thru</th><th class="r">Pts</th>' +
+            '</tr></thead><tbody>';
+
+          secEntries.forEach(function (e, i) {
+            var rank = i + 1;
+            var posClass = rank === 1 ? ' p1' : '';
+            html += '<tr><td class="pos' + posClass + '">' + rank + '</td>';
+            html += '<td class="name">' + esc(e.names);
+            if (e.countback) html += '<br><span class="cb">' + esc(e.countback) + '</span>';
+            html += '</td>';
+            html += '<td class="thru">' + (e.thru >= 18 ? 'F' : e.thru) + '</td>';
+            html += '<td class="pts' + posClass + '">' + e.points + '</td></tr>';
+          });
+          html += '</tbody></table>';
+        }
+      }
+
+      // Share buttons
+      html += '<div class="share-bar">';
+      var waMsg = encodeURIComponent(shareText + '\n' + shareUrl);
+      html += '<button class="share-btn share-whatsapp" onclick="window.open(\'https://wa.me/?text=' + waMsg + '\',\'_blank\')">WhatsApp</button>';
+      html += '<button class="share-btn share-copy" onclick="navigator.clipboard.writeText(\'' + shareUrl + '\');this.textContent=\'Copied!\'">Copy link</button>';
+      if (typeof navigator.share === 'function') {
+        html += '<button class="share-btn share-generic" onclick="navigator.share({title:\'' + esc(ev.name) + ' Results\',text:\'' + esc(shareText) + '\',url:\'' + shareUrl + '\'})">Share</button>';
+      }
+      html += '</div>';
+
+      // Promo
+      html += '<div class="promo"><p>Scored with <strong>Out of Bounds</strong>.<br>Run your own for &pound;9.99. <a href="/">Find out more</a></p></div>';
+
+      document.getElementById('content').innerHTML = html;
+
+    } catch (err) {
+      document.getElementById('content').innerHTML = '<div class="loading">Failed to load results: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  load();
+})();
+</script>
+</body>
+</html>
