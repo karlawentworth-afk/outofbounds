@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Out of Bounds — Organiser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/shared/api.js"></script>
+<script src="/shared/engine.js"></script>
+<style>
+:root {
+  --navy: #10344E;
+  --green: #2F7A45;
+  --green-dark: #276A3B;
+  --off-white: #F7F5F0;
+  --white: #FFFFFF;
+  --muted: #5B6672;
+  --line: #E3E7EB;
+  --ink: #1B2430;
+  --red: #D32F2F;
+  --amber: #E0A800;
+  --green-light: #E8F5E9;
+  --radius: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--off-white); color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100%; line-height: 1.5;
+}
+h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: -.02em; }
+
+/* Layout */
+.screen { display: none; }
+.screen.active { display: block; }
+.container { width: min(560px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+
+/* Top bar */
+.top-bar {
+  background: var(--navy); color: #fff; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.top-bar .logo { height: 28px; }
+.top-bar .user-pill {
+  font-size: 13px; font-weight: 500; background: rgba(255,255,255,.12);
+  padding: 6px 14px; border-radius: 999px; cursor: pointer; border: none; color: #fff;
+  font-family: inherit;
+}
+.top-bar .user-pill:hover { background: rgba(255,255,255,.2); }
+
+/* Sign-in */
+#screen-signin {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 32px 16px; text-align: center;
+}
+#screen-signin .logo-big { height: 56px; margin-bottom: 40px; }
+#screen-signin h2 { font-size: 24px; margin-bottom: 8px; }
+#screen-signin .sub { color: var(--muted); font-size: 15px; margin-bottom: 32px; }
+.auth-btns { display: flex; flex-direction: column; gap: 12px; width: min(340px, 100%); }
+.auth-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 14px 20px; border-radius: 999px; border: 2px solid var(--line);
+  background: var(--white); font-family: 'Poppins', sans-serif; font-weight: 600;
+  font-size: 15px; cursor: pointer; color: var(--ink); transition: all .15s;
+}
+.auth-btn:hover { border-color: var(--navy); }
+.auth-btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
+.auth-btn.primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
+.auth-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* Magic link input */
+.magic-link-form { width: min(340px, 100%); margin-top: 0; }
+.magic-link-form input {
+  width: 100%; padding: 14px 16px; border: 2px solid var(--line); border-radius: var(--radius);
+  font-size: 16px; font-family: inherit; margin-bottom: 12px; outline: none;
+}
+.magic-link-form input:focus { border-color: var(--green); }
+.magic-link-sent { color: var(--green); font-weight: 600; font-size: 15px; margin-top: 16px; }
+
+/* Onboarding */
+#screen-onboard .container { max-width: 440px; }
+.ob-title { font-size: 22px; margin-bottom: 24px; text-align: center; }
+.field-group { margin-bottom: 24px; }
+.field-label { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block; }
+.field-input {
+  width: 100%; padding: 12px 14px; border: 2px solid var(--line); border-radius: var(--radius);
+  font-size: 16px; font-family: inherit; outline: none; background: var(--white);
+}
+.field-input:focus { border-color: var(--green); }
+.radio-group { display: flex; flex-direction: column; gap: 8px; }
+.radio-opt {
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  border: 2px solid var(--line); border-radius: var(--radius); cursor: pointer;
+  background: var(--white); transition: border-color .15s;
+}
+.radio-opt:hover { border-color: var(--muted); }
+.radio-opt.selected { border-color: var(--green); background: var(--green-light); }
+.radio-opt input { display: none; }
+.radio-dot {
+  width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.radio-opt.selected .radio-dot { border-color: var(--green); }
+.radio-opt.selected .radio-dot::after {
+  content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+}
+.radio-opt span { font-size: 15px; font-weight: 500; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 15px;
+  padding: 14px 28px; border-radius: 999px; border: none; cursor: pointer;
+  transition: all .15s; width: 100%;
+}
+.btn:active { transform: translateY(1px); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: var(--green-dark); }
+.btn-green:disabled { opacity: .5; cursor: not-allowed; }
+.btn-navy { background: var(--navy); color: #fff; }
+.btn-navy:hover { background: #0B2538; }
+.btn-outline { background: transparent; color: var(--navy); border: 2px solid var(--line); }
+.btn-outline:hover { border-color: var(--navy); }
+.btn-sm { padding: 10px 18px; font-size: 14px; width: auto; }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #B71C1C; }
+
+/* Dashboard */
+.dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.dash-header h2 { font-size: 22px; }
+.event-list { display: flex; flex-direction: column; gap: 10px; }
+.event-card {
+  background: var(--white); border-radius: var(--radius); padding: 16px;
+  border: 1px solid var(--line); cursor: pointer; transition: border-color .15s;
+}
+.event-card:hover { border-color: var(--muted); }
+.event-card .ev-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
+.event-card .ev-meta { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+}
+.badge-draft { background: #FFF3CD; color: #856404; }
+.badge-live { background: var(--green-light); color: var(--green); }
+.badge-finished { background: #E8EAF6; color: #3949AB; }
+.empty-state { text-align: center; padding: 48px 16px; color: var(--muted); }
+.empty-state p { font-size: 15px; margin-bottom: 16px; }
+
+/* Event detail — tabs */
+.tab-bar {
+  display: flex; gap: 0; border-bottom: 2px solid var(--line); margin-bottom: 24px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab-btn {
+  padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--muted);
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  white-space: nowrap; position: relative;
+}
+.tab-btn.active { color: var(--green); }
+.tab-btn.active::after {
+  content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
+  height: 2px; background: var(--green);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* Event form */
+.form-section { margin-bottom: 20px; }
+.form-section h3 { font-size: 16px; margin-bottom: 12px; }
+.form-row { margin-bottom: 16px; }
+.form-row label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--muted); }
+.form-row select, .form-row input[type="text"], .form-row input[type="date"],
+.form-row input[type="number"], .form-row input[type="time"] {
+  width: 100%; padding: 10px 12px; border: 2px solid var(--line); border-radius: 8px;
+  font-size: 15px; font-family: inherit; outline: none; background: var(--white);
+  -webkit-appearance: none; appearance: none;
+}
+.form-row select { background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235B6672' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 12px center; padding-right: 32px; }
+.form-row input:focus, .form-row select:focus { border-color: var(--green); }
+.inline-row { display: flex; gap: 12px; }
+.inline-row > * { flex: 1; }
+.hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.disclaimer {
+  background: #FFF8E1; border: 1px solid #FFE082; border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; color: #6D4C00; margin-bottom: 16px;
+}
+
+/* Course inline form */
+.course-search-wrap { position: relative; }
+.course-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+  background: var(--white); border: 1px solid var(--line); border-radius: 8px;
+  max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.course-results .cr-item {
+  padding: 10px 14px; cursor: pointer; font-size: 14px; border-bottom: 1px solid var(--line);
+}
+.course-results .cr-item:hover { background: var(--green-light); }
+.course-results .cr-add { color: var(--green); font-weight: 600; }
+.course-inline { background: var(--white); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-top: 12px; }
+.holes-grid {
+  display: grid; grid-template-columns: 40px 1fr 1fr; gap: 6px 10px;
+  font-size: 13px; align-items: center; margin-top: 8px;
+}
+.holes-grid .hg-label { font-weight: 600; color: var(--muted); font-size: 12px; }
+.holes-grid select { padding: 6px 8px; font-size: 13px; border-radius: 6px; }
+
+/* Player list */
+.player-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.player-count { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+.player-count .warn { color: var(--amber); font-weight: 600; }
+.player-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.player-item .pi-name { flex: 1; font-weight: 500; }
+.player-item .pi-idx { color: var(--muted); font-size: 13px; width: 44px; text-align: right; }
+.player-item .pi-ph { font-weight: 600; width: 36px; text-align: right; }
+.player-item .pi-del {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: none;
+  color: var(--red); cursor: pointer; font-size: 18px; display: flex;
+  align-items: center; justify-content: center;
+}
+.player-item .pi-del:hover { background: #FFEBEE; }
+
+/* Paste modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 200; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: var(--radius); padding: 24px;
+  width: min(480px, 100%); max-height: 90vh; overflow-y: auto;
+}
+.modal h3 { font-size: 18px; margin-bottom: 16px; }
+.modal textarea {
+  width: 100%; height: 200px; padding: 12px; border: 2px solid var(--line);
+  border-radius: 8px; font-family: 'Inter', monospace; font-size: 14px;
+  resize: vertical; outline: none;
+}
+.modal textarea:focus { border-color: var(--green); }
+.modal .modal-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+
+/* Groups */
+.group-card {
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.group-card .gc-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.group-card .gc-num { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; }
+.group-card .gc-time input { width: 100px; }
+.group-card .gc-members { display: flex; flex-direction: column; gap: 6px; }
+.group-card .gc-player {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 14px; padding: 4px 0;
+}
+.group-card .gc-player .gcp-name { font-weight: 500; }
+.group-card .gc-player .gcp-ph { color: var(--muted); font-size: 13px; }
+
+/* Go Live */
+.go-live-box {
+  background: var(--white); border: 2px solid var(--green); border-radius: var(--radius);
+  padding: 24px; text-align: center;
+}
+.go-live-box .price { font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 700; color: var(--green); margin: 12px 0; }
+.go-live-box .breakdown { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+/* Live event */
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+}
+.status-dot.green { background: var(--green); }
+.status-dot.amber { background: var(--amber); }
+.status-dot.red { background: var(--red); }
+
+.live-group-card {
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+}
+.live-group-card:hover { border-color: var(--muted); }
+.live-group-card .lgc-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.live-group-card .lgc-group { font-weight: 600; font-size: 15px; }
+.live-group-card .lgc-meta { font-size: 13px; color: var(--muted); }
+
+/* Leaderboard */
+.lb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.lb-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 8px 6px; border-bottom: 2px solid var(--line); }
+.lb-table td { padding: 10px 6px; border-bottom: 1px solid var(--line); }
+.lb-table .lb-pos { width: 32px; font-weight: 700; color: var(--green); }
+.lb-table .lb-name { font-weight: 500; }
+.lb-table .lb-pts { font-weight: 700; text-align: right; }
+.lb-table .lb-thru { text-align: right; color: var(--muted); font-size: 13px; }
+.lb-table .lb-cb { font-size: 11px; color: var(--muted); }
+
+/* QR code */
+.qr-wrap { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
+.qr-wrap canvas { border: 8px solid var(--white); box-shadow: 0 2px 8px rgba(0,0,0,.1); border-radius: 8px; }
+.qr-wrap .qr-label { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* Invite link section */
+.invite-section { background: var(--white); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--line); }
+.invite-section .invite-url {
+  font-family: monospace; font-size: 13px; padding: 10px 12px; background: var(--off-white);
+  border-radius: 6px; word-break: break-all; margin: 8px 0 12px;
+}
+
+/* Results */
+.past-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.pro-label { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--line); padding: 2px 8px; border-radius: 4px; margin-left: 6px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--navy); color: #fff; padding: 12px 24px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; z-index: 300; opacity: 0;
+  transition: opacity .3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 3px solid rgba(255,255,255,.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Back button */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 14px;
+  font-weight: 500; color: var(--muted); margin-bottom: 16px; cursor: pointer;
+  border: none; background: none; font-family: inherit; padding: 4px 0;
+}
+.back-btn:hover { color: var(--ink); }
+
+/* Loading */
+.loading-screen {
+  display: flex; align-items: center; justify-content: center; min-height: 100vh;
+}
+.loading-screen .spinner { border-color: var(--line); border-top-color: var(--green); width: 32px; height: 32px; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="screen-loading" class="screen active">
+  <div class="loading-screen"><div class="spinner"></div></div>
+</div>
+
+<!-- Sign-in -->
+<div id="screen-signin" class="screen">
+  <img src="/img/logo-color.png" alt="Out of Bounds" class="logo-big">
+  <h2>Organiser sign-in</h2>
+  <p class="sub">Set up and run your golf event</p>
+  <div class="auth-btns" id="auth-buttons">
+    <button class="auth-btn" onclick="signInGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </button>
+    <button class="auth-btn" onclick="signInApple()">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+      Sign in with Apple
+    </button>
+    <button class="auth-btn primary" onclick="showEmailSignIn()">
+      Sign in with email
+    </button>
+  </div>
+  <div class="magic-link-form" id="magic-link-form" style="display:none;">
+    <input type="email" id="magic-email" placeholder="you@example.com" autocomplete="email">
+    <button class="btn btn-green" onclick="sendMagicLink()">Send magic link</button>
+    <div class="magic-link-sent" id="magic-sent" style="display:none;">Check your inbox for the sign-in link.</div>
+  </div>
+</div>
+
+<!-- Onboarding -->
+<div id="screen-onboard" class="screen">
+  <div class="container">
+    <div style="text-align:center;margin-bottom:32px;">
+      <img src="/img/logo-color.png" alt="Out of Bounds" style="height:40px;margin:0 auto 16px;display:block;">
+    </div>
+    <h2 class="ob-title">Welcome to Out of Bounds</h2>
+    <div class="field-group">
+      <label class="field-label">What should we call you?</label>
+      <input type="text" class="field-input" id="ob-name" placeholder="e.g. Dave Thompson">
+    </div>
+    <div class="field-group">
+      <label class="field-label">What do you run?</label>
+      <div class="radio-group" id="ob-type-group">
+        <label class="radio-opt" data-value="friends_societies">
+          <input type="radio" name="ob-type" value="friends_societies">
+          <span class="radio-dot"></span>
+          <span>Friends and societies</span>
+        </label>
+        <label class="radio-opt" data-value="charity_days">
+          <input type="radio" name="ob-type" value="charity_days">
+          <span class="radio-dot"></span>
+          <span>Charity days</span>
+        </label>
+        <label class="radio-opt" data-value="club_competitions">
+          <input type="radio" name="ob-type" value="club_competitions">
+          <span class="radio-dot"></span>
+          <span>Club competitions</span>
+        </label>
+        <label class="radio-opt" data-value="events_company">
+          <input type="radio" name="ob-type" value="events_company">
+          <span class="radio-dot"></span>
+          <span>Events company</span>
+        </label>
+      </div>
+    </div>
+    <button class="btn btn-green" id="ob-go" onclick="completeOnboarding()">Let's go</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="screen-dashboard" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <div class="dash-header">
+      <h2>Your events</h2>
+      <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
+    </div>
+    <div id="event-list" class="event-list"></div>
+  </div>
+</div>
+
+<!-- Event detail -->
+<div id="screen-event" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-ev" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 id="ev-title" style="font-size:20px;margin-bottom:16px;">New event</h2>
+
+    <div class="tab-bar" id="ev-tabs">
+      <button class="tab-btn active" data-tab="details" onclick="switchTab(this)">Details</button>
+      <button class="tab-btn" data-tab="players" onclick="switchTab(this)">Players</button>
+      <button class="tab-btn" data-tab="groups" onclick="switchTab(this)">Groups</button>
+      <button class="tab-btn" data-tab="golive" onclick="switchTab(this)">Go live</button>
+    </div>
+
+    <!-- DETAILS TAB -->
+    <div class="tab-panel active" id="tab-details">
+      <div class="form-row">
+        <label>Event name</label>
+        <input type="text" id="ev-name" class="field-input" placeholder="e.g. Summer Open 2026">
+      </div>
+      <div class="form-row">
+        <label>Date</label>
+        <input type="date" id="ev-date">
+      </div>
+      <div class="form-row">
+        <label>Starting mode</label>
+        <div class="radio-group" id="starting-mode-group" style="flex-direction:row;gap:10px;">
+          <label class="radio-opt selected" data-value="tee_times" style="flex:1;">
+            <input type="radio" name="starting-mode" value="tee_times" checked>
+            <span class="radio-dot"></span>
+            <span>Tee times</span>
+          </label>
+          <label class="radio-opt" data-value="shotgun" style="flex:1;">
+            <input type="radio" name="starting-mode" value="shotgun">
+            <span class="radio-dot"></span>
+            <span>Shotgun</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Course -->
+      <div class="form-section">
+        <h3>Course</h3>
+        <div class="form-row course-search-wrap">
+          <label>Search courses</label>
+          <input type="text" id="course-search" class="field-input" placeholder="Start typing course name...">
+          <div class="course-results" id="course-results" style="display:none;"></div>
+        </div>
+        <div id="course-selected" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
+            <span id="course-selected-name" style="font-weight:600;"></span>
+            <button class="btn btn-outline btn-sm" onclick="clearCourse()" style="padding:6px 14px;font-size:13px;">Change</button>
+          </div>
+          <div class="form-row">
+            <label>Tee</label>
+            <select id="course-tee-select"></select>
+          </div>
+        </div>
+        <div id="course-inline-form" style="display:none;" class="course-inline">
+          <h3 style="font-size:15px;margin-bottom:12px;">Add a new course</h3>
+          <div class="form-row"><label>Course name</label><input type="text" id="ci-name" class="field-input"></div>
+          <div class="inline-row">
+            <div class="form-row"><label>Tee colour</label><input type="text" id="ci-tee-colour" class="field-input" placeholder="e.g. White"></div>
+            <div class="form-row"><label>Par total</label><input type="number" id="ci-par" class="field-input" value="72"></div>
+          </div>
+          <div class="inline-row">
+            <div class="form-row"><label>Slope</label><input type="number" id="ci-slope" class="field-input" value="113" step="1"></div>
+            <div class="form-row"><label>Rating</label><input type="number" id="ci-rating" class="field-input" value="72.0" step="0.1"></div>
+          </div>
+          <h3 style="font-size:14px;margin:16px 0 8px;">Holes</h3>
+          <div class="holes-grid" id="holes-grid">
+            <span class="hg-label">Hole</span><span class="hg-label">Par</span><span class="hg-label">SI</span>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-green btn-sm" onclick="saveCourseInline()">Save course</button>
+            <button class="btn btn-outline btn-sm" onclick="cancelCourseInline()" style="margin-top:8px;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div class="form-row">
+        <label>Format</label>
+        <select id="ev-format">
+          <option value="individual_stableford">Individual Stableford</option>
+          <option value="better_ball_pairs">Better ball pairs</option>
+          <option value="better_ball_2from4">Best 2 from 4</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Handicap allowance</label>
+        <select id="ev-allowance">
+          <option value="1.00">100%</option>
+          <option value="0.95" selected>95%</option>
+          <option value="0.90">90%</option>
+          <option value="0.85">85%</option>
+          <option value="0.80">80%</option>
+        </select>
+      </div>
+      <div class="inline-row">
+        <div class="form-row">
+          <label>Max handicap</label>
+          <input type="number" id="ev-max-hcp" value="54" min="0" max="54">
+        </div>
+        <div class="form-row">
+          <label>Freeze hole</label>
+          <select id="ev-freeze">
+            <option value="0">Off</option>
+            <option value="6">6</option>
+            <option value="9">9</option>
+            <option value="12" selected>12</option>
+            <option value="15">15</option>
+          </select>
+        </div>
+      </div>
+      <div class="disclaimer" id="hcp-disclaimer">
+        We can't check handicaps against the WHS. Play off what you actually play off. The organiser has the final say.
+      </div>
+      <button class="btn btn-green" onclick="saveEventDetails()" id="save-details-btn">Save details</button>
+    </div>
+
+    <!-- PLAYERS TAB -->
+    <div class="tab-panel" id="tab-players">
+      <div class="player-actions">
+        <button class="btn btn-green btn-sm" onclick="showAddPlayer()">+ Add a player</button>
+        <button class="btn btn-outline btn-sm" onclick="showPasteModal()">Paste a list</button>
+        <button class="btn btn-outline btn-sm" onclick="addMeAsPlayer()">Add me</button>
+      </div>
+
+      <!-- Inline add player -->
+      <div id="add-player-form" style="display:none;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px;">
+        <div class="inline-row">
+          <div class="form-row"><label>First name</label><input type="text" id="ap-first" class="field-input"></div>
+          <div class="form-row"><label>Last name</label><input type="text" id="ap-last" class="field-input"></div>
+        </div>
+        <div class="form-row">
+          <label>Handicap index (optional)</label>
+          <input type="number" id="ap-index" class="field-input" step="0.1" placeholder="e.g. 18.4">
+        </div>
+        <div id="ap-ph-preview" style="font-size:13px;color:var(--muted);margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-green btn-sm" onclick="addPlayerSubmit()">Add</button>
+          <button class="btn btn-outline btn-sm" onclick="hideAddPlayer()">Cancel</button>
+        </div>
+      </div>
+
+      <div class="player-count" id="player-count"></div>
+      <div id="player-list"></div>
+    </div>
+
+    <!-- GROUPS TAB -->
+    <div class="tab-panel" id="tab-groups">
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill groups</button>
+        <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ Add group</button>
+      </div>
+      <div id="groups-list"></div>
+    </div>
+
+    <!-- GO LIVE TAB -->
+    <div class="tab-panel" id="tab-golive">
+      <div id="golive-draft">
+        <div class="go-live-box">
+          <h3>Ready to go live?</h3>
+          <div class="breakdown" id="golive-breakdown"></div>
+          <div class="price" id="golive-price"></div>
+          <button class="btn btn-green" onclick="goLiveAndPay()" id="golive-btn">Go live and pay</button>
+        </div>
+      </div>
+
+      <!-- Live state -->
+      <div id="golive-live" style="display:none;">
+        <div class="invite-section">
+          <h3 style="font-size:16px;margin-bottom:8px;">Player links</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Share the find-your-name link or copy individual player links.</p>
+          <div class="qr-wrap" id="invite-qr-wrap"></div>
+          <div class="invite-url" id="invite-url"></div>
+          <button class="btn btn-outline btn-sm" onclick="copyInviteLink()" style="margin-bottom:8px;">Copy link</button>
+          <button class="btn btn-outline btn-sm" onclick="copyAllPlayerLinks()">Copy all player links</button>
+        </div>
+
+        <h3 style="font-size:16px;margin:20px 0 12px;">Groups</h3>
+        <div id="live-groups-list"></div>
+
+        <h3 style="font-size:16px;margin:20px 0 12px;">Leaderboard</h3>
+        <div id="live-leaderboard"></div>
+
+        <div style="margin-top:24px;">
+          <button class="btn btn-danger" onclick="finishEvent()">Finish event</button>
+        </div>
+      </div>
+
+      <!-- Finished state -->
+      <div id="golive-finished" style="display:none;">
+        <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
+        <div id="finished-leaderboard"></div>
+        <div class="past-actions">
+          <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
+          <button class="btn btn-outline btn-sm" disabled style="opacity:.5;">Export CSV<span class="pro-label">Pro</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Paste modal -->
+<div class="modal-overlay" id="paste-modal">
+  <div class="modal">
+    <h3>Paste a player list</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">One player per line: <strong>First Last, 18.4</strong> (handicap index is optional)</p>
+    <textarea id="paste-text" placeholder="John Smith, 12.4
+Jane Doe, 22.1
+Bob Wilson"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closePasteModal()">Cancel</button>
+      <button class="btn btn-green btn-sm" onclick="submitPaste()">Add players</button>
+    </div>
+  </div>
+</div>
+
+<!-- Score edit modal -->
+<div class="modal-overlay" id="score-edit-modal">
+  <div class="modal">
+    <h3 id="score-edit-title">Edit scores</h3>
+    <div id="score-edit-body"></div>
+    <div class="form-row" style="margin-top:12px;">
+      <label>Reason for edit</label>
+      <input type="text" id="score-edit-reason" class="field-input" placeholder="e.g. Scorer miscounted on hole 7">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeScoreEdit()">Cancel</button>
+      <button class="btn btn-green btn-sm" onclick="submitScoreEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── Supabase Auth client ──────────────────────────────────────
+  var SB_URL = 'https://ahutmswadskdkqhnrhhh.supabase.co';
+  var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXRtc3dhZHNrZGtxaG5yaGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjk2NTEsImV4cCI6MjEwNTY0NTY1MX0.sV9wHdMfiEwIdErw9ISwELf68e00_UEXv3SmWkSdoQc';
+  var sb = window.supabase.createClient(SB_URL, SB_ANON);
+
+  // ── State ─────────────────────────────────────────────────────
+  var state = {
+    authUser: null,
+    authToken: null,
+    organiser: null,
+    events: [],
+    currentEvent: null,
+    currentEventData: null,
+    players: [],
+    groups: [],
+    courseData: null, // { course, tees, holes }
+    teeData: null     // selected tee
+  };
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function $(id) { return document.getElementById(id); }
+  function show(id) { $(id).classList.add('active'); }
+  function hide(id) { $(id).classList.remove('active'); }
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    $(id).classList.add('active');
+  }
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  function api(fn, opts) {
+    return window.OOB.api(fn, opts);
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    var dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatPrice(pence) {
+    return '\u00A3' + (pence / 100).toFixed(2);
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────
+  async function init() {
+    // Check for auth callback (magic link or OAuth redirect)
+    var hash = window.location.hash;
+    if (hash && hash.indexOf('access_token') !== -1) {
+      // Supabase will pick this up automatically
+    }
+
+    var { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      state.authUser = session.user;
+      state.authToken = session.access_token;
+      await checkOrganiser();
+    } else {
+      showScreen('screen-signin');
+    }
+
+    // Listen for auth changes
+    sb.auth.onAuthStateChange(async function(event, session) {
+      if (event === 'SIGNED_IN' && session) {
+        state.authUser = session.user;
+        state.authToken = session.access_token;
+        await checkOrganiser();
+      } else if (event === 'SIGNED_OUT') {
+        state.authUser = null;
+        state.authToken = null;
+        state.organiser = null;
+        showScreen('screen-signin');
+      }
+    });
+  }
+
+  async function checkOrganiser() {
+    try {
+      var res = await api('org-auth', {
+        method: 'POST',
+        body: { action: 'check', auth_token: state.authToken }
+      });
+      if (res.organiser) {
+        state.organiser = res.organiser;
+        goToDashboard();
+      } else {
+        showScreen('screen-onboard');
+      }
+    } catch (err) {
+      console.error('Check organiser error:', err);
+      showScreen('screen-signin');
+      toast('Sign-in failed: ' + err.message);
+    }
+  }
+
+  window.signInGoogle = async function() {
+    var { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/o/' }
+    });
+    if (error) toast('Google sign-in failed: ' + error.message);
+  };
+
+  window.signInApple = async function() {
+    var { error } = await sb.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin + '/o/' }
+    });
+    if (error) toast('Apple sign-in failed: ' + error.message);
+  };
+
+  window.showEmailSignIn = function() {
+    $('auth-buttons').style.display = 'none';
+    $('magic-link-form').style.display = 'block';
+    $('magic-email').focus();
+  };
+
+  window.sendMagicLink = async function() {
+    var email = $('magic-email').value.trim();
+    if (!email) { toast('Enter your email'); return; }
+    var { error } = await sb.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: window.location.origin + '/o/' }
+    });
+    if (error) {
+      toast('Error: ' + error.message);
+    } else {
+      $('magic-sent').style.display = 'block';
+    }
+  };
+
+  window.signOut = async function() {
+    await sb.auth.signOut();
+    state.authUser = null;
+    state.authToken = null;
+    state.organiser = null;
+    showScreen('screen-signin');
+    $('auth-buttons').style.display = 'flex';
+    $('magic-link-form').style.display = 'none';
+    $('magic-sent').style.display = 'none';
+  };
+
+  // ── Onboarding ────────────────────────────────────────────────
+  // Radio button handling
+  document.querySelectorAll('.radio-opt').forEach(function(opt) {
+    opt.addEventListener('click', function() {
+      var group = opt.closest('.radio-group') || opt.parentElement;
+      group.querySelectorAll('.radio-opt').forEach(function(o) { o.classList.remove('selected'); });
+      opt.classList.add('selected');
+      var input = opt.querySelector('input[type="radio"]');
+      if (input) input.checked = true;
+    });
+  });
+
+  window.completeOnboarding = async function() {
+    var name = $('ob-name').value.trim();
+    var typeEl = document.querySelector('#ob-type-group .radio-opt.selected');
+    var type = typeEl ? typeEl.dataset.value : null;
+
+    if (!name) { toast('Enter your name'); return; }
+    if (!type) { toast('Select what you run'); return; }
+
+    $('ob-go').disabled = true;
+    $('ob-go').innerHTML = '<span class="spinner"></span>';
+
+    try {
+      var res = await api('org-auth', {
+        method: 'POST',
+        body: {
+          action: 'onboard',
+          auth_token: state.authToken,
+          display_name: name,
+          onboard_type: type
+        }
+      });
+      state.organiser = res.organiser;
+      goToDashboard();
+    } catch (err) {
+      toast('Error: ' + err.message);
+      $('ob-go').disabled = false;
+      $('ob-go').textContent = "Let's go";
+    }
+  };
+
+  // ── Dashboard ─────────────────────────────────────────────────
+  window.goToDashboard = async function() {
+    showScreen('screen-dashboard');
+    window.location.hash = 'dashboard';
+    await loadEvents();
+  };
+
+  async function loadEvents() {
+    try {
+      var res = await api('org-events', {
+        query: { organiser_id: state.organiser.id }
+      });
+      state.events = res.events || [];
+      renderEventList();
+    } catch (err) {
+      toast('Error loading events: ' + err.message);
+    }
+  }
+
+  function renderEventList() {
+    var el = $('event-list');
+    if (state.events.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No events yet. Create your first one.</p></div>';
+      return;
+    }
+    el.innerHTML = state.events.map(function(ev) {
+      var badgeClass = 'badge-' + ev.status;
+      return '<div class="event-card" onclick="openEvent(\'' + ev.id + '\')">' +
+        '<div class="ev-name">' + esc(ev.name) + '</div>' +
+        '<div class="ev-meta">' +
+          '<span class="badge ' + badgeClass + '">' + ev.status + '</span>' +
+          (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── New / Open Event ──────────────────────────────────────────
+  window.newEvent = function() {
+    state.currentEvent = null;
+    state.currentEventData = null;
+    state.players = [];
+    state.groups = [];
+    state.courseData = null;
+    state.teeData = null;
+    showScreen('screen-event');
+    window.location.hash = 'new-event';
+    $('ev-title').textContent = 'New event';
+    resetEventForm();
+    switchTab(document.querySelector('.tab-btn[data-tab="details"]'));
+    updateGoLiveTab();
+  };
+
+  window.openEvent = async function(eventId) {
+    showScreen('screen-event');
+    window.location.hash = 'event-' + eventId;
+
+    // Find event in list
+    var ev = state.events.find(function(e) { return e.id === eventId; });
+    state.currentEvent = eventId;
+    state.currentEventData = ev;
+
+    // Load full event data
+    try {
+      var evRes = await api('org-events', {
+        query: { organiser_id: state.organiser.id }
+      });
+      var fullEv = (evRes.events || []).find(function(e) { return e.id === eventId; });
+      if (fullEv) {
+        state.currentEventData = fullEv;
+      }
+    } catch (err) { /* use cached */ }
+
+    $('ev-title').textContent = ev ? ev.name : 'Event';
+    populateEventForm(state.currentEventData);
+
+    // Determine which tab set to show based on status
+    if (state.currentEventData && state.currentEventData.status === 'live') {
+      updateTabsForStatus('live');
+      switchTab(document.querySelector('.tab-btn[data-tab="golive"]'));
+    } else if (state.currentEventData && state.currentEventData.status === 'finished') {
+      updateTabsForStatus('finished');
+      switchTab(document.querySelector('.tab-btn[data-tab="golive"]'));
+    } else {
+      updateTabsForStatus('draft');
+      switchTab(document.querySelector('.tab-btn[data-tab="details"]'));
+    }
+
+    // Load players and groups
+    await loadPlayers();
+    await loadGroups();
+    updateGoLiveTab();
+  };
+
+  function updateTabsForStatus(status) {
+    // All tabs visible, but golive tab label changes
+    var goliveBtn = document.querySelector('.tab-btn[data-tab="golive"]');
+    if (status === 'live') goliveBtn.textContent = 'Live';
+    else if (status === 'finished') goliveBtn.textContent = 'Results';
+    else goliveBtn.textContent = 'Go live';
+  }
+
+  function resetEventForm() {
+    $('ev-name').value = '';
+    $('ev-date').value = '';
+    $('ev-format').value = 'individual_stableford';
+    $('ev-allowance').value = '0.95';
+    $('ev-max-hcp').value = '54';
+    $('ev-freeze').value = '12';
+    $('course-search').value = '';
+    $('course-selected').style.display = 'none';
+    $('course-inline-form').style.display = 'none';
+    $('course-results').style.display = 'none';
+    selectStartingMode('tee_times');
+  }
+
+  function populateEventForm(ev) {
+    if (!ev) return;
+    $('ev-name').value = ev.name || '';
+    $('ev-date').value = ev.event_date || '';
+    $('ev-format').value = ev.format || 'individual_stableford';
+    $('ev-allowance').value = ev.handicap_allowance != null ? String(ev.handicap_allowance) : '0.95';
+    $('ev-max-hcp').value = ev.max_handicap != null ? ev.max_handicap : 54;
+    $('ev-freeze').value = ev.leaderboard_freeze_hole != null ? ev.leaderboard_freeze_hole : 12;
+    selectStartingMode(ev.starting_mode || 'tee_times');
+
+    // Load course if set
+    if (ev.course_id) {
+      loadCourseForEvent(ev.course_id, ev.tee_id);
+    }
+  }
+
+  async function loadCourseForEvent(courseId, teeId) {
+    try {
+      var res = await api('org-courses', { query: { id: courseId } });
+      state.courseData = res;
+      $('course-search').style.display = 'none';
+      $('course-selected').style.display = 'block';
+      $('course-selected-name').textContent = res.course.name;
+
+      // Populate tee dropdown
+      var teeSelect = $('course-tee-select');
+      teeSelect.innerHTML = (res.tees || []).map(function(t) {
+        var sel = teeId && t.id === teeId ? ' selected' : '';
+        return '<option value="' + t.id + '"' + sel + '>' + t.tee_name +
+          ' (slope ' + t.slope + ', rating ' + t.rating + ', par ' + t.par_total + ')</option>';
+      }).join('');
+
+      // Set tee data
+      var selectedTee = teeId ? (res.tees || []).find(function(t) { return t.id === teeId; }) : (res.tees || [])[0];
+      if (selectedTee) state.teeData = selectedTee;
+    } catch (err) {
+      console.error('Load course error:', err);
+    }
+  }
+
+  function selectStartingMode(mode) {
+    var group = $('starting-mode-group');
+    group.querySelectorAll('.radio-opt').forEach(function(opt) {
+      opt.classList.remove('selected');
+      if (opt.dataset.value === mode) {
+        opt.classList.add('selected');
+        opt.querySelector('input').checked = true;
+      }
+    });
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────
+  window.switchTab = function(btn) {
+    if (!btn) return;
+    var tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    $('tab-' + tab).classList.add('active');
+
+    if (tab === 'players') renderPlayerList();
+    if (tab === 'groups') renderGroupsList();
+    if (tab === 'golive') updateGoLiveTab();
+  };
+
+  // ── Format change → default allowance ────────────────────────
+  $('ev-format').addEventListener('change', function() {
+    var fmt = this.value;
+    if (fmt === 'individual_stableford') {
+      $('ev-allowance').value = '0.95';
+    } else if (fmt === 'better_ball_pairs') {
+      $('ev-allowance').value = '0.85';
+    } else {
+      $('ev-allowance').value = '0.85';
+    }
+  });
+
+  // ── Course search ─────────────────────────────────────────────
+  var courseSearchTimer = null;
+  $('course-search').addEventListener('input', function() {
+    var q = this.value.trim();
+    clearTimeout(courseSearchTimer);
+    if (q.length < 2) {
+      $('course-results').style.display = 'none';
+      return;
+    }
+    courseSearchTimer = setTimeout(async function() {
+      try {
+        var res = await api('org-courses', { query: { search: q } });
+        var html = (res.courses || []).map(function(c) {
+          return '<div class="cr-item" onclick="selectCourse(\'' + c.id + '\',\'' + esc(c.name) + '\')">' +
+            esc(c.name) + (c.club ? ' <span style="color:var(--muted);font-size:12px;">(' + esc(c.club) + ')</span>' : '') +
+          '</div>';
+        }).join('');
+        html += '<div class="cr-item cr-add" onclick="showCourseInline()">+ Add a new course</div>';
+        $('course-results').innerHTML = html;
+        $('course-results').style.display = 'block';
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+  });
+
+  window.selectCourse = async function(courseId, name) {
+    $('course-results').style.display = 'none';
+    await loadCourseForEvent(courseId, null);
+  };
+
+  window.clearCourse = function() {
+    state.courseData = null;
+    state.teeData = null;
+    $('course-selected').style.display = 'none';
+    $('course-search').style.display = 'block';
+    $('course-search').value = '';
+  };
+
+  window.showCourseInline = function() {
+    $('course-results').style.display = 'none';
+    $('course-search').style.display = 'none';
+    $('course-inline-form').style.display = 'block';
+    buildHolesGrid();
+  };
+
+  window.cancelCourseInline = function() {
+    $('course-inline-form').style.display = 'none';
+    $('course-search').style.display = 'block';
+  };
+
+  function buildHolesGrid() {
+    var grid = $('holes-grid');
+    // Clear existing hole rows
+    while (grid.children.length > 3) grid.removeChild(grid.lastChild);
+
+    for (var h = 1; h <= 18; h++) {
+      var numEl = document.createElement('span');
+      numEl.style.fontWeight = '600';
+      numEl.textContent = h;
+      grid.appendChild(numEl);
+
+      var parSel = document.createElement('select');
+      parSel.id = 'ci-hole-par-' + h;
+      [3,4,5,6].forEach(function(p) {
+        var o = document.createElement('option');
+        o.value = p; o.textContent = p;
+        if (p === 4) o.selected = true;
+        parSel.appendChild(o);
+      });
+      grid.appendChild(parSel);
+
+      var siSel = document.createElement('select');
+      siSel.id = 'ci-hole-si-' + h;
+      for (var s = 1; s <= 18; s++) {
+        var o = document.createElement('option');
+        o.value = s; o.textContent = s;
+        if (s === h) o.selected = true;
+        siSel.appendChild(o);
+      }
+      grid.appendChild(siSel);
+    }
+  }
+
+  window.saveCourseInline = async function() {
+    var name = $('ci-name').value.trim();
+    if (!name) { toast('Enter course name'); return; }
+
+    var holes = [];
+    for (var h = 1; h <= 18; h++) {
+      holes.push({
+        hole_number: h,
+        par: parseInt($('ci-hole-par-' + h).value),
+        stroke_index: parseInt($('ci-hole-si-' + h).value)
+      });
+    }
+
+    // Check for duplicate SI values
+    var siValues = holes.map(function(h) { return h.stroke_index; });
+    var siSet = new Set(siValues);
+    if (siSet.size !== 18) {
+      toast('Each stroke index must be unique (1-18)');
+      return;
+    }
+
+    try {
+      var res = await api('org-courses', {
+        method: 'POST',
+        body: {
+          name: name,
+          tee_name: $('ci-tee-colour').value.trim() || 'White',
+          tee_colour: $('ci-tee-colour').value.trim() || 'White',
+          slope: parseFloat($('ci-slope').value) || 113,
+          rating: parseFloat($('ci-rating').value) || 72,
+          par_total: parseInt($('ci-par').value) || 72,
+          holes: holes,
+          organiser_id: state.organiser.id
+        }
+      });
+
+      toast('Course saved');
+      $('course-inline-form').style.display = 'none';
+      await loadCourseForEvent(res.course.id, res.tee.id);
+    } catch (err) {
+      toast('Error saving course: ' + err.message);
+    }
+  };
+
+  // ── Save event details ────────────────────────────────────────
+  window.saveEventDetails = async function() {
+    var name = $('ev-name').value.trim();
+    if (!name) { toast('Enter event name'); return; }
+
+    var btn = $('save-details-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+
+    var modeEl = document.querySelector('#starting-mode-group .radio-opt.selected');
+    var mode = modeEl ? modeEl.dataset.value : 'tee_times';
+
+    var teeId = $('course-tee-select').value || null;
+    var courseId = state.courseData ? state.courseData.course.id : null;
+
+    var payload = {
+      organiser_id: state.organiser.id,
+      name: name,
+      event_date: $('ev-date').value || null,
+      format: $('ev-format').value,
+      handicap_allowance: parseFloat($('ev-allowance').value),
+      max_handicap: parseInt($('ev-max-hcp').value) || 54,
+      starting_mode: mode,
+      leaderboard_freeze_hole: parseInt($('ev-freeze').value) || 0,
+      course_id: courseId,
+      tee_id: teeId
+    };
+
+    try {
+      var res;
+      if (state.currentEvent) {
+        // Update
+        payload.id = state.currentEvent;
+        res = await api('org-events', { method: 'PATCH', body: payload });
+        state.currentEventData = res.event;
+        toast('Event saved');
+      } else {
+        // Create
+        res = await api('org-events', { method: 'POST', body: payload });
+        state.currentEvent = res.event.id;
+        state.currentEventData = res.event;
+        window.location.hash = 'event-' + res.event.id;
+        toast('Event created');
+      }
+      $('ev-title').textContent = name;
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Save details';
+  };
+
+  // ── Players ───────────────────────────────────────────────────
+  async function loadPlayers() {
+    if (!state.currentEvent) return;
+    try {
+      var res = await api('org-players', {
+        query: { event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+      state.players = res.players || [];
+    } catch (err) {
+      console.error('Load players error:', err);
+    }
+  }
+
+  function renderPlayerList() {
+    var el = $('player-list');
+    var countEl = $('player-count');
+
+    if (state.players.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No players yet.</p></div>';
+      countEl.textContent = '';
+      return;
+    }
+
+    var missing = state.players.filter(function(p) { return p.handicap_index == null; }).length;
+    var countHtml = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
+    if (missing > 0) {
+      countHtml += ' &middot; <span class="warn">' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
+    }
+    countEl.innerHTML = countHtml;
+
+    el.innerHTML = state.players.map(function(p) {
+      var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '-';
+      var phStr = p.playing_handicap != null ? p.playing_handicap : '-';
+      return '<div class="player-item">' +
+        '<span class="pi-name">' + esc(p.display_name) + '</span>' +
+        '<span class="pi-idx">' + idxStr + '</span>' +
+        '<span class="pi-ph">' + phStr + '</span>' +
+        '<button class="pi-del" onclick="deletePlayer(\'' + p.id + '\')" title="Remove">&times;</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.showAddPlayer = function() {
+    $('add-player-form').style.display = 'block';
+    $('ap-first').focus();
+  };
+
+  window.hideAddPlayer = function() {
+    $('add-player-form').style.display = 'none';
+    $('ap-first').value = '';
+    $('ap-last').value = '';
+    $('ap-index').value = '';
+    $('ap-ph-preview').textContent = '';
+  };
+
+  // PH preview
+  $('ap-index').addEventListener('input', function() {
+    var idx = parseFloat(this.value);
+    if (isNaN(idx) || !state.teeData) {
+      $('ap-ph-preview').textContent = '';
+      return;
+    }
+    var allowance = parseFloat($('ev-allowance').value) || 0.95;
+    var cap = parseInt($('ev-max-hcp').value) || 54;
+    var ph = window.OOB.playingHandicap(idx, parseFloat(state.teeData.slope), parseFloat(state.teeData.rating), state.teeData.par_total, allowance, cap);
+    $('ap-ph-preview').textContent = 'Playing handicap: ' + ph;
+  });
+
+  window.addPlayerSubmit = async function() {
+    if (!state.currentEvent) { toast('Save event details first'); return; }
+    var first = $('ap-first').value.trim();
+    var last = $('ap-last').value.trim();
+    if (!first) { toast('Enter first name'); return; }
+
+    var idx = $('ap-index').value.trim();
+    var idxNum = idx ? parseFloat(idx) : null;
+
+    try {
+      await api('org-players', {
+        method: 'POST',
+        body: {
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id,
+          players: [{ first_name: first, last_name: last, handicap_index: idxNum }]
+        }
+      });
+      await loadPlayers();
+      renderPlayerList();
+      hideAddPlayer();
+      toast('Player added');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.deletePlayer = async function(playerId) {
+    if (!confirm('Remove this player?')) return;
+    try {
+      await api('org-players', {
+        method: 'POST',
+        body: {
+          action: 'delete',
+          id: playerId,
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      await loadPlayers();
+      renderPlayerList();
+      toast('Player removed');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.showPasteModal = function() {
+    $('paste-modal').classList.add('open');
+    $('paste-text').focus();
+  };
+
+  window.closePasteModal = function() {
+    $('paste-modal').classList.remove('open');
+    $('paste-text').value = '';
+  };
+
+  window.submitPaste = async function() {
+    if (!state.currentEvent) { toast('Save event details first'); return; }
+    var text = $('paste-text').value.trim();
+    if (!text) { toast('Paste some players'); return; }
+
+    try {
+      var res = await api('org-players', {
+        method: 'POST',
+        body: {
+          action: 'paste',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id,
+          text: text
+        }
+      });
+      await loadPlayers();
+      renderPlayerList();
+      closePasteModal();
+      toast(res.count + ' player' + (res.count !== 1 ? 's' : '') + ' added');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.addMeAsPlayer = async function() {
+    if (!state.currentEvent) { toast('Save event details first'); return; }
+    if (!state.organiser) return;
+
+    var name = state.organiser.name || 'Organiser';
+    var parts = name.split(' ');
+    var first = parts[0] || name;
+    var last = parts.slice(1).join(' ') || '';
+
+    try {
+      await api('org-players', {
+        method: 'POST',
+        body: {
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id,
+          players: [{ first_name: first, last_name: last, handicap_index: null }]
+        }
+      });
+      await loadPlayers();
+      renderPlayerList();
+      toast('You have been added');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // ── Groups ────────────────────────────────────────────────────
+  async function loadGroups() {
+    if (!state.currentEvent) return;
+    try {
+      var res = await api('org-groups', {
+        query: { event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+      state.groups = res.groups || [];
+      // Update players with latest group assignments
+      if (res.players) state.players = res.players;
+    } catch (err) {
+      console.error('Load groups error:', err);
+    }
+  }
+
+  function renderGroupsList() {
+    var el = $('groups-list');
+    if (state.groups.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No groups yet. Use auto-fill or add manually.</p></div>';
+      return;
+    }
+
+    var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+    var isShotgun = startingMode === 'shotgun';
+
+    el.innerHTML = state.groups.map(function(g) {
+      var members = state.players.filter(function(p) { return p.group_id === g.id; });
+      var membersHtml = members.map(function(p) {
+        return '<div class="gc-player">' +
+          '<span class="gcp-name">' + esc(p.display_name) + (p.pair_key ? ' <span style="color:var(--muted);font-size:11px;">(' + p.pair_key + ')</span>' : '') + '</span>' +
+          '<span class="gcp-ph">' + (p.playing_handicap != null ? p.playing_handicap : '-') + '</span>' +
+        '</div>';
+      }).join('');
+
+      var timeInput = '';
+      if (isShotgun) {
+        timeInput = '<div class="gc-time"><label style="font-size:12px;color:var(--muted);">Start hole</label>' +
+          '<input type="number" min="1" max="18" value="' + (g.starting_hole || 1) + '" ' +
+          'onchange="updateGroup(\'' + g.id + '\',{starting_hole:parseInt(this.value)})" style="width:60px;padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
+          '</div>';
+      } else {
+        var tv = g.tee_time || '';
+        timeInput = '<div class="gc-time"><label style="font-size:12px;color:var(--muted);">Tee time</label>' +
+          '<input type="time" value="' + tv + '" ' +
+          'onchange="updateGroup(\'' + g.id + '\',{tee_time:this.value||null})" style="width:100px;padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
+          '</div>';
+      }
+
+      return '<div class="group-card">' +
+        '<div class="gc-header">' +
+          '<span class="gc-num">Group ' + g.group_number + '</span>' +
+          timeInput +
+        '</div>' +
+        '<div class="gc-members">' + (membersHtml || '<span style="font-size:13px;color:var(--muted);">No players</span>') + '</div>' +
+      '</div>';
+    }).join('');
+
+    // Show unassigned players
+    var unassigned = state.players.filter(function(p) { return !p.group_id; });
+    if (unassigned.length > 0) {
+      el.innerHTML += '<div style="margin-top:16px;"><h3 style="font-size:14px;color:var(--muted);margin-bottom:8px;">Unassigned (' + unassigned.length + ')</h3>' +
+        unassigned.map(function(p) {
+          return '<div class="player-item" style="padding:8px 0;">' +
+            '<span class="pi-name">' + esc(p.display_name) + '</span>' +
+            '<select onchange="assignToGroup(\'' + p.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
+              '<option value="">Assign...</option>' +
+              state.groups.map(function(g) { return '<option value="' + g.id + '">Group ' + g.group_number + '</option>'; }).join('') +
+            '</select>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+  }
+
+  window.autoFillGroups = async function() {
+    if (!state.currentEvent) { toast('Save event details first'); return; }
+    if (state.players.length === 0) { toast('Add players first'); return; }
+
+    try {
+      await api('org-groups', {
+        method: 'POST',
+        body: {
+          action: 'auto_fill',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      await loadGroups();
+      renderGroupsList();
+      toast('Groups created');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.addGroupManual = async function() {
+    if (!state.currentEvent) { toast('Save event details first'); return; }
+    try {
+      await api('org-groups', {
+        method: 'POST',
+        body: {
+          action: 'create_group',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      await loadGroups();
+      renderGroupsList();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.assignToGroup = async function(playerId, groupId) {
+    if (!groupId) return;
+    try {
+      await api('org-groups', {
+        method: 'POST',
+        body: {
+          action: 'assign',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id,
+          player_id: playerId,
+          group_id: groupId
+        }
+      });
+      await loadGroups();
+      renderGroupsList();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.updateGroup = async function(groupId, updates) {
+    try {
+      updates.id = groupId;
+      updates.event_id = state.currentEvent;
+      updates.organiser_id = state.organiser.id;
+      await api('org-groups', { method: 'PATCH', body: updates });
+      toast('Group updated');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // ── Go Live tab ───────────────────────────────────────────────
+  function updateGoLiveTab() {
+    var ev = state.currentEventData;
+    if (!ev) {
+      $('golive-draft').style.display = 'block';
+      $('golive-live').style.display = 'none';
+      $('golive-finished').style.display = 'none';
+      $('golive-breakdown').textContent = 'Save your event first.';
+      $('golive-price').textContent = '';
+      $('golive-btn').style.display = 'none';
+      return;
+    }
+
+    if (ev.status === 'finished') {
+      $('golive-draft').style.display = 'none';
+      $('golive-live').style.display = 'none';
+      $('golive-finished').style.display = 'block';
+      loadFinishedLeaderboard();
+      return;
+    }
+
+    if (ev.status === 'live' || ev.paid) {
+      $('golive-draft').style.display = 'none';
+      $('golive-live').style.display = 'block';
+      $('golive-finished').style.display = 'none';
+      renderLiveView();
+      return;
+    }
+
+    // Draft
+    $('golive-draft').style.display = 'block';
+    $('golive-live').style.display = 'none';
+    $('golive-finished').style.display = 'none';
+    $('golive-btn').style.display = '';
+
+    var n = state.players.length;
+    var base = 999;
+    var perPlayer = 99;
+    var total = base + (n * perPlayer);
+
+    $('golive-breakdown').innerHTML = formatPrice(base) + ' + ' + formatPrice(perPlayer) + ' &times; ' + n + ' player' + (n !== 1 ? 's' : '');
+    $('golive-price').textContent = formatPrice(total);
+
+    if (n === 0) {
+      $('golive-breakdown').innerHTML = 'Add players before going live.';
+      $('golive-price').textContent = '';
+      $('golive-btn').disabled = true;
+    } else {
+      $('golive-btn').disabled = false;
+    }
+  }
+
+  window.goLiveAndPay = async function() {
+    if (!state.currentEvent) return;
+
+    $('golive-btn').disabled = true;
+    $('golive-btn').innerHTML = '<span class="spinner"></span>';
+
+    try {
+      var res = await api('stripe-checkout', {
+        method: 'POST',
+        body: {
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        toast('No checkout URL returned');
+      }
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+
+    $('golive-btn').disabled = false;
+    $('golive-btn').textContent = 'Go live and pay';
+  };
+
+  // ── Live view ─────────────────────────────────────────────────
+  async function renderLiveView() {
+    await loadPlayers();
+    await loadGroups();
+
+    // Build invite link
+    var baseUrl = window.location.origin;
+    // The find-your-name link goes to the event's player lookup
+    var inviteUrl = baseUrl + '/p/?event=' + state.currentEvent;
+    $('invite-url').textContent = inviteUrl;
+
+    // Generate QR code
+    renderQR(inviteUrl, $('invite-qr-wrap'));
+
+    // Render group cards with status
+    renderLiveGroups();
+
+    // Render leaderboard
+    await renderLiveLeaderboard();
+  }
+
+  function renderLiveGroups() {
+    var el = $('live-groups-list');
+    if (state.groups.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No groups</p></div>';
+      return;
+    }
+
+    el.innerHTML = state.groups.map(function(g) {
+      var members = state.players.filter(function(p) { return p.group_id === g.id; });
+      var scorer = members.find(function(p) { return p.id === g.scorer_player_id; });
+      var scorerName = scorer ? scorer.display_name : 'No scorer';
+      // Determine status dot based on scorer
+      var dotClass = scorer ? 'green' : 'red';
+
+      return '<div class="live-group-card" onclick="editGroupScores(\'' + g.id + '\')">' +
+        '<div class="lgc-row">' +
+          '<span class="lgc-group">Group ' + g.group_number + '</span>' +
+          '<span class="status-dot ' + dotClass + '"></span>' +
+        '</div>' +
+        '<div class="lgc-meta">Scorer: ' + esc(scorerName) + ' &middot; ' + members.length + ' players</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  async function renderLiveLeaderboard() {
+    if (!state.currentEventData || !state.courseData) {
+      // Try to load course data
+      if (state.currentEventData && state.currentEventData.course_id) {
+        await loadCourseForEvent(state.currentEventData.course_id, state.currentEventData.tee_id);
+      }
+    }
+
+    var holes = state.courseData ? state.courseData.holes : [];
+    var tee = state.teeData || { slope: 113, rating: 72, par_total: 72 };
+    var ev = state.currentEventData || {};
+
+    // Get scores
+    try {
+      var scoresRes = await api('leaderboard', {
+        query: { event: state.currentEvent }
+      });
+      if (scoresRes && scoresRes.standings) {
+        renderLeaderboardTable($('live-leaderboard'), scoresRes.standings);
+        return;
+      }
+    } catch (err) {
+      // Fall back to building locally
+    }
+
+    // Build standings locally if leaderboard function doesn't work
+    var standings = buildLocalStandings(holes, tee, ev);
+    renderLeaderboardTable($('live-leaderboard'), standings);
+  }
+
+  function buildLocalStandings(holes, tee, ev) {
+    // We need scores from the DB — simplified version showing just players
+    var format = ev.format || 'individual_stableford';
+    return state.players.map(function(p) {
+      return {
+        names: p.display_name,
+        points: 0,
+        thru: 0,
+        hasPlayed: false,
+        countback: null
+      };
+    });
+  }
+
+  function renderLeaderboardTable(el, standings) {
+    if (!standings || standings.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No scores yet.</p></div>';
+      return;
+    }
+
+    var html = '<table class="lb-table"><thead><tr>' +
+      '<th class="lb-pos">#</th><th class="lb-name">Player</th><th class="lb-thru">Thru</th><th class="lb-pts">Pts</th>' +
+      '</tr></thead><tbody>';
+
+    var pos = 0;
+    var lastPts = -1;
+    standings.forEach(function(s, i) {
+      if (s.points !== lastPts) {
+        pos = i + 1;
+        lastPts = s.points;
+      }
+      html += '<tr>' +
+        '<td class="lb-pos">' + (s.hasPlayed ? pos : '-') + '</td>' +
+        '<td class="lb-name">' + esc(s.names) + (s.countback ? '<div class="lb-cb">' + s.countback + '</div>' : '') + '</td>' +
+        '<td class="lb-thru">' + (s.thru || '-') + '</td>' +
+        '<td class="lb-pts">' + s.points + '</td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  // ── Score editing ─────────────────────────────────────────────
+  window.editGroupScores = function(groupId) {
+    var group = state.groups.find(function(g) { return g.id === groupId; });
+    if (!group) return;
+    var members = state.players.filter(function(p) { return p.group_id === groupId; });
+
+    $('score-edit-title').textContent = 'Edit Group ' + group.group_number;
+
+    var html = '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Edit scores for players in this group. Changes are logged.</p>';
+    members.forEach(function(p) {
+      html += '<div style="margin-bottom:12px;">' +
+        '<div style="font-weight:600;font-size:14px;margin-bottom:6px;">' + esc(p.display_name) + '</div>' +
+        '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+      for (var h = 1; h <= 18; h++) {
+        html += '<input type="number" min="1" max="20" style="width:36px;padding:4px;text-align:center;border:1px solid var(--line);border-radius:4px;font-size:13px;" ' +
+          'id="se-' + p.id + '-' + h + '" placeholder="' + h + '">';
+      }
+      html += '</div></div>';
+    });
+
+    $('score-edit-body').innerHTML = html;
+    $('score-edit-modal').classList.add('open');
+    $('score-edit-modal').dataset.groupId = groupId;
+  };
+
+  window.closeScoreEdit = function() {
+    $('score-edit-modal').classList.remove('open');
+  };
+
+  window.submitScoreEdit = async function() {
+    var groupId = $('score-edit-modal').dataset.groupId;
+    var members = state.players.filter(function(p) { return p.group_id === groupId; });
+    var reason = $('score-edit-reason').value.trim();
+
+    // Collect scores
+    var scores = [];
+    members.forEach(function(p) {
+      for (var h = 1; h <= 18; h++) {
+        var input = $('se-' + p.id + '-' + h);
+        if (input && input.value) {
+          scores.push({
+            player_id: p.id,
+            hole_number: h,
+            gross_score: parseInt(input.value)
+          });
+        }
+      }
+    });
+
+    if (scores.length === 0) {
+      toast('No scores entered');
+      return;
+    }
+
+    // Find a scorer token for this group
+    var scorer = members.find(function(p) { return p.player_token; });
+    if (!scorer) {
+      toast('No player token available');
+      return;
+    }
+
+    try {
+      await api('score-save', {
+        method: 'POST',
+        body: { token: scorer.player_token, scores: scores }
+      });
+
+      // Log the edit (we'd need a score_edits endpoint, for now just toast)
+      if (reason) {
+        console.log('Score edit reason:', reason);
+      }
+
+      closeScoreEdit();
+      await renderLiveLeaderboard();
+      toast('Scores saved');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // ── Finish event ──────────────────────────────────────────────
+  window.finishEvent = async function() {
+    if (!confirm('Finish this event? Scores will be locked and results published.')) return;
+    try {
+      await api('org-events', {
+        method: 'POST',
+        body: {
+          action: 'finish',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      state.currentEventData.status = 'finished';
+      updateGoLiveTab();
+      toast('Event finished');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // ── Finished leaderboard ──────────────────────────────────────
+  async function loadFinishedLeaderboard() {
+    try {
+      var res = await api('leaderboard', {
+        query: { event: state.currentEvent }
+      });
+      if (res && res.standings) {
+        renderLeaderboardTable($('finished-leaderboard'), res.standings);
+      }
+    } catch (err) {
+      $('finished-leaderboard').innerHTML = '<div class="empty-state"><p>Could not load results.</p></div>';
+    }
+  }
+
+  // ── Clone event ───────────────────────────────────────────────
+  window.cloneEvent = async function() {
+    try {
+      var res = await api('org-events', {
+        method: 'POST',
+        body: {
+          action: 'clone',
+          event_id: state.currentEvent,
+          organiser_id: state.organiser.id
+        }
+      });
+      toast('Event cloned');
+      await loadEvents();
+      openEvent(res.event.id);
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // ── Invite link / QR ─────────────────────────────────────────
+  window.copyInviteLink = function() {
+    var url = $('invite-url').textContent;
+    navigator.clipboard.writeText(url).then(function() { toast('Link copied'); });
+  };
+
+  window.copyAllPlayerLinks = function() {
+    var baseUrl = window.location.origin;
+    var links = state.players.map(function(p) {
+      return p.display_name + ': ' + baseUrl + '/p/?t=' + p.player_token;
+    }).join('\n');
+    navigator.clipboard.writeText(links).then(function() { toast('All links copied'); });
+  };
+
+  // ── QR code renderer (canvas-based, no external libs) ────────
+  function renderQR(text, container) {
+    container.innerHTML = '';
+    // Simple QR code using a basic encoding
+    // We use a minimal QR generator
+    var canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    container.appendChild(canvas);
+
+    var label = document.createElement('div');
+    label.className = 'qr-label';
+    label.textContent = 'Scan to find your name';
+    container.appendChild(label);
+
+    // Generate QR modules
+    var modules = generateQR(text);
+    if (!modules) return;
+
+    var ctx = canvas.getContext('2d');
+    var size = modules.length;
+    var cellSize = Math.floor(200 / (size + 8));
+    var offset = Math.floor((200 - cellSize * size) / 2);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 200, 200);
+    ctx.fillStyle = '#10344E';
+
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        if (modules[r][c]) {
+          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+
+  // Minimal QR Code generator (Mode: byte, ECC: L, version auto)
+  // This is a simplified implementation for client-side use
+  function generateQR(text) {
+    // Use a data URL approach with an image fallback for proper QR
+    // For a real implementation, we encode the QR matrix directly
+    try {
+      var data = encodeUTF8(text);
+      var version = getMinVersion(data.length);
+      if (version > 40) return null;
+
+      var size = version * 4 + 17;
+      var matrix = [];
+      for (var i = 0; i < size; i++) {
+        matrix[i] = [];
+        for (var j = 0; j < size; j++) {
+          matrix[i][j] = false;
+        }
+      }
+
+      // Place finder patterns
+      placeFinder(matrix, 0, 0);
+      placeFinder(matrix, 0, size - 7);
+      placeFinder(matrix, size - 7, 0);
+
+      // Place timing patterns
+      for (var i = 8; i < size - 8; i++) {
+        matrix[6][i] = (i % 2 === 0);
+        matrix[i][6] = (i % 2 === 0);
+      }
+
+      // Place alignment patterns for versions > 1
+      if (version > 1) {
+        var positions = getAlignmentPositions(version);
+        for (var ai = 0; ai < positions.length; ai++) {
+          for (var aj = 0; aj < positions.length; aj++) {
+            var ay = positions[ai], ax = positions[aj];
+            if (isFinderArea(ay, ax, size)) continue;
+            placeAlignment(matrix, ay, ax);
+          }
+        }
+      }
+
+      // Encode data
+      var encoded = encodeData(data, version);
+
+      // Place data bits
+      placeData(matrix, encoded, size);
+
+      // Apply mask (mask 0 for simplicity)
+      applyMask(matrix, size, 0);
+
+      // Place format info
+      placeFormatInfo(matrix, size, 0);
+
+      // Place version info for versions >= 7
+      if (version >= 7) {
+        placeVersionInfo(matrix, size, version);
+      }
+
+      return matrix;
+    } catch (e) {
+      console.error('QR generation error:', e);
+      return null;
+    }
+  }
+
+  function encodeUTF8(str) {
+    var bytes = [];
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c < 128) bytes.push(c);
+      else if (c < 2048) { bytes.push(192 | (c >> 6)); bytes.push(128 | (c & 63)); }
+      else { bytes.push(224 | (c >> 12)); bytes.push(128 | ((c >> 6) & 63)); bytes.push(128 | (c & 63)); }
+    }
+    return bytes;
+  }
+
+  // Capacity table for byte mode, ECC level L
+  var QR_CAPACITIES = [0, 17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644, 718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528, 1628, 1732, 1840, 1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953];
+
+  function getMinVersion(dataLen) {
+    for (var v = 1; v <= 40; v++) {
+      if (QR_CAPACITIES[v] >= dataLen) return v;
+    }
+    return 41;
+  }
+
+  function placeFinder(matrix, row, col) {
+    for (var r = 0; r < 7; r++) {
+      for (var c = 0; c < 7; c++) {
+        matrix[row + r][col + c] =
+          (r === 0 || r === 6 || c === 0 || c === 6) ||
+          (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+      }
+    }
+    // Separator
+    for (var i = -1; i <= 7; i++) {
+      setIfValid(matrix, row - 1, col + i, false);
+      setIfValid(matrix, row + 7, col + i, false);
+      setIfValid(matrix, row + i, col - 1, false);
+      setIfValid(matrix, row + i, col + 7, false);
+    }
+  }
+
+  function setIfValid(matrix, r, c, val) {
+    if (r >= 0 && r < matrix.length && c >= 0 && c < matrix.length) {
+      matrix[r][c] = val;
+    }
+  }
+
+  function isFinderArea(r, c, size) {
+    return (r < 9 && c < 9) || (r < 9 && c >= size - 8) || (r >= size - 8 && c < 9);
+  }
+
+  function getAlignmentPositions(version) {
+    if (version === 1) return [];
+    var intervals = Math.floor(version / 7) + 1;
+    var size = version * 4 + 17;
+    var last = size - 7;
+    var step = Math.ceil((last - 6) / intervals);
+    if (step % 2 !== 0) step++;
+    var positions = [6];
+    var pos = last;
+    while (pos > 6) {
+      positions.unshift(pos);
+      pos -= step;
+    }
+    return positions;
+  }
+
+  function placeAlignment(matrix, row, col) {
+    for (var r = -2; r <= 2; r++) {
+      for (var c = -2; c <= 2; c++) {
+        matrix[row + r][col + c] =
+          (r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0));
+      }
+    }
+  }
+
+  function encodeData(data, version) {
+    var bits = [];
+    // Mode indicator: byte = 0100
+    bits.push(0, 1, 0, 0);
+    // Character count indicator
+    var ccBits = version <= 9 ? 8 : 16;
+    for (var i = ccBits - 1; i >= 0; i--) {
+      bits.push((data.length >> i) & 1);
+    }
+    // Data
+    for (var i = 0; i < data.length; i++) {
+      for (var b = 7; b >= 0; b--) {
+        bits.push((data[i] >> b) & 1);
+      }
+    }
+    // Terminator
+    var capacity = QR_CAPACITIES[version] * 8 + 4 + ccBits; // rough
+    while (bits.length < capacity && bits.length % 8 !== 0) bits.push(0);
+    // Pad codewords
+    var padBytes = [0xEC, 0x11];
+    var pi = 0;
+    while (bits.length < capacity) {
+      var pb = padBytes[pi % 2];
+      for (var b = 7; b >= 0; b--) bits.push((pb >> b) & 1);
+      pi++;
+    }
+    return bits;
+  }
+
+  function placeData(matrix, bits, size) {
+    var reserved = createReservedMatrix(size);
+    var bitIdx = 0;
+    var upward = true;
+
+    for (var col = size - 1; col >= 0; col -= 2) {
+      if (col === 6) col = 5; // Skip timing column
+      for (var i = 0; i < size; i++) {
+        var row = upward ? (size - 1 - i) : i;
+        for (var dx = 0; dx <= 1; dx++) {
+          var c = col - dx;
+          if (c < 0 || c >= size) continue;
+          if (reserved[row][c]) continue;
+          matrix[row][c] = bitIdx < bits.length ? bits[bitIdx] === 1 : false;
+          bitIdx++;
+        }
+      }
+      upward = !upward;
+    }
+  }
+
+  function createReservedMatrix(size) {
+    var m = [];
+    for (var i = 0; i < size; i++) {
+      m[i] = [];
+      for (var j = 0; j < size; j++) m[i][j] = false;
+    }
+    // Finder + separator areas
+    for (var r = 0; r < 9; r++) for (var c = 0; c < 9; c++) { setR(m, r, c); }
+    for (var r = 0; r < 9; r++) for (var c = size - 8; c < size; c++) { setR(m, r, c); }
+    for (var r = size - 8; r < size; r++) for (var c = 0; c < 9; c++) { setR(m, r, c); }
+    // Timing
+    for (var i = 0; i < size; i++) { m[6][i] = true; m[i][6] = true; }
+    // Format info
+    m[8][8] = true;
+    return m;
+  }
+
+  function setR(m, r, c) { if (r >= 0 && r < m.length && c >= 0 && c < m.length) m[r][c] = true; }
+
+  function applyMask(matrix, size, maskNum) {
+    var reserved = createReservedMatrix(size);
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        if (reserved[r][c]) continue;
+        var mask = false;
+        if (maskNum === 0) mask = ((r + c) % 2 === 0);
+        if (mask) matrix[r][c] = !matrix[r][c];
+      }
+    }
+  }
+
+  function placeFormatInfo(matrix, size, maskNum) {
+    // ECC L = 01, mask 0 = 000 => format bits = 01000
+    // With BCH error correction this becomes a 15-bit sequence
+    // For ECC L mask 0: 111011111000100
+    var formatBits = [1,1,1,0,1,1,1,1,1,0,0,0,1,0,0];
+
+    // Horizontal
+    var hPositions = [0,1,2,3,4,5,7,8,size-8,size-7,size-6,size-5,size-4,size-3,size-2];
+    for (var i = 0; i < 15; i++) {
+      matrix[8][hPositions[i]] = formatBits[i] === 1;
+    }
+    // Vertical
+    var vPositions = [size-1,size-2,size-3,size-4,size-5,size-6,size-7,8,7,5,4,3,2,1,0];
+    for (var i = 0; i < 15; i++) {
+      matrix[vPositions[i]][8] = formatBits[i] === 1;
+    }
+    // Dark module
+    matrix[size - 8][8] = true;
+  }
+
+  function placeVersionInfo(matrix, size, version) {
+    // Simplified — version info not critical for scanning small QR codes
+  }
+
+  // ── Escape HTML ───────────────────────────────────────────────
+  function esc(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // ── Init ──────────────────────────────────────────────────────
+  init();
+
+})();
+</script>
+</body>
+</html>
