@@ -2,7 +2,6 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<link rel="icon" href="/favicon.png" type="image/png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Out of Bounds | Live scoring for any golf event</title>
 <meta name="description" content="Simple, affordable live golf scoring. Players score on their own phones, the leaderboard runs on the clubhouse telly. For one event or forever.">
@@ -166,16 +165,12 @@ section{padding:96px 0}
 
 /* PRICING */
 .plans{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:44px auto 0;max-width:860px}
-.plans-3{grid-template-columns:repeat(3,1fr);max-width:1080px}
-.tier-sub{font-size:14px;color:var(--muted);margin-top:4px}
-.wrap-narrow{max-width:720px}
-@media (max-width:980px){.plans-3{grid-template-columns:1fr;max-width:480px}}
 @media (max-width:720px){.plans{grid-template-columns:1fr}}
 .plan{border:1px solid var(--line);border-radius:var(--radius);padding:32px;display:flex;flex-direction:column;gap:16px}
 .plan.hi{border:2px solid var(--green);position:relative}
-.plan.hi::before{content:"Best value";position:absolute;top:-13px;left:24px;background:var(--green);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
-.plan .price{font-family:Poppins,sans-serif;font-weight:800;font-size:44px;line-height:1;color:var(--navy)}
-.plan .price small{font-size:15px;font-weight:600;color:var(--muted)}
+.plan.hi::before{content:"Best for regulars";position:absolute;top:-13px;left:24px;background:var(--green);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.plan .price{font-family:Poppins,sans-serif;font-weight:800;font-size:52px;line-height:1;color:var(--navy)}
+.plan .price small{font-size:18px;font-weight:600;color:var(--muted)}
 .plan ul{list-style:none;display:grid;gap:9px;color:var(--muted);font-size:15px}
 .plan li::before{content:"✓";color:var(--green);font-weight:700;margin-right:9px}
 .plan .btn{margin-top:auto;justify-content:center}
@@ -196,7 +191,7 @@ section{padding:96px 0}
 .faq details p{margin-top:10px;color:var(--muted);font-size:16px}
 
 /* CONTACT */
-.contact .wrap{display:block}
+.contact .wrap{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
 @media (max-width:860px){.contact .wrap{grid-template-columns:1fr}}
 form{display:grid;gap:14px}
 label{font-size:14px;font-weight:600}
@@ -223,9 +218,9 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
       <li><a href="#how">How it works</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="#live">See it live</a></li>
-      <li><a href="#faq">Questions</a></li>
+      <li><a href="#contact">Contact</a></li>
     </ul>
-    <a class="btn btn-green cta-desktop" href="https://score.outofboundsevents.com/o/">Start an event</a>
+    <a class="btn btn-green cta-desktop" href="#contact">Score your next event</a>
     <button class="burger" id="burger" aria-label="Menu" aria-expanded="false">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -239,12 +234,12 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
     <div>
       <div class="eyebrow">Live golf scoring</div>
       <h1>Live scoring for <span>any golf event.</span></h1>
-      <p class="lead">Players score on their own phones. The leaderboard runs on the clubhouse telly. Sign in, set it up in ten minutes, and go. No sales call, no contract. For one event or forever.</p>
+      <p class="lead">Players score on their own phones. The leaderboard runs on the clubhouse telly. You set it up in ten minutes and it just works. For one event or forever.</p>
       <div class="actions">
-        <a class="btn btn-green" href="https://score.outofboundsevents.com/o/">Start an event, £9.99</a>
+        <a class="btn btn-green" href="#contact">Score your next event</a>
         <a class="btn btn-ghost" href="#live">Watch it live</a>
       </div>
-      <div class="fine"><span>No app to download</span><span>Any phone</span><span>Handicaps worked out for you</span><span>From £9.99 an event</span></div>
+      <div class="fine"><span>No app to download</span><span>Any phone</span><span>Handicaps worked out for you</span><span>From £79 an event</span></div>
     </div>
 
     <div class="stage" aria-label="Live leaderboard demo">
@@ -358,7 +353,7 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
     <div class="who">
       <div class="card"><div class="ph" data-note="photo: pro on the first tee"></div><div class="tx"><h3>Golf pros and event companies</h3><p>Run every day you organise under your own brand. Look like the big operators without paying like them.</p></div></div>
       <div class="card"><div class="ph" data-note="photo: charity day group"></div><div class="tx"><h3>Charity golf days</h3><p>Sponsors on the screen, results in the bar before the auction starts, nobody counting cards.</p></div></div>
-      <div class="card"><div class="ph" data-note="photo: society at the clubhouse"></div><div class="tx"><h3>Societies and club opens</h3><p>One event from £9.99, done. Handicaps, formats and the leaderboard sorted for the away day.</p></div></div>
+      <div class="card"><div class="ph" data-note="photo: society at the clubhouse"></div><div class="tx"><h3>Societies and club opens</h3><p>One event, £79, done. Handicaps, formats and the leaderboard sorted for the away day.</p></div></div>
       <div class="card"><div class="ph" data-note="photo: corporate four-ball"></div><div class="tx"><h3>Corporate days</h3><p>Guests score on their own phones and watch the leaderboard on the telly. It looks like the tour, because it works like the tour.</p></div></div>
     </div>
   </div>
@@ -368,46 +363,33 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
   <div class="wrap">
     <div class="eyebrow" style="text-align:center">Pricing</div>
     <h2 style="text-align:center">For one event or forever.</h2>
-    <p class="lead" style="text-align:center;margin:14px auto 0">Sign in, set up, pay when you go live. Nobody to ring, nothing to sign.</p>
-    <div class="plans plans-3">
+    <div class="plans">
       <div class="plan">
-        <div><h3>Play</h3><p class="tier-sub">One event, any size</p></div>
-        <div class="price">£9.99<small> + 99p a player</small></div>
+        <div><h3>Per event</h3></div>
+        <div class="price">£79</div>
         <ul>
-          <li>Live scoring and leaderboard on every phone</li>
-          <li>Handicaps and formats worked out for you</li>
-          <li>Results page to share on WhatsApp</li>
-          <li>Results kept in your account, run it again in a tap</li>
-          <li>Out of Bounds branding</li>
+          <li>Everything, for one event</li>
+          <li>Up to 120 players</li>
+          <li>Leaderboard on phones and the telly</li>
+          <li>Your logo and sponsor slides</li>
+          <li>Handicaps and formats included</li>
         </ul>
-        <a class="btn btn-outline" href="https://score.outofboundsevents.com/o/">Start an event</a>
-      </div>
-      <div class="plan">
-        <div><h3>Pro monthly</h3><p class="tier-sub">Your brand, the big screen</p></div>
-        <div class="price">£39.99<small>/month</small></div>
-        <ul>
-          <li>Everything in Play, unlimited events</li>
-          <li>Your logo and colours on every screen</li>
-          <li>Leaderboard on the clubhouse telly</li>
-          <li>Sponsor slides between leaderboard pages</li>
-          <li>12-month term, paid monthly</li>
-        </ul>
-        <a class="btn btn-outline" href="https://score.outofboundsevents.com/o/">Go Pro</a>
+        <a class="btn btn-outline" href="#contact">Book one event</a>
       </div>
       <div class="plan hi">
-        <div><h3>Pro annual</h3><p class="tier-sub">Two months free</p></div>
+        <div><h3>Unlimited</h3></div>
         <div class="price">£399<small>/year</small></div>
         <ul>
-          <li>Everything in Pro monthly</li>
-          <li>Paid once, done for the season</li>
+          <li>Every event you run for a year</li>
+          <li>Your branding saved and ready</li>
           <li>Course library that builds as you go</li>
           <li>Priority help on the day</li>
-          <li>Cheaper than ten months</li>
+          <li>Cheaper than six events</li>
         </ul>
-        <a class="btn btn-green" href="https://score.outofboundsevents.com/o/">Go Pro annual</a>
+        <a class="btn btn-green" href="#contact">Go unlimited</a>
       </div>
     </div>
-    <p class="note">Run golf days for other people? Licensee pricing puts your own brand on every event. <a href="mailto:hello@outofboundsevents.com" style="color:var(--green);font-weight:600">Email us</a>, that's the one thing worth a conversation.</p>
+    <p class="note">Run golf days for other people? <b>Ask about licensee pricing</b> with your own branding on every event.</p>
     <p class="quiet">The systems the big corporate days use cost £2,000 a year and up. This is the same maths without the price tag.</p>
   </div>
 </section>
@@ -441,11 +423,21 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
 </section>
 
 <section class="contact" id="contact">
-  <div class="wrap wrap-narrow">
-    <div class="eyebrow" style="text-align:center">Stuck?</div>
-    <h2 style="text-align:center">You shouldn't need us. If you do, we're here.</h2>
-    <p class="lead" style="text-align:center;margin:16px auto 0">Everything is self-serve: sign in, set up, go live. If something isn't working on the day, email <a href="mailto:hello@outofboundsevents.com" style="color:var(--green);font-weight:600">hello@outofboundsevents.com</a> and a person will answer.</p>
-    <div class="actions" style="display:flex;justify-content:center;margin-top:28px"><a class="btn btn-navy" href="https://score.outofboundsevents.com/o/">Start an event</a></div>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Contact</div>
+      <h2>Talk to a person.</h2>
+      <p class="lead" style="margin-top:16px">Tell us about your event and we'll get you set up. Most people are scoring their first round within the week.</p>
+      <p class="alt">Or email <a href="mailto:hello@outofboundsevents.com" style="color:var(--green);font-weight:600">hello@outofboundsevents.com</a></p>
+    </div>
+    <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="contact">
+      <p style="display:none"><label>Don't fill this in: <input name="bot-field"></label></p>
+      <div><label for="name">Your name</label><input id="name" name="name" required autocomplete="name"></div>
+      <div><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="email"></div>
+      <div><label for="message">Your event</label><textarea id="message" name="message" rows="5" placeholder="Charity day, 72 players, 14 June, Riverside GC…"></textarea></div>
+      <button class="btn btn-navy" type="submit">Send</button>
+    </form>
   </div>
 </section>
 
@@ -458,7 +450,7 @@ footer .small{font-size:13px;width:100%;margin-top:8px}
       <li><a href="#how">How it works</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="#live">See it live</a></li>
-      <li><a href="#faq">Questions</a></li>
+      <li><a href="#contact">Contact</a></li>
       <li><a href="/privacy">Privacy</a></li>
     </ul>
     <div class="small">© 2026 Out of Bounds Events, Stoke-on-Trent.</div>
