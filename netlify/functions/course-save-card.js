@@ -77,27 +77,65 @@ exports.handler = async function (event) {
       courseId = (Array.isArray(created) ? created[0] : created).id;
     }
 
-    // Create tee sets and holes
+    // Create tee rows: one per (colour, rating_gender)
+    // Claude returns rating_men/slope_men and rating_women/slope_women per tee colour.
+    // Each non-null pair becomes a separate course_tees row.
     var teeSummary = [];
     for (var t = 0; t < body.tee_sets.length; t++) {
       var ts = body.tee_sets[t];
+      var colour = (ts.colour || ts.tee_name || '').toLowerCase();
+      var teeName = ts.tee_name || 'Tee ' + (t + 1);
+      var numHoles = ts.number_of_holes || (ts.holes ? ts.holes.length : 18);
 
-      var teeRow = {
-        course_id: courseId,
-        tee_name: ts.tee_name || 'Tee ' + (t + 1),
-        colour: (ts.colour || ts.tee_name || '').toLowerCase(),
-        slope: ts.slope_rating || null,
-        rating: ts.course_rating || null,
-        par_total: ts.par_total || null,
-        tee_set: ts.gender === 'female' ? 'female' : ts.gender === 'male' ? 'male' : null,
-        total_yards: ts.total_yards || null,
-        number_of_holes: ts.number_of_holes || (ts.holes ? ts.holes.length : 18)
-      };
+      // Build rating pairs to create rows for
+      var ratingPairs = [];
+      if (ts.rating_men != null || ts.slope_men != null) {
+        ratingPairs.push({ gender: 'men', rating: ts.rating_men, slope: ts.slope_men });
+      }
+      if (ts.rating_women != null || ts.slope_women != null) {
+        ratingPairs.push({ gender: 'women', rating: ts.rating_women, slope: ts.slope_women });
+      }
+      // Fallback: old format with single rating/slope
+      if (ratingPairs.length === 0) {
+        if (ts.slope_rating != null || ts.course_rating != null) {
+          ratingPairs.push({ gender: ts.rating_gender || 'men', rating: ts.course_rating, slope: ts.slope_rating });
+        }
+        if (ts.rating_unlabelled != null || ts.slope_unlabelled != null) {
+          ratingPairs.push({ gender: 'men', rating: ts.rating_unlabelled, slope: ts.slope_unlabelled });
+        }
+      }
+      // If still nothing, create one row with nulls
+      if (ratingPairs.length === 0) {
+        ratingPairs.push({ gender: 'men', rating: null, slope: null });
+      }
 
-      var createdTee = await sb.sbPost('course_tees', teeRow);
-      var teeId = (Array.isArray(createdTee) ? createdTee[0] : createdTee).id;
+      for (var r = 0; r < ratingPairs.length; r++) {
+        var rp = ratingPairs[r];
+        var teeRow = {
+          course_id: courseId,
+          tee_name: teeName,
+          colour: colour,
+          slope: rp.slope,
+          rating: rp.rating,
+          par_total: ts.par_total || null,
+          rating_gender: rp.gender,
+          total_yards: ts.total_yards || null,
+          number_of_holes: numHoles
+        };
 
-      teeSummary.push({ id: teeId, tee_name: teeRow.tee_name, tee_set: teeRow.tee_set });
+        var createdTee = await sb.sbPost('course_tees', teeRow);
+        var teeId = (Array.isArray(createdTee) ? createdTee[0] : createdTee).id;
+
+        teeSummary.push({
+          id: teeId,
+          tee_name: teeName,
+          colour: colour,
+          rating_gender: rp.gender,
+          rating: rp.rating,
+          slope: rp.slope,
+          par_total: ts.par_total
+        });
+      }
     }
 
     // Create holes from the first tee set (holes are per-course)
