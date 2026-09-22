@@ -43,8 +43,8 @@ exports.handler = async function (event) {
 
   var webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET not set');
-    return sb.respond(500, { error: 'Webhook secret not configured' });
+    console.error('stripe-webhook: STRIPE_WEBHOOK_SECRET not set — rejecting all webhooks');
+    return sb.respond(400, { error: 'Webhook not configured' });
   }
 
   var sigHeader = event.headers['stripe-signature'] || event.headers['Stripe-Signature'];
