@@ -25,8 +25,8 @@ function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Read the template HTML once
-var templatePath = path.join(__dirname, '..', '..', 'public', 'r', '_template.html');
+// Read the template HTML once (co-located with the function)
+var templatePath = path.join(__dirname, 'results-template.html');
 var templateHtml = null;
 
 exports.handler = async function (event) {
