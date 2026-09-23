@@ -2125,12 +2125,14 @@ Bob Wilson"></textarea>
         state.currentEventData = res.event;
         toast('Event saved');
       } else {
-        // Create
+        // Create — then switch to Players tab
         res = await api('org-events', { method: 'POST', body: payload });
         state.currentEvent = res.event.id;
         state.currentEventData = res.event;
         window.location.hash = 'event-' + res.event.id;
-        toast('Event created');
+        $('ev-title').textContent = name;
+        switchTab(document.querySelector('.tab-btn[data-tab="players"]'));
+        toast('Event created — add your players');
       }
       $('ev-title').textContent = name;
     } catch (err) {
