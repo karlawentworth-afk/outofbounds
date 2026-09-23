@@ -901,6 +901,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
         <div class="past-actions">
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
           <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.5;">Export CSV<span class="pro-label" id="csv-pro-tag">Pro</span></button>
+          <button class="btn btn-outline btn-sm" id="btn-archive" onclick="archiveEvent()">Archive</button>
         </div>
       </div>
     </div>
@@ -1201,21 +1202,65 @@ Bob Wilson"></textarea>
 
   function renderEventList() {
     var el = $('event-list');
+    var showArchived = state.showArchived || false;
+
     if (state.events.length === 0) {
       el.innerHTML = '<div class="empty-state"><p>No events yet. Create your first one.</p></div>';
       return;
     }
-    el.innerHTML = state.events.map(function(ev) {
-      var badgeClass = 'badge-' + ev.status;
+
+    var live = state.events.filter(function(e) { return e.status === 'live'; });
+    var drafts = state.events.filter(function(e) { return e.status === 'draft'; });
+    var finished = state.events.filter(function(e) { return e.status === 'finished' && !e.archived; });
+    var archived = state.events.filter(function(e) { return e.archived; });
+
+    function renderCard(ev) {
+      var badgeClass = 'badge-' + (ev.archived ? 'finished' : ev.status);
+      var label = ev.archived ? 'archived' : ev.status;
       return '<div class="event-card" onclick="openEvent(\'' + ev.id + '\')">' +
         '<div class="ev-name">' + esc(ev.name) + '</div>' +
         '<div class="ev-meta">' +
-          '<span class="badge ' + badgeClass + '">' + ev.status + '</span>' +
+          '<span class="badge ' + badgeClass + '">' + label + '</span>' +
           (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
         '</div>' +
       '</div>';
-    }).join('');
+    }
+
+    var html = '';
+
+    if (live.length) {
+      html += '<h3 style="font-size:14px;color:var(--green);font-weight:700;margin-bottom:8px;">Live now</h3>';
+      html += live.map(renderCard).join('');
+    }
+
+    if (drafts.length) {
+      html += '<h3 style="font-size:14px;color:var(--muted);font-weight:700;margin:16px 0 8px;">Drafts</h3>';
+      html += drafts.map(renderCard).join('');
+    }
+
+    if (finished.length) {
+      html += '<h3 style="font-size:14px;color:var(--muted);font-weight:700;margin:16px 0 8px;">Finished</h3>';
+      html += finished.map(renderCard).join('');
+    }
+
+    if (archived.length) {
+      html += '<div style="margin-top:16px;text-align:center;">';
+      html += '<button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="toggleArchived()">' +
+        (showArchived ? 'Hide' : 'Show') + ' ' + archived.length + ' archived</button>';
+      html += '</div>';
+      if (showArchived) {
+        html += archived.map(renderCard).join('');
+      }
+    }
+
+    el.innerHTML = html;
   }
+
+  state.showArchived = false;
+  window.toggleArchived = function() {
+    state.showArchived = !state.showArchived;
+    renderEventList();
+  };
 
   // ── Billing ────────────────────────────────────────────────────
   state.billingInterval = 'month';
@@ -2771,6 +2816,22 @@ Bob Wilson"></textarea>
       state.currentEventData.status = 'finished';
       updateGoLiveTab();
       toast(countedHoles < 18 ? 'Finished through hole ' + countedHoles : 'Event finished');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.archiveEvent = async function() {
+    if (!state.currentEvent) return;
+    var isArchived = state.currentEventData && state.currentEventData.archived;
+    var action = isArchived ? 'unarchive' : 'archive';
+    try {
+      await api('org-events', {
+        method: 'POST',
+        body: { action: action, event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+      toast(isArchived ? 'Unarchived' : 'Archived');
+      goToDashboard();
     } catch (err) {
       toast('Error: ' + err.message);
     }

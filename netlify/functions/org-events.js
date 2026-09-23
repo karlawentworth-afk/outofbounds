@@ -43,7 +43,7 @@ exports.handler = async function (event) {
     try {
       var events = await sb.sbGet(
         'events?organiser_id=eq.' + organiserId +
-        '&select=id,name,slug,event_date,format,status,starting_mode,paid,created_at' +
+        '&select=id,name,slug,event_date,format,status,starting_mode,paid,created_at,archived' +
         '&order=created_at.desc'
       );
       return sb.respond(200, { events: events || [] });
@@ -164,6 +164,24 @@ exports.handler = async function (event) {
         return sb.respond(200, { ok: true, abandoned: true });
       } catch (err) {
         console.error('org-events abandon error:', err);
+        return sb.respond(500, { error: err.message });
+      }
+
+    } else if (action === 'archive' || action === 'unarchive') {
+      if (!body.event_id || !body.organiser_id) {
+        return sb.respond(400, { error: 'Missing event_id or organiser_id' });
+      }
+      try {
+        var ev = await verifyOwnership(body.event_id, body.organiser_id);
+        if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
+
+        await sb.sbPatch('events?id=eq.' + body.event_id, {
+          archived: action === 'archive'
+        });
+
+        return sb.respond(200, { ok: true, archived: action === 'archive' });
+      } catch (err) {
+        console.error('org-events archive error:', err);
         return sb.respond(500, { error: err.message });
       }
 
