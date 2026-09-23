@@ -121,19 +121,49 @@ exports.handler = async function (event) {
         var ev = await verifyOwnership(body.event_id, body.organiser_id);
         if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
 
+        // count_to_hole: 1-18, or null for all 18
+        var countedHoles = body.counted_holes ? parseInt(body.counted_holes) : 18;
+        if (countedHoles < 1 || countedHoles > 18 || isNaN(countedHoles)) countedHoles = 18;
+
         await sb.sbPatch(
           'events?id=eq.' + body.event_id,
           {
             status: 'finished',
             locked_at: new Date().toISOString(),
             results_published: true,
-            results_published_at: new Date().toISOString()
+            results_published_at: new Date().toISOString(),
+            counted_holes: countedHoles
           }
         );
 
-        return sb.respond(200, { ok: true });
+        return sb.respond(200, { ok: true, counted_holes: countedHoles });
       } catch (err) {
         console.error('org-events finish error:', err);
+        return sb.respond(500, { error: err.message });
+      }
+
+    } else if (action === 'abandon') {
+      // Abandon: mark as finished with no results
+      if (!body.event_id || !body.organiser_id) {
+        return sb.respond(400, { error: 'Missing event_id or organiser_id' });
+      }
+      try {
+        var ev = await verifyOwnership(body.event_id, body.organiser_id);
+        if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
+
+        await sb.sbPatch(
+          'events?id=eq.' + body.event_id,
+          {
+            status: 'finished',
+            locked_at: new Date().toISOString(),
+            results_published: false,
+            counted_holes: 0
+          }
+        );
+
+        return sb.respond(200, { ok: true, abandoned: true });
+      } catch (err) {
+        console.error('org-events abandon error:', err);
         return sb.respond(500, { error: err.message });
       }
 

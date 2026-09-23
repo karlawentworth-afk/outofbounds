@@ -34,7 +34,7 @@ exports.handler = async function (event) {
       sb.sbGet(
         'events?id=eq.' + eventId +
         '&select=id,format,handicap_allowance,leaderboard_freeze_hole,board_show_full,' +
-        'secondary_format,secondary_title,secondary_allowance,course_id,tee_id,status' +
+        'secondary_format,secondary_title,secondary_allowance,course_id,tee_id,status,counted_holes' +
         '&limit=1'
       ),
       sb.sbGet(
@@ -80,9 +80,12 @@ exports.handler = async function (event) {
     // Finished events: never frozen (results are final)
     // Player/board mode: frozen unless board_show_full
     var isFinished = eventRow.status === 'finished';
+    var countedHoles = eventRow.counted_holes || 18;
     var maxHole;
-    if (mode === 'organiser' || isFinished) {
+    if (mode === 'organiser') {
       maxHole = 18;
+    } else if (isFinished) {
+      maxHole = countedHoles; // Only count holes up to counted_holes
     } else {
       maxHole = showFull ? 18 : freezeHole;
     }
@@ -124,6 +127,7 @@ exports.handler = async function (event) {
         ? Math.round(eventRow.handicap_allowance * 100)
         : 95,
       freezeHole: maxHole,
+      countedHoles: countedHoles,
       secondary: null
     };
 

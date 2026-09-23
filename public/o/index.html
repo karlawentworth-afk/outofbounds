@@ -847,8 +847,16 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
         <h3 style="font-size:16px;margin:20px 0 12px;">Leaderboard</h3>
         <div id="live-leaderboard"></div>
 
-        <div style="margin-top:24px;">
-          <button class="btn btn-danger" onclick="finishEvent()">Finish event</button>
+        <div style="margin-top:24px;border-top:1px solid var(--line);padding-top:20px;">
+          <h3 style="font-size:16px;margin-bottom:12px;">Finish</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn btn-green" onclick="finishEvent(18)">Finish &mdash; count all 18 holes</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-outline" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="flex:1;">Finish &mdash; count holes 1 to</button>
+              <input type="number" id="finish-hole-n" value="14" min="1" max="17" style="width:56px;padding:10px;border:2px solid var(--line);border-radius:8px;font-size:16px;text-align:center;font-family:inherit;">
+            </div>
+            <button class="btn btn-outline" onclick="abandonEvent()" style="color:var(--red);border-color:var(--red);">Abandon &mdash; no results</button>
+          </div>
         </div>
       </div>
 
@@ -2626,20 +2634,44 @@ Bob Wilson"></textarea>
   };
 
   // ── Finish event ──────────────────────────────────────────────
-  window.finishEvent = async function() {
-    if (!confirm('Finish this event? Scores will be locked and results published.')) return;
+  window.finishEvent = async function(countedHoles) {
+    countedHoles = parseInt(countedHoles) || 18;
+    var msg = countedHoles < 18
+      ? 'Finish and count holes 1 to ' + countedHoles + '? Results will be published.'
+      : 'Finish this event? Scores will be locked and results published.';
+    if (!confirm(msg)) return;
     try {
       await api('org-events', {
         method: 'POST',
         body: {
           action: 'finish',
           event_id: state.currentEvent,
+          organiser_id: state.organiser.id,
+          counted_holes: countedHoles
+        }
+      });
+      state.currentEventData.status = 'finished';
+      updateGoLiveTab();
+      toast(countedHoles < 18 ? 'Finished through hole ' + countedHoles : 'Event finished');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.abandonEvent = async function() {
+    if (!confirm('Abandon this event? No results will be published. This cannot be undone.')) return;
+    try {
+      await api('org-events', {
+        method: 'POST',
+        body: {
+          action: 'abandon',
+          event_id: state.currentEvent,
           organiser_id: state.organiser.id
         }
       });
       state.currentEventData.status = 'finished';
       updateGoLiveTab();
-      toast('Event finished');
+      toast('Event abandoned');
     } catch (err) {
       toast('Error: ' + err.message);
     }
