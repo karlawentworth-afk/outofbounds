@@ -81,7 +81,7 @@
     bar.style.cssText = 'background:#10344E;display:flex;align-items:center;justify-content:center;gap:0;position:fixed;top:0;left:0;right:0;z-index:10000;font-size:12px;font-weight:600;';
 
     var tabs = [
-      { label: 'Organiser', href: '/o/' },
+      { label: 'Organiser', href: '/o/#view-as-demo' },
       { label: 'Scoreboard', href: '/board/#/demo/autumn-invitational' },
       { label: 'Player', href: '/p/demo/autumn-invitational/demo-scorer-group-001-token' },
       { label: 'Results', href: '/r/demo/spring-charity-classic' },
