@@ -56,7 +56,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 .top-bar .user-pill:hover { background: rgba(255,255,255,.2); }
 
 /* Sign-in */
-#screen-signin {
+#screen-signin.active {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh; padding: 32px 16px; text-align: center;
 }
@@ -66,13 +66,11 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 .auth-btns { display: flex; flex-direction: column; gap: 12px; width: min(340px, 100%); }
 .auth-btn {
   display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; padding: 14px 20px; border-radius: 999px; border: 2px solid var(--line);
+  width: 100%; padding: 14px 20px; border-radius: 999px; border: 1px solid var(--line);
   background: var(--white); font-family: 'Poppins', sans-serif; font-weight: 600;
   font-size: 15px; cursor: pointer; color: var(--ink); transition: all .15s;
 }
 .auth-btn:hover { border-color: var(--navy); }
-.auth-btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
-.auth-btn.primary:hover { background: var(--green-dark); border-color: var(--green-dark); }
 .auth-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
 
 /* Magic link input */
