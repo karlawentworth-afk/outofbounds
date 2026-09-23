@@ -66,29 +66,29 @@ async function main() {
 
   console.log('Product created: ' + product.id);
 
-  // 2. Monthly price: £14.99
+  // 2. Monthly price: £39.99 (12-month term)
   var monthly = await stripePost('/v1/prices', [
     'product=' + product.id,
     'currency=gbp',
-    'unit_amount=1499',
+    'unit_amount=3999',
     'recurring[interval]=month'
   ].join('&'));
 
-  console.log('Monthly price: ' + monthly.id + ' (£14.99/month)');
+  console.log('Monthly price: ' + monthly.id + ' (£39.99/month)');
 
-  // 3. Annual price: £149
+  // 3. Annual price: £399
   var annual = await stripePost('/v1/prices', [
     'product=' + product.id,
     'currency=gbp',
-    'unit_amount=14900',
+    'unit_amount=39900',
     'recurring[interval]=year'
   ].join('&'));
 
-  console.log('Annual price:  ' + annual.id + ' (£149/year)');
+  console.log('Annual price:  ' + annual.id + ' (£399/year)');
 
   console.log('\n--- Add these to Netlify environment variables ---');
-  console.log('STRIPE_PRO_MONTHLY_PRICE=' + monthly.id);
-  console.log('STRIPE_PRO_ANNUAL_PRICE=' + annual.id);
+  console.log('STRIPE_PRICE_PRO_MONTHLY=' + monthly.id);
+  console.log('STRIPE_PRICE_PRO_ANNUAL=' + annual.id);
 
   // 4. Optional: create test clock
   if (process.argv.includes('--test-clock')) {

@@ -68,8 +68,8 @@ exports.handler = async function (event) {
     // ── Subscribe (create Checkout Session) ──
     var interval = body.price_interval === 'year' ? 'year' : 'month';
     var priceId = interval === 'year'
-      ? process.env.STRIPE_PRO_ANNUAL_PRICE
-      : process.env.STRIPE_PRO_MONTHLY_PRICE;
+      ? process.env.STRIPE_PRICE_PRO_ANNUAL
+      : process.env.STRIPE_PRICE_PRO_MONTHLY;
 
     if (!priceId) return sb.respond(500, { error: 'Price not configured for interval: ' + interval });
 
