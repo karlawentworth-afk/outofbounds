@@ -2198,8 +2198,8 @@ Bob Wilson"></textarea>
       }
       return '<div class="player-item">' +
         statusDot +
-        '<span class="pi-name">' + esc(p.display_name) + '</span>' +
-        '<span class="pi-idx">' + idxStr + '</span>' +
+        '<span class="pi-name" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + esc(p.display_name) + '</span>' +
+        '<span class="pi-idx" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + idxStr + '</span>' +
         '<span class="pi-ph">' + phStr + '</span>' +
         '<button class="pi-del" onclick="deletePlayer(\'' + p.id + '\')" title="Remove">&times;</button>' +
       '</div>';
@@ -2257,6 +2257,31 @@ Bob Wilson"></textarea>
     } catch (err) {
       toast('Error: ' + err.message);
     }
+  };
+
+  window.editPlayer = function(playerId) {
+    var player = state.players.find(function (p) { return p.id === playerId; });
+    if (!player) return;
+
+    var newHI = prompt('Handicap index for ' + player.display_name + ':', player.handicap_index != null ? player.handicap_index : '');
+    if (newHI === null) return; // cancelled
+
+    var hi = newHI.trim() === '' ? null : parseFloat(newHI);
+
+    api('org-players', {
+      method: 'PATCH',
+      body: {
+        id: playerId,
+        event_id: state.currentEvent,
+        organiser_id: state.organiser.id,
+        handicap_index: hi
+      }
+    }).then(function () {
+      loadPlayers().then(renderPlayerList);
+      toast('Updated');
+    }).catch(function (err) {
+      toast('Error: ' + err.message);
+    });
   };
 
   window.nudgeInvited = function() {
@@ -2332,6 +2357,13 @@ Bob Wilson"></textarea>
   window.addMeAsPlayer = async function() {
     if (!state.currentEvent) { toast('Save event details first'); return; }
     if (!state.organiser) return;
+
+    // Check if already added
+    var orgName = (state.organiser.name || '').toLowerCase();
+    var alreadyAdded = state.players.some(function (p) {
+      return (p.display_name || '').toLowerCase() === orgName;
+    });
+    if (alreadyAdded) { toast('You are already in this event'); return; }
 
     var name = state.organiser.name || 'Organiser';
     var parts = name.split(' ');
