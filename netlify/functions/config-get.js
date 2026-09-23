@@ -76,7 +76,10 @@ exports.handler = async function (event) {
         status: ev.status,
         board_rows_per_page: ev.board_rows_per_page,
         leaderboard_freeze_hole: ev.leaderboard_freeze_hole,
-        board_show_full: ev.board_show_full
+        board_show_full: ev.board_show_full,
+        counted_holes: ev.counted_holes,
+        results_published_at: ev.results_published_at,
+        auto_closed: ev.auto_closed
       };
     }
 
