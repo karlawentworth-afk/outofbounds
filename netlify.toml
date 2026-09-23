@@ -37,6 +37,17 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+# Player view: path-based URLs serve the SPA (Netlify rewrites to index.html)
+[[redirects]]
+  from = "/p/:org/:event/:token"
+  to = "/p/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/p/:org/:event"
+  to = "/p/index.html"
+  status = 200
+
 # Results page: SSR with OG tags
 [[redirects]]
   from = "/r/:org/:event/og.png"

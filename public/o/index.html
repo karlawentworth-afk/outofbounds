@@ -2263,7 +2263,7 @@ Bob Wilson"></textarea>
     var names = state._invitedNames || 'your mates';
     var orgSlug = state.organiser ? state.organiser.slug : '';
     var evSlug = state.currentEventData ? state.currentEventData.slug : '';
-    var link = window.location.origin + '/p/#/' + orgSlug + '/' + evSlug;
+    var link = window.location.origin + '/p/' + orgSlug + '/' + evSlug;
     var text = 'Hey ' + names + ' — tap your name and confirm your handicap so we can get going: ' + link;
 
     if (navigator.clipboard) {
@@ -2606,7 +2606,10 @@ Bob Wilson"></textarea>
     // Build invite link
     var baseUrl = window.location.origin;
     // The find-your-name link goes to the event's player lookup
-    var inviteUrl = baseUrl + '/p/?event=' + state.currentEvent;
+    // Path-based URL so it survives WhatsApp/social sharing (hash gets stripped)
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+    var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
     $('invite-url').textContent = inviteUrl;
 
     // Generate QR code

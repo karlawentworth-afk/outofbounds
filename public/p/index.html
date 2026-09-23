@@ -446,7 +446,12 @@ html, body {
   'use strict';
 
   /* ── Route ── */
-  var parts = (location.hash || '').replace(/^#\/?/, '').split('/');
+  // Try hash first (#/org/event/token), then path (/p/org/event/token)
+  var parts = (location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (parts.length < 2) {
+    // Fall back to path: /p/org/event or /p/org/event/token
+    parts = location.pathname.replace(/^\/p\/?/, '').split('/').filter(Boolean);
+  }
   var orgSlug   = parts[0] || '';
   var eventSlug = parts[1] || '';
   var token     = parts[2] || '';
