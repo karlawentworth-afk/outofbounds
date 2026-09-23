@@ -3252,7 +3252,14 @@ Bob Wilson"></textarea>
     var evName = state.currentEventData ? state.currentEventData.name : 'the event';
     var url = $('invite-url').textContent;
     var text = "You're playing in " + evName + "! Tap your name and confirm your handicap: " + url;
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    var waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
+    // On mobile: open normally. On desktop: reuse a named window so repeat taps don't pile up tabs.
+    var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.open(waUrl);
+    } else {
+      window.open(waUrl, 'oob-share');
+    }
   };
 
   window.downloadQRPoster = function() {
