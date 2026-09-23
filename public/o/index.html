@@ -2913,45 +2913,25 @@ Bob Wilson"></textarea>
     navigator.clipboard.writeText(links).then(function() { toast('All links copied'); });
   };
 
-  // ── QR code renderer (canvas-based, no external libs) ────────
+  // ── QR code renderer (uses QR Server API for reliable scanning) ──
   function renderQR(text, container) {
     container.innerHTML = '';
-    // Simple QR code using a basic encoding
-    // We use a minimal QR generator
-    var canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    container.appendChild(canvas);
+
+    var img = document.createElement('img');
+    img.width = 200;
+    img.height = 200;
+    img.style.borderRadius = '8px';
+    img.alt = 'QR code';
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=' + encodeURIComponent(text);
+    container.appendChild(img);
 
     var label = document.createElement('div');
     label.className = 'qr-label';
     label.textContent = 'Scan to find your name';
     container.appendChild(label);
-
-    // Generate QR modules
-    var modules = generateQR(text);
-    if (!modules) return;
-
-    var ctx = canvas.getContext('2d');
-    var size = modules.length;
-    var cellSize = Math.floor(200 / (size + 8));
-    var offset = Math.floor((200 - cellSize * size) / 2);
-
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, 200, 200);
-    ctx.fillStyle = '#10344E';
-
-    for (var r = 0; r < size; r++) {
-      for (var c = 0; c < size; c++) {
-        if (modules[r][c]) {
-          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
-        }
-      }
-    }
   }
 
-  // Minimal QR Code generator (Mode: byte, ECC: L, version auto)
-  // This is a simplified implementation for client-side use
+  // QR generator removed — using api.qrserver.com instead
   function generateQR(text) {
     // Use a data URL approach with an image fallback for proper QR
     // For a real implementation, we encode the QR matrix directly
