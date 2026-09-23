@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/api.js"></script>
+<script src="/shared/contrast.js"></script>
 <script src="/shared/engine.js"></script>
 <style>
 :root {
@@ -435,6 +436,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline btn-sm" id="btn-admin" onclick="goToAdmin()" style="display:none;">Admin</button>
+        <button class="btn btn-outline btn-sm" id="btn-branding" onclick="goToBranding()" style="display:none;">Branding<span class="pro-label" id="branding-pro-tag">Pro</span></button>
         <button class="btn btn-outline btn-sm" onclick="goToBilling()">Billing</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
       </div>
@@ -542,6 +544,111 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
           <button class="btn btn-outline btn-sm" onclick="closeRebrandModal()">Cancel</button>
           <button class="btn btn-green btn-sm" onclick="submitRebrand()">Save</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Branding -->
+<div id="screen-branding" class="screen">
+  <div class="top-bar" id="branding-topbar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-brand" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 style="font-size:20px;margin-bottom:24px;">Branding</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <!-- Left: form -->
+      <div>
+        <div class="form-row">
+          <label>Display name</label>
+          <input type="text" id="brand-display-name" class="field-input" placeholder="As shown to players" oninput="updateBrandPreview()">
+        </div>
+        <div class="form-row">
+          <label>Logo URL</label>
+          <input type="text" id="brand-logo-url" class="field-input" placeholder="https://..." oninput="updateBrandPreview()">
+          <div class="hint">PNG, SVG or JPG, max 2 MB, resized to 600 px wide</div>
+        </div>
+        <div class="form-row">
+          <label>Logo for dark backgrounds (optional)</label>
+          <input type="text" id="brand-logo-dark" class="field-input" placeholder="https://..." oninput="updateBrandPreview()">
+        </div>
+        <div class="form-row">
+          <label>Primary colour</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="brand-primary" value="#10344E" style="width:48px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;" oninput="updateBrandPreview()">
+            <span id="brand-primary-ratio" style="font-size:13px;font-weight:600;"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Secondary colour</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="color" id="brand-secondary" value="#FFFFFF" style="width:48px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;" oninput="updateBrandPreview()">
+            <span id="brand-secondary-ratio" style="font-size:13px;font-weight:600;"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Accent colour</label>
+          <input type="color" id="brand-accent" value="#2F7A45" style="width:48px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;" oninput="updateBrandPreview()">
+        </div>
+        <div id="brand-warning" style="display:none;background:#FFF8E1;border:1px solid var(--amber);border-radius:8px;padding:12px;font-size:13px;color:#7A5A00;margin-bottom:16px;"></div>
+        <div id="brand-error" style="display:none;background:#FFEBEE;border:1px solid var(--red);border-radius:8px;padding:12px;font-size:13px;color:var(--red);margin-bottom:16px;"></div>
+        <button class="btn btn-green" id="brand-save-btn" onclick="saveBranding()">Save branding</button>
+
+        <div style="margin-top:24px;">
+          <h3 style="font-size:14px;color:var(--muted);margin-bottom:8px;">Version history</h3>
+          <div id="brand-versions" style="font-size:13px;color:var(--muted);"></div>
+        </div>
+      </div>
+
+      <!-- Right: live preview -->
+      <div>
+        <h3 style="font-size:14px;color:var(--muted);margin-bottom:8px;">Phone preview</h3>
+        <div id="brand-preview-phone" style="border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:280px;">
+          <div id="bp-topbar" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+            <span id="bp-ev-name" style="font-size:13px;font-weight:600;color:#fff;">Summer Open</span>
+            <img id="bp-logo" alt="" style="height:20px;display:none;">
+          </div>
+          <div style="padding:16px;background:var(--off-white);">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Hole 5 &middot; Par 4 &middot; SI 7</div>
+            <div style="display:flex;gap:8px;">
+              <div style="flex:1;background:#fff;border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-size:11px;color:var(--muted);">J. Smith</div>
+                <div style="font-size:20px;font-weight:700;">5</div>
+              </div>
+              <div style="flex:1;background:#fff;border-radius:8px;padding:10px;text-align:center;">
+                <div style="font-size:11px;color:var(--muted);">A. Jones</div>
+                <div style="font-size:20px;font-weight:700;">4</div>
+              </div>
+            </div>
+          </div>
+          <div id="bp-savebar" style="padding:8px 12px;text-align:center;">
+            <span style="font-size:13px;font-weight:600;" id="bp-savebar-text">Save</span>
+          </div>
+        </div>
+
+        <h3 style="font-size:14px;color:var(--muted);margin:16px 0 8px;">Board preview</h3>
+        <div id="brand-preview-board" style="border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:280px;">
+          <div id="bp-board-header" style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+            <img id="bp-board-logo" alt="" style="height:18px;display:none;">
+            <span id="bp-board-name" style="font-size:13px;font-weight:600;color:#fff;">Summer Open</span>
+          </div>
+          <div style="background:#10344E;padding:8px 12px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:4px;">
+              <span>Pos</span><span>Player</span><span>Pts</span><span>Thru</span>
+            </div>
+            <div id="bp-board-row" style="display:flex;justify-content:space-between;font-size:12px;color:#fff;padding:4px 0;">
+              <span>1</span><span>J. Smith</span><span style="font-weight:700;">38</span><span>16</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.7);padding:4px 0;">
+              <span>2</span><span>A. Jones</span><span>36</span><span>16</span>
+            </div>
+          </div>
+        </div>
+
+        <p style="font-size:12px;color:var(--muted);margin-top:12px;">Scored with Out of Bounds</p>
       </div>
     </div>
   </div>
@@ -1318,6 +1425,136 @@ Bob Wilson"></textarea>
     }
   };
 
+  // ── Branding ──────────────────────────────────────────────────
+  window.goToBranding = async function() {
+    if (!state.organiser) return;
+    var name = state.organiser.name;
+    $('user-pill-brand').textContent = name + ' \u00B7 Sign out';
+    showScreen('screen-branding');
+    window.location.hash = 'branding';
+
+    try {
+      var res = await api('org-branding', {
+        query: { organiser_id: state.organiser.id }
+      });
+      var b = res.branding || {};
+      $('brand-display-name').value = b.display_name || state.organiser.name || '';
+      $('brand-logo-url').value = b.logo_url || '';
+      $('brand-logo-dark').value = b.logo_dark_url || '';
+      $('brand-primary').value = b.primary_colour || '#10344E';
+      $('brand-secondary').value = b.secondary_colour || '#FFFFFF';
+      $('brand-accent').value = b.accent_colour || '#2F7A45';
+
+      // Version history
+      var vHtml = (res.versions || []).map(function (v) {
+        var d = new Date(v.created_at);
+        return '<div style="padding:4px 0;border-bottom:1px solid var(--line);">' +
+          d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) +
+          (v.display_name ? ' \u2014 ' + esc(v.display_name) : '') +
+          (v.primary_colour ? ' <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:' + v.primary_colour + ';vertical-align:middle;"></span>' : '') +
+        '</div>';
+      }).join('');
+      $('brand-versions').innerHTML = vHtml || 'No versions yet';
+
+      updateBrandPreview();
+    } catch (err) {
+      if (err.status === 403) {
+        toast('Branding is a Pro feature');
+        goToDashboard();
+      } else {
+        toast('Error: ' + err.message);
+      }
+    }
+  };
+
+  window.updateBrandPreview = function() {
+    var primary = $('brand-primary').value;
+    var secondary = $('brand-secondary').value;
+    var accent = $('brand-accent').value;
+    var logoUrl = $('brand-logo-url').value;
+    var logoDark = $('brand-logo-dark').value;
+    var displayName = $('brand-display-name').value || 'Your Event';
+
+    // Compute text colours
+    var pc = OOBContrast.textColour(primary);
+    var sc = OOBContrast.textColour(secondary);
+
+    // Update ratio labels
+    var prLabel = $('brand-primary-ratio');
+    prLabel.textContent = pc.ratio + ':1';
+    prLabel.style.color = pc.level === 'pass' ? 'var(--green)' : pc.level === 'warn' ? 'var(--amber)' : 'var(--red)';
+
+    var scLabel = $('brand-secondary-ratio');
+    scLabel.textContent = sc.ratio + ':1';
+    scLabel.style.color = sc.level === 'pass' ? 'var(--green)' : sc.level === 'warn' ? 'var(--amber)' : 'var(--red)';
+
+    // Warning/error messages
+    $('brand-warning').style.display = 'none';
+    $('brand-error').style.display = 'none';
+    $('brand-save-btn').disabled = false;
+
+    if (pc.level === 'fail' || sc.level === 'fail') {
+      $('brand-error').textContent = 'This colour is hard to read on buttons. Try a darker or lighter shade.';
+      $('brand-error').style.display = 'block';
+      $('brand-save-btn').disabled = true;
+    } else if (pc.level === 'warn' || sc.level === 'warn') {
+      $('brand-warning').textContent = 'Contrast is below the recommended 4.5:1. Text may be harder to read on some screens.';
+      $('brand-warning').style.display = 'block';
+    }
+
+    // Phone preview
+    $('bp-topbar').style.background = primary;
+    $('bp-ev-name').style.color = pc.colour;
+    $('bp-savebar').style.background = primary;
+    $('bp-savebar-text').style.color = pc.colour;
+
+    var logo = $('bp-logo');
+    if (logoUrl) { logo.src = logoUrl; logo.style.display = ''; } else { logo.style.display = 'none'; }
+
+    // Board preview
+    $('bp-board-header').style.background = primary;
+    $('bp-board-name').style.color = pc.colour;
+    $('bp-board-name').textContent = displayName;
+    $('bp-board-row').style.background = accent;
+
+    var bLogo = $('bp-board-logo');
+    var darkLogo = logoDark || logoUrl;
+    if (darkLogo) { bLogo.src = darkLogo; bLogo.style.display = ''; } else { bLogo.style.display = 'none'; }
+  };
+
+  window.saveBranding = async function() {
+    $('brand-save-btn').disabled = true;
+    $('brand-save-btn').innerHTML = '<span class="spinner"></span>';
+
+    try {
+      var res = await api('org-branding', {
+        method: 'POST',
+        body: {
+          organiser_id: state.organiser.id,
+          display_name: $('brand-display-name').value,
+          logo_url: $('brand-logo-url').value || null,
+          logo_dark_url: $('brand-logo-dark').value || null,
+          primary_colour: $('brand-primary').value,
+          secondary_colour: $('brand-secondary').value,
+          accent_colour: $('brand-accent').value
+        }
+      });
+
+      if (res.warnings && res.warnings.length) {
+        toast('Saved with warning: ' + res.warnings[0]);
+      } else {
+        toast('Branding saved');
+      }
+
+      // Refresh to show new version
+      goToBranding();
+    } catch (err) {
+      toast('Error: ' + err.message);
+      $('brand-save-btn').disabled = false;
+      $('brand-save-btn').textContent = 'Save branding';
+    }
+  };
+
   // ── Pro gating UI ─────────────────────────────────────────────
   function updateProGating() {
     var org = state.organiser || {};
@@ -1326,6 +1563,22 @@ Bob Wilson"></textarea>
     // Admin button (superadmin only)
     var adminBtn = $('btn-admin');
     if (adminBtn) adminBtn.style.display = org.is_superadmin ? '' : 'none';
+
+    // Branding button (always visible, but Pro-gated)
+    var brandBtn = $('btn-branding');
+    var brandTag = $('branding-pro-tag');
+    if (brandBtn) {
+      brandBtn.style.display = '';
+      if (isPro) {
+        brandBtn.style.opacity = '';
+        brandBtn.onclick = function() { goToBranding(); };
+        if (brandTag) brandTag.style.display = 'none';
+      } else {
+        brandBtn.style.opacity = '.5';
+        brandBtn.onclick = function() { toast('Branding is a Pro feature. Upgrade in Billing.'); };
+        if (brandTag) brandTag.style.display = '';
+      }
+    }
 
     // CSV export button
     var csvBtn = $('btn-csv-export');

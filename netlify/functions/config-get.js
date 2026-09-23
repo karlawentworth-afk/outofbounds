@@ -22,7 +22,7 @@ exports.handler = async function (event) {
     // Look up organiser by slug
     var orgs = await sb.sbGet(
       'organisers?slug=eq.' + encodeURIComponent(orgSlug) +
-      '&select=id,name,logo_url,primary_colour,accent_colour,text_on_primary' +
+      '&select=id,name,logo_url,logo_dark_url,primary_colour,secondary_colour,accent_colour,text_on_primary,display_name,plan' +
       '&limit=1'
     );
 
@@ -39,9 +39,13 @@ exports.handler = async function (event) {
         id: org.id,
         name: org.name,
         logo_url: org.logo_url,
+        logo_dark_url: org.logo_dark_url,
         primary_colour: org.primary_colour,
+        secondary_colour: org.secondary_colour,
         accent_colour: org.accent_colour,
-        text_on_primary: org.text_on_primary
+        text_on_primary: org.text_on_primary,
+        display_name: org.display_name,
+        plan: org.plan
       },
       test_mode: testMode
     };

@@ -38,7 +38,7 @@ exports.handler = async function (event) {
     // Fetch organiser
     var orgs = await sb.sbGet(
       'organisers?slug=eq.' + encodeURIComponent(orgSlug) +
-      '&select=id,name&limit=1'
+      '&select=id,name,logo_url,primary_colour,text_on_primary,display_name&limit=1'
     );
     if (!orgs || !orgs.length) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/html' }, body: '<p>Not found.</p>' };
