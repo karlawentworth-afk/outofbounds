@@ -10,7 +10,7 @@ var sb = require('./supabase');
 async function assertPro(organiserId) {
   var orgs = await sb.sbGet(
     'organisers?id=eq.' + organiserId +
-    '&select=id,plan' +
+    '&select=id,plan,comp_until' +
     '&limit=1'
   );
 

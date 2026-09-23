@@ -54,6 +54,23 @@
       });
   }
 
+  /**
+   * Show a thin amber banner at the top of the page if test_mode is true.
+   * Call after config-get returns.
+   */
+  function showTestBanner(testMode) {
+    if (!testMode) return;
+    if (document.getElementById('test-mode-banner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'test-mode-banner';
+    banner.style.cssText = 'background:#E0A800;color:#fff;text-align:center;padding:4px 8px;font-size:12px;font-weight:600;position:fixed;top:0;left:0;right:0;z-index:9999;';
+    banner.textContent = 'Test mode. Cards aren\u2019t charged.';
+    document.body.insertBefore(banner, document.body.firstChild);
+    // Push content down
+    document.body.style.paddingTop = (banner.offsetHeight) + 'px';
+  }
+
   exports.api = api;
+  exports.showTestBanner = showTestBanner;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.OOB = window.OOB || {}));

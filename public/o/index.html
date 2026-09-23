@@ -434,6 +434,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <div class="dash-header">
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" id="btn-admin" onclick="goToAdmin()" style="display:none;">Admin</button>
         <button class="btn btn-outline btn-sm" onclick="goToBilling()">Billing</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
       </div>
@@ -480,6 +481,68 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <p style="font-weight:600;color:#7A5A00;">Pro active until <span id="billing-term-end"></span></p>
       <p style="font-size:13px;color:#7A5A00;margin-top:4px;">You won't be charged again. Pro features stay until this date.</p>
       <button class="btn btn-green btn-sm" onclick="resumePro()" style="margin-top:12px;">Keep Pro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div id="screen-admin" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-admin" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 style="font-size:20px;margin-bottom:24px;">Admin</h2>
+
+    <div id="admin-org-list"></div>
+
+    <!-- Comp modal -->
+    <div class="modal-overlay" id="comp-modal">
+      <div class="modal">
+        <h3>Set comp plan</h3>
+        <div class="form-row">
+          <label>Organiser</label>
+          <div id="comp-org-name" style="font-weight:600;margin-bottom:12px;"></div>
+        </div>
+        <div class="form-row">
+          <label>Comp until</label>
+          <input type="date" id="comp-until" class="field-input">
+          <div class="hint">Leave blank for indefinite</div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline btn-sm" onclick="closeCompModal()">Cancel</button>
+          <button class="btn btn-green btn-sm" onclick="submitComp()">Set comp</button>
+          <button class="btn btn-danger btn-sm" id="comp-remove-btn" onclick="removeComp()" style="display:none;">Remove comp</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rebrand demo modal -->
+    <div class="modal-overlay" id="rebrand-modal">
+      <div class="modal">
+        <h3>Rebrand demo</h3>
+        <div class="form-row">
+          <label>Display name</label>
+          <input type="text" id="rebrand-name" class="field-input" placeholder="Fairway Events">
+        </div>
+        <div class="form-row">
+          <label>Primary colour</label>
+          <input type="color" id="rebrand-primary" value="#1B2A4A" style="width:60px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;">
+        </div>
+        <div class="form-row">
+          <label>Accent colour</label>
+          <input type="color" id="rebrand-accent" value="#D4378F" style="width:60px;height:36px;border:1px solid var(--line);border-radius:6px;cursor:pointer;">
+        </div>
+        <div class="form-row">
+          <label>Logo URL</label>
+          <input type="text" id="rebrand-logo" class="field-input" placeholder="https://...">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline btn-sm" onclick="closeRebrandModal()">Cancel</button>
+          <button class="btn btn-green btn-sm" onclick="submitRebrand()">Save</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -826,6 +889,7 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { action: 'check', auth_token: state.authToken }
       });
+      if (window.OOB && OOB.showTestBanner) OOB.showTestBanner(res.test_mode);
       if (res.organiser) {
         state.organiser = res.organiser;
         goToDashboard();
@@ -986,25 +1050,37 @@ Bob Wilson"></textarea>
 
     var org = state.organiser || {};
     var isPro = org.plan === 'pro';
-    var cancelling = isPro && org.cancel_at_period_end;
+    var isComp = org.plan_source === 'comp';
+    var cancelling = isPro && org.cancel_at_period_end && !isComp;
 
     // Current plan label
-    $('billing-plan-label').textContent = isPro ? 'Out of Bounds Pro' : 'Play (pay per event)';
-
-    if (isPro && org.current_period_end) {
-      var end = new Date(org.current_period_end);
-      $('billing-status').textContent = cancelling
-        ? 'Cancels on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-        : 'Renews on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (isComp) {
+      $('billing-plan-label').textContent = 'Out of Bounds Pro';
+      if (org.comp_until && new Date(org.comp_until).getFullYear() < 2090) {
+        var compEnd = new Date(org.comp_until);
+        $('billing-status').textContent = 'Pro, courtesy of Out of Bounds until ' +
+          compEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      } else {
+        $('billing-status').textContent = 'Pro, courtesy of Out of Bounds';
+      }
     } else if (isPro) {
-      $('billing-status').textContent = 'Active';
+      $('billing-plan-label').textContent = 'Out of Bounds Pro';
+      if (org.current_period_end) {
+        var end = new Date(org.current_period_end);
+        $('billing-status').textContent = cancelling
+          ? 'Cancels on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+          : 'Renews on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      } else {
+        $('billing-status').textContent = 'Active';
+      }
     } else {
+      $('billing-plan-label').textContent = 'Play (pay per event)';
       $('billing-status').textContent = '\u00A39.99 + 99p per player, each event';
     }
 
     // Show/hide panels
-    $('billing-upgrade').style.display = isPro ? 'none' : 'block';
-    $('billing-manage').style.display = (isPro && !cancelling) ? 'block' : 'none';
+    $('billing-upgrade').style.display = (isPro || isComp) ? 'none' : 'block';
+    $('billing-manage').style.display = (isPro && !cancelling && !isComp) ? 'block' : 'none';
     $('billing-cancelling').style.display = cancelling ? 'block' : 'none';
 
     if (cancelling && org.current_period_end) {
@@ -1092,9 +1168,164 @@ Bob Wilson"></textarea>
     }
   };
 
+  // ── Admin ─────────────────────────────────────────────────────
+  state.adminTarget = null;
+
+  window.goToAdmin = async function() {
+    if (!state.organiser || !state.organiser.is_superadmin) return;
+    var name = state.organiser.name;
+    $('user-pill-admin').textContent = name + ' \u00B7 Sign out';
+    showScreen('screen-admin');
+    window.location.hash = 'admin';
+
+    try {
+      var res = await api('org-admin', {
+        query: { organiser_id: state.organiser.id }
+      });
+      renderAdminList(res.organisers || []);
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  function renderAdminList(orgs) {
+    var html = orgs.map(function (o) {
+      var planLabel = o.plan;
+      if (o.plan_source === 'comp') planLabel = 'comp';
+      if (o.comp_until && o.plan_source === 'comp') {
+        var d = new Date(o.comp_until);
+        if (d.getFullYear() < 2090) planLabel += ' until ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      var actions = '<button class="btn btn-outline btn-sm" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Comp</button>';
+      if (o.slug === 'demo' || o.slug === 'demo-events') {
+        actions += ' <button class="btn btn-outline btn-sm" onclick="openRebrandModal()">Rebrand</button>';
+        actions += ' <button class="btn btn-outline btn-sm" onclick="resetDemo()">Reset</button>';
+      }
+
+      return '<div class="event-card" style="cursor:default;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+          '<div>' +
+            '<div class="ev-name">' + esc(o.name) + (o.is_superadmin ? ' <span class="pro-label">SA</span>' : '') + '</div>' +
+            '<div class="ev-meta">' +
+              '<span class="badge badge-' + (o.plan === 'pro' ? 'live' : 'draft') + '">' + planLabel + '</span>' +
+              '<span>' + o.events_total + ' events</span>' +
+              (o.contact_email ? '<span>' + esc(o.contact_email) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' + actions + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    $('admin-org-list').innerHTML = html || '<div class="empty-state"><p>No organisers.</p></div>';
+  }
+
+  window.openCompModal = function(orgId, orgName, planSource) {
+    state.adminTarget = orgId;
+    $('comp-org-name').textContent = orgName;
+    $('comp-until').value = '';
+    $('comp-remove-btn').style.display = planSource === 'comp' ? '' : 'none';
+    $('comp-modal').classList.add('open');
+  };
+
+  window.closeCompModal = function() {
+    $('comp-modal').classList.remove('open');
+    state.adminTarget = null;
+  };
+
+  window.submitComp = async function() {
+    if (!state.adminTarget) return;
+    var until = $('comp-until').value;
+    try {
+      await api('org-admin', {
+        method: 'POST',
+        body: {
+          organiser_id: state.organiser.id,
+          action: 'set_comp',
+          target_id: state.adminTarget,
+          comp_until: until ? until + 'T23:59:59Z' : null
+        }
+      });
+      closeCompModal();
+      toast('Comp set');
+      goToAdmin();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.removeComp = async function() {
+    if (!state.adminTarget) return;
+    try {
+      await api('org-admin', {
+        method: 'POST',
+        body: {
+          organiser_id: state.organiser.id,
+          action: 'remove_comp',
+          target_id: state.adminTarget
+        }
+      });
+      closeCompModal();
+      toast('Comp removed');
+      goToAdmin();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.openRebrandModal = function() {
+    $('rebrand-modal').classList.add('open');
+  };
+
+  window.closeRebrandModal = function() {
+    $('rebrand-modal').classList.remove('open');
+  };
+
+  window.submitRebrand = async function() {
+    try {
+      await api('org-admin', {
+        method: 'POST',
+        body: {
+          organiser_id: state.organiser.id,
+          action: 'rebrand_demo',
+          display_name: $('rebrand-name').value || undefined,
+          name: $('rebrand-name').value || undefined,
+          primary_colour: $('rebrand-primary').value,
+          accent_colour: $('rebrand-accent').value,
+          logo_url: $('rebrand-logo').value || undefined
+        }
+      });
+      closeRebrandModal();
+      toast('Demo rebranded');
+      goToAdmin();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.resetDemo = async function() {
+    if (!confirm('Reset the demo organiser? All demo data will be regenerated.')) return;
+    try {
+      await api('demo-reset', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id }
+      });
+      toast('Demo reset complete');
+      goToAdmin();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
   // ── Pro gating UI ─────────────────────────────────────────────
   function updateProGating() {
-    var isPro = state.organiser && state.organiser.plan === 'pro';
+    var org = state.organiser || {};
+    var isPro = org.plan === 'pro';
+
+    // Admin button (superadmin only)
+    var adminBtn = $('btn-admin');
+    if (adminBtn) adminBtn.style.display = org.is_superadmin ? '' : 'none';
 
     // CSV export button
     var csvBtn = $('btn-csv-export');

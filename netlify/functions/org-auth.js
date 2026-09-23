@@ -87,14 +87,17 @@ exports.handler = async function (event) {
 
       var orgs = await sb.sbGet(
         'organisers?auth_user_id=eq.' + user.id +
-        '&select=id,name,slug,onboard_type,plan,logo_url,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end' +
+        '&select=id,name,slug,onboard_type,plan,logo_url,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end,is_superadmin,plan_source,comp_until' +
         '&limit=1'
       );
 
+      var stripeKey = process.env.STRIPE_SECRET_KEY || '';
+      var testMode = stripeKey.indexOf('sk_test_') === 0;
+
       if (orgs && orgs.length > 0) {
-        return sb.respond(200, { organiser: orgs[0], user_id: user.id, email: user.email });
+        return sb.respond(200, { organiser: orgs[0], user_id: user.id, email: user.email, test_mode: testMode });
       } else {
-        return sb.respond(200, { organiser: null, user_id: user.id, email: user.email });
+        return sb.respond(200, { organiser: null, user_id: user.id, email: user.email, test_mode: testMode });
       }
     } catch (err) {
       console.error('org-auth check error:', err);

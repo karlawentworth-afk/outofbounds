@@ -31,6 +31,9 @@ exports.handler = async function (event) {
     }
 
     var org = orgs[0];
+    var stripeKey = process.env.STRIPE_SECRET_KEY || '';
+    var testMode = stripeKey.indexOf('sk_test_') === 0;
+
     var result = {
       organiser: {
         id: org.id,
@@ -39,7 +42,8 @@ exports.handler = async function (event) {
         primary_colour: org.primary_colour,
         accent_colour: org.accent_colour,
         text_on_primary: org.text_on_primary
-      }
+      },
+      test_mode: testMode
     };
 
     // If event slug provided, also return event summary

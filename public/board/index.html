@@ -244,6 +244,7 @@ body {
   async function init() {
     try {
       var config = await OOB.api('config-get', { query: { org: orgSlug, event: eventSlug } });
+      if (OOB.showTestBanner) OOB.showTestBanner(config.test_mode);
       var org = config.organiser || {};
       var ev = config.event || {};
 
