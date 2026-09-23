@@ -9,9 +9,13 @@
     included_files = []
     timeout = 26
 
-  # People cleanup: monthly scheduled function
+  # People cleanup: monthly scheduled function (1st of month at 03:00 UTC)
   [functions."people-cleanup"]
     schedule = "0 3 1 * *"
+
+  # Demo reset: nightly at 03:00 UK (02:00 UTC in summer, 03:00 UTC in winter)
+  [functions."demo-reset"]
+    schedule = "0 2 * * *"
 
 
 [[headers]]
