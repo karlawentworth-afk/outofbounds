@@ -3061,20 +3061,27 @@ Bob Wilson"></textarea>
       return;
     }
 
-    // Find a scorer token for this group
-    var scorer = members.find(function(p) { return p.player_token; });
-    if (!scorer) {
-      toast('No player token available');
+    if (!reason) {
+      toast('Enter a reason for the edit');
       return;
     }
 
     try {
-      await api('score-save', {
-        method: 'POST',
-        body: { token: scorer.player_token, scores: scores }
-      });
+      // Use org-score-edit for each score (authenticates via organiser_id)
+      for (var si = 0; si < scores.length; si++) {
+        await api('org-score-edit', {
+          method: 'POST',
+          body: {
+            organiser_id: state.organiser.id,
+            event_id: state.currentEvent,
+            player_id: scores[si].player_id,
+            hole_number: scores[si].hole_number,
+            new_gross: scores[si].gross_score,
+            reason: reason
+          }
+        });
+      }
 
-      // Log the edit (we'd need a score_edits endpoint, for now just toast)
       if (reason) {
         console.log('Score edit reason:', reason);
       }
