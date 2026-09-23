@@ -1374,6 +1374,54 @@ async function stepN_viewportFit() {
   }
 }
 
+// ── UC1 Fix Tests ────────────────────────────────────────────────
+async function stepUC1_fixes() {
+  console.log('\n--- UC1 Fix Tests ---');
+
+  var https = require('https');
+
+  function httpGet(url) {
+    return new Promise(function (resolve) {
+      https.get(url, function (res) {
+        var chunks = [];
+        res.on('data', function (c) { chunks.push(c); });
+        res.on('end', function () { resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString() }); });
+      }).on('error', function () { resolve({ status: 0, body: '' }); });
+    });
+  }
+
+  // Fix 1: Path-based player URL
+  var orgData = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=slug');
+  var orgSlug = orgData.data && orgData.data[0] ? orgData.data[0].slug : '';
+  var pathRes = await httpGet(LIVE_URL + '/p/' + orgSlug + '/' + state.eventSlug);
+  step('Fix 1: Path-based player URL', pathRes.status === 200, 'status=' + pathRes.status);
+
+  // Fix 2: QR uses local library
+  var orgHtml = await httpGet(LIVE_URL + '/o/');
+  step('Fix 2: QR local library loaded', orgHtml.body.indexOf('qrcode.min.js') !== -1, 'has qrcode.min.js');
+
+  // Fix 8: Disclaimer wording
+  step('Fix 8: Handicap disclaimer', orgHtml.body.indexOf("Handicaps can\\'t be checked against the WHS") !== -1 || orgHtml.body.indexOf("Handicaps can't be checked against the WHS") !== -1, 'correct wording');
+
+  // Fix 12: Header icon not lockup
+  step('Fix 12: Header uses icon-white', orgHtml.body.indexOf('icon-white.png') !== -1 && orgHtml.body.indexOf('logo-white.png') === -1, 'icon only');
+
+  // Fix 13: Favicon
+  step('Fix 13: Favicon + apple-touch-icon on /o/', orgHtml.body.indexOf('rel="icon"') !== -1 && orgHtml.body.indexOf('apple-touch-icon') !== -1, 'both present');
+
+  // Player view has path routing and confirm screen
+  var playerHtml = await httpGet(LIVE_URL + '/p/');
+  step('Fix 1b: Player path routing', playerHtml.body.indexOf('pathname.replace') !== -1, 'has path parser');
+  step('UC1.1: Confirm screen', playerHtml.body.indexOf('s-confirm') !== -1, 'has s-confirm');
+
+  // player-confirm endpoint
+  var confirmRes = await apiFetch('player-confirm', { body: { token: 'nonexistent' } });
+  step('UC1.1: player-confirm responds', confirmRes.status === 404, 'status=' + confirmRes.status);
+
+  // Fix 13b: Favicon on player view
+  step('Fix 13b: Favicon on /p/', playerHtml.body.indexOf('apple-touch-icon') !== -1, 'has apple-touch-icon');
+}
+
 // ── Cleanup ─────────────────────────────────────────────────────
 async function cleanup() {
   console.log('\n--- Cleanup ---');
@@ -1464,6 +1512,9 @@ async function main() {
 
     // VIEWPORT
     await stepN_viewportFit();
+
+    // UC1 FIX TESTS
+    await stepUC1_fixes();
 
   } catch (err) {
     console.error('\n!!! Unexpected error: ' + err.message);
