@@ -1269,7 +1269,7 @@ html, body {
     if (scores.length === 0) return;
 
     var btn = document.getElementById('btn-save');
-    btn.textContent = '\u2713';
+    btn.textContent = 'Saving...';
     btn.disabled = true;
 
     try {
@@ -1278,10 +1278,16 @@ html, body {
         body: { token: token, scores: scores }
       });
       scores.forEach(function (s) { savedHoles[s.player_id + '-' + s.hole_number] = true; });
+      btn.textContent = 'Saved';
       flushPending();
     } catch (err) {
       storePending(ctx.event.id, scores);
       scores.forEach(function (s) { savedHoles[s.player_id + '-' + s.hole_number] = true; });
+      btn.textContent = "Didn\u2019t save, try again";
+      btn.disabled = false;
+      // Don't advance — let them retry or it will flush later
+      updateStatusLine();
+      return;
     }
 
     advanceAfterSave();
