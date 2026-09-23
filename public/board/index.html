@@ -220,6 +220,9 @@ body {
     return;
   }
 
+  // Demo switcher for superadmin
+  if (localStorage.getItem('oob-superadmin') === 'true' && OOB.showDemoSwitcher) OOB.showDemoSwitcher();
+
   // Wake Lock — keep the screen on
   var wakeLock = null;
   async function requestWakeLock() {

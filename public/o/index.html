@@ -368,7 +368,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 <!-- Sign-in -->
 <div id="screen-signin" class="screen">
   <img src="/img/logo-color.png" alt="Out of Bounds" class="logo-big">
-  <h2>Organiser sign-in</h2>
+  <h2>Log in or create your account</h2>
   <p class="sub">Set up and run your golf event</p>
   <div class="auth-btns" id="auth-buttons">
     <button class="auth-btn" onclick="signInGoogle()">
@@ -492,7 +492,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
     <!-- Manage panel (Pro users) -->
     <div id="billing-manage" style="display:none;">
-      <button class="btn btn-outline" onclick="openPortal()" style="margin-bottom:10px;">Manage billing on Stripe</button>
+      <button class="btn btn-outline" onclick="openPortal()" style="margin-bottom:10px;">Manage your billing</button>
       <button class="btn btn-outline" id="btn-cancel" onclick="cancelPro()" style="color:var(--red);border-color:var(--red);">Cancel Pro</button>
     </div>
 
@@ -520,7 +520,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <!-- Comp modal -->
     <div class="modal-overlay" id="comp-modal">
       <div class="modal">
-        <h3>Set comp plan</h3>
+        <h3>Give free Pro access</h3>
         <div class="form-row">
           <label>Organiser</label>
           <div id="comp-org-name" style="font-weight:600;margin-bottom:12px;"></div>
@@ -844,6 +844,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div class="player-actions">
         <button class="btn btn-green btn-sm" onclick="showAddPlayer()">+ Add a player</button>
         <button class="btn btn-outline btn-sm" onclick="showPasteModal()">Paste a list</button>
+        <button class="btn btn-outline btn-sm" id="btn-upload-list" onclick="showUploadModal()" style="display:none;">Upload a file</button>
         <button class="btn btn-outline btn-sm" onclick="addMeAsPlayer()">Add me</button>
       </div>
 
@@ -1110,6 +1111,10 @@ Bob Wilson"></textarea>
         body: { action: 'check', auth_token: state.authToken }
       });
       if (window.OOB && OOB.showTestBanner) OOB.showTestBanner(res.test_mode);
+      if (res.organiser && res.organiser.is_superadmin) {
+        localStorage.setItem('oob-superadmin', 'true');
+        if (OOB.showDemoSwitcher) OOB.showDemoSwitcher();
+      }
       if (res.organiser) {
         state.organiser = res.organiser;
         goToDashboard();
@@ -1469,14 +1474,22 @@ Bob Wilson"></textarea>
     }
   };
 
+  // Store real organiser for "view as" return
+  state.realOrganiser = null;
+
   function renderAdminList(orgs) {
     var myOrgId = state.organiser ? state.organiser.id : '';
     var html = orgs.map(function (o) {
-      var planLabel = o.plan;
-      if (o.plan_source === 'comp') planLabel = 'comp';
-      if (o.comp_until && o.plan_source === 'comp') {
-        var d = new Date(o.comp_until);
-        if (d.getFullYear() < 2090) planLabel += ' until ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      // Plan label: plain English, no DB values
+      var planLabel = 'Play';
+      if (o.plan === 'pro' && o.plan_source === 'comp') {
+        planLabel = 'Free Pro';
+        if (o.comp_until) {
+          var d = new Date(o.comp_until);
+          if (d.getFullYear() < 2090) planLabel = 'Free Pro until ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      } else if (o.plan === 'pro') {
+        planLabel = 'Pro';
       }
 
       // Labels
@@ -1484,29 +1497,73 @@ Bob Wilson"></textarea>
       if (o.slug === 'demo') nameLabel += ' <span style="color:var(--muted);font-weight:400;">(demo)</span>';
       if (o.id === myOrgId) nameLabel += ' <span style="color:var(--green);font-weight:400;">(you)</span>';
 
-      var actions = '<button class="btn btn-outline btn-sm" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Comp</button>';
+      // Event count with correct grammar
+      var evCount = o.events_total === 1 ? '1 event' : o.events_total + ' events';
+
+      // Actions — wrapped so they don't overflow
+      var actions = '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="viewAsOrg(\'' + o.id + '\')">Open as</button>';
+      actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Give free Pro</button>';
       if (o.slug === 'demo') {
-        actions += ' <button class="btn btn-outline btn-sm" onclick="openRebrandModal()">Rebrand</button>';
-        actions += ' <button class="btn btn-outline btn-sm" onclick="resetDemo()">Reset</button>';
+        actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="openRebrandModal()">Rebrand</button>';
+        actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="resetDemo()">Reset</button>';
       }
 
       return '<div class="event-card" style="cursor:default;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
-          '<div>' +
-            '<div class="ev-name">' + nameLabel + (o.is_superadmin ? ' <span class="pro-label">SA</span>' : '') + '</div>' +
-            '<div class="ev-meta">' +
-              '<span class="badge badge-' + (o.plan === 'pro' ? 'live' : 'draft') + '">' + planLabel + '</span>' +
-              '<span>' + o.events_total + ' events</span>' +
-              (o.contact_email ? '<span>' + esc(o.contact_email) + '</span>' : '') +
-            '</div>' +
+        '<div>' +
+          '<div class="ev-name">' + nameLabel + '</div>' +
+          '<div class="ev-meta" style="flex-wrap:wrap;">' +
+            '<span class="badge badge-' + (o.plan === 'pro' ? 'live' : 'draft') + '">' + planLabel + '</span>' +
+            '<span>' + evCount + '</span>' +
+            (o.contact_email ? '<span>' + esc(o.contact_email) + '</span>' : '') +
           '</div>' +
-          '<div style="display:flex;gap:6px;flex-shrink:0;">' + actions + '</div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">' + actions + '</div>' +
         '</div>' +
       '</div>';
     }).join('');
 
     $('admin-org-list').innerHTML = html || '<div class="empty-state"><p>No organisers.</p></div>';
   }
+
+  window.viewAsOrg = async function(orgId) {
+    // Save real organiser for return
+    state.realOrganiser = Object.assign({}, state.organiser);
+
+    // Fetch target organiser
+    try {
+      var res = await api('org-admin', { query: { organiser_id: state.organiser.id } });
+      var target = (res.organisers || []).find(function (o) { return o.id === orgId; });
+      if (!target) { toast('Organiser not found'); return; }
+
+      // Switch to viewing as this organiser
+      state.organiser = target;
+      state.organiser.is_superadmin = false; // Hide admin when viewing as
+
+      // Show the "viewing as" banner
+      var banner = document.getElementById('viewing-as-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'viewing-as-banner';
+        banner.style.cssText = 'background:#E0A800;color:#fff;text-align:center;padding:6px 16px;font-size:13px;font-weight:600;z-index:999;';
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+      banner.innerHTML = 'You are viewing as <strong>' + esc(target.name) + '</strong>. <a href="#" onclick="returnToMyAccount();return false;" style="color:#fff;text-decoration:underline;margin-left:8px;">Back to my account</a>';
+      banner.style.display = '';
+
+      goToDashboard();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.returnToMyAccount = function() {
+    if (state.realOrganiser) {
+      state.organiser = state.realOrganiser;
+      state.realOrganiser = null;
+    }
+    var banner = document.getElementById('viewing-as-banner');
+    if (banner) banner.style.display = 'none';
+    goToDashboard();
+  };
 
   window.openCompModal = function(orgId, orgName, planSource) {
     state.adminTarget = orgId;
@@ -1535,7 +1592,7 @@ Bob Wilson"></textarea>
         }
       });
       closeCompModal();
-      toast('Comp set');
+      toast('Free Pro access enabled');
       goToAdmin();
     } catch (err) {
       toast('Error: ' + err.message);
@@ -1554,7 +1611,7 @@ Bob Wilson"></textarea>
         }
       });
       closeCompModal();
-      toast('Comp removed');
+      toast('Free Pro access removed');
       goToAdmin();
     } catch (err) {
       toast('Error: ' + err.message);
@@ -1874,6 +1931,10 @@ Bob Wilson"></textarea>
         if (csvTag) csvTag.style.display = '';
       }
     }
+
+    // Upload button (Pro only)
+    var uploadBtn = $('btn-upload-list');
+    if (uploadBtn) uploadBtn.style.display = isPro ? '' : 'none';
   }
 
   // Handle ?upgraded=true in hash after Stripe redirect

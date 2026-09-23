@@ -461,6 +461,9 @@ html, body {
   var eventSlug = parts[1] || '';
   var token     = parts[2] || '';
 
+  // Demo switcher for superadmin
+  if (localStorage.getItem('oob-superadmin') === 'true' && OOB.showDemoSwitcher) OOB.showDemoSwitcher();
+
   // Show "Back to organiser" if navigated from organiser view
   var orgReturnUrl = localStorage.getItem('oob-organiser-return');
   if (orgReturnUrl) {

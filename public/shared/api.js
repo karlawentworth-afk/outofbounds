@@ -70,7 +70,50 @@
     document.body.style.paddingTop = (banner.offsetHeight) + 'px';
   }
 
+  /**
+   * Show the demo switcher bar for superadmins.
+   * Four tabs: Organiser, Scoreboard, Player, Results.
+   */
+  function showDemoSwitcher() {
+    if (document.getElementById('demo-switcher')) return;
+    var bar = document.createElement('div');
+    bar.id = 'demo-switcher';
+    bar.style.cssText = 'background:#10344E;display:flex;align-items:center;justify-content:center;gap:0;position:fixed;top:0;left:0;right:0;z-index:10000;font-size:12px;font-weight:600;';
+
+    var tabs = [
+      { label: 'Organiser', href: '/o/' },
+      { label: 'Scoreboard', href: '/board/#/demo/autumn-invitational' },
+      { label: 'Player', href: '/p/demo/autumn-invitational/demo-scorer-group-001-token' },
+      { label: 'Results', href: '/r/demo/spring-charity-classic' },
+      { label: 'My account', href: '/o/#my-account' }
+    ];
+
+    var currentPath = location.pathname;
+    tabs.forEach(function (t) {
+      var a = document.createElement('a');
+      a.href = t.href;
+      a.textContent = t.label;
+      var isActive = currentPath.indexOf(t.href.split('#')[0].split('?')[0]) === 0 && t.href.split('#')[0].split('?')[0].length > 1;
+      a.style.cssText = 'flex:1;text-align:center;padding:8px 4px;color:' + (isActive ? '#fff' : 'rgba(255,255,255,.5)') + ';text-decoration:none;border-bottom:2px solid ' + (isActive ? '#2F7A45' : 'transparent') + ';';
+      bar.appendChild(a);
+    });
+
+    document.body.insertBefore(bar, document.body.firstChild);
+    document.body.style.paddingTop = '36px';
+
+    // On board page: fade out after 5s, show on tap
+    if (currentPath.indexOf('/board') === 0) {
+      var fadeTimer = setTimeout(function () { bar.style.opacity = '0'; bar.style.transition = 'opacity 0.5s'; }, 5000);
+      document.addEventListener('click', function () {
+        bar.style.opacity = '1';
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(function () { bar.style.opacity = '0'; }, 5000);
+      });
+    }
+  }
+
   exports.api = api;
   exports.showTestBanner = showTestBanner;
+  exports.showDemoSwitcher = showDemoSwitcher;
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.OOB = window.OOB || {}));
