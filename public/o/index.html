@@ -440,6 +440,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline btn-sm" id="btn-admin" onclick="goToAdmin()" style="display:none;">Admin</button>
+        <button class="btn btn-outline btn-sm" id="btn-team" onclick="goToTeam()" style="display:none;">Team<span class="pro-label" id="team-pro-tag">Pro</span></button>
         <button class="btn btn-outline btn-sm" id="btn-branding" onclick="goToBranding()" style="display:none;">Branding<span class="pro-label" id="branding-pro-tag">Pro</span></button>
         <button class="btn btn-outline btn-sm" onclick="goToBilling()">Billing</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
@@ -654,6 +655,35 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
         <p style="font-size:12px;color:var(--muted);margin-top:12px;">Scored with Out of Bounds</p>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Team -->
+<div id="screen-team" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-team" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 style="font-size:20px;margin-bottom:8px;">Team</h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Up to 3 organisers (can edit) and unlimited helpers (view only). No extra charge.</p>
+    <div id="team-list" style="margin-bottom:20px;"></div>
+    <div style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px;">
+      <h3 style="font-size:15px;margin-bottom:12px;">Invite someone</h3>
+      <div class="form-row">
+        <label>Email</label>
+        <input type="email" id="team-email" class="field-input" placeholder="colleague@example.com">
+      </div>
+      <div class="form-row">
+        <label>Role</label>
+        <select id="team-role" style="width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit;">
+          <option value="helper">Helper (view only)</option>
+          <option value="organiser">Organiser (can edit)</option>
+        </select>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="inviteTeamMember()">Send invite</button>
     </div>
   </div>
 </div>
@@ -1598,6 +1628,63 @@ Bob Wilson"></textarea>
     }
   };
 
+  // ── Team ──────────────────────────────────────────────────────
+  window.goToTeam = async function() {
+    if (!state.organiser) return;
+    $('user-pill-team').textContent = state.organiser.name + ' \u00B7 Sign out';
+    showScreen('screen-team');
+    window.location.hash = 'team';
+
+    try {
+      var res = await api('org-team', { query: { organiser_id: state.organiser.id } });
+      var members = res.members || [];
+      var html = members.map(function (m) {
+        var badge = m.role === 'organiser' ? '<span class="badge badge-live" style="font-size:10px;">Organiser</span>' : '<span class="badge badge-draft" style="font-size:10px;">Helper</span>';
+        var status = m.accepted_at ? 'Accepted' : 'Invited';
+        return '<div class="event-card" style="cursor:default;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div><div style="font-weight:600;">' + esc(m.display_name || m.email) + '</div>' +
+            '<div class="ev-meta">' + badge + ' <span>' + status + '</span></div></div>' +
+            '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);font-size:12px;" onclick="revokeTeamMember(\'' + m.id + '\')">Remove</button>' +
+          '</div></div>';
+      }).join('');
+      $('team-list').innerHTML = html || '<p style="color:var(--muted);font-size:14px;">No team members yet.</p>';
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.inviteTeamMember = async function() {
+    var email = $('team-email').value.trim();
+    var role = $('team-role').value;
+    if (!email) { toast('Enter an email'); return; }
+    try {
+      await api('org-team', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'invite', email: email, role: role }
+      });
+      $('team-email').value = '';
+      toast('Invite sent');
+      goToTeam();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.revokeTeamMember = async function(memberId) {
+    if (!confirm('Remove this team member?')) return;
+    try {
+      await api('org-team', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'revoke', member_id: memberId }
+      });
+      toast('Removed');
+      goToTeam();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
   // ── Pro gating UI ─────────────────────────────────────────────
   function updateProGating() {
     var org = state.organiser || {};
@@ -1606,6 +1693,22 @@ Bob Wilson"></textarea>
     // Admin button (superadmin only)
     var adminBtn = $('btn-admin');
     if (adminBtn) adminBtn.style.display = org.is_superadmin ? '' : 'none';
+
+    // Team button (always visible, Pro-gated)
+    var teamBtn = $('btn-team');
+    var teamTag = $('team-pro-tag');
+    if (teamBtn) {
+      teamBtn.style.display = '';
+      if (isPro) {
+        teamBtn.style.opacity = '';
+        teamBtn.onclick = function() { goToTeam(); };
+        if (teamTag) teamTag.style.display = 'none';
+      } else {
+        teamBtn.style.opacity = '.5';
+        teamBtn.onclick = function() { toast('Team is a Pro feature. Upgrade in Billing.'); };
+        if (teamTag) teamTag.style.display = '';
+      }
+    }
 
     // Branding button (always visible, but Pro-gated)
     var brandBtn = $('btn-branding');
