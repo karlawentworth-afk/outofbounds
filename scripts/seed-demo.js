@@ -77,7 +77,6 @@ var COURSES = [
     id: 'c0000000-0000-0000-0000-000000000010',
     name: 'Carden Park — Cheshire',
     club: 'Carden Park Hotel',
-    postcode: 'CH3 9DQ',
     verified: true,
     tees: [
       { id: 'd0000000-0000-0000-0000-000000000010', colour: 'White', rating_gender: 'men', rating: 72.4, slope: 133,
@@ -90,10 +89,9 @@ var COURSES = [
   },
   {
     id: 'c0000000-0000-0000-0000-000000000011',
-    name: 'The Belfry — Brabazon',
-    club: 'The Belfry Hotel',
-    postcode: 'B76 9PR',
-    verified: true,
+    name: 'Riverside GC',
+    club: 'Riverside Golf Club',
+    verified: false,
     tees: [
       { id: 'd0000000-0000-0000-0000-000000000020', colour: 'White', rating_gender: 'men', rating: 74.1, slope: 138,
         pars: [4,4,4,3,4,5,4,3,4,4,4,3,5,3,5,4,5,4], sis: [5,9,1,17,7,3,11,15,13,6,4,18,2,16,8,14,10,12] },
@@ -103,10 +101,9 @@ var COURSES = [
   },
   {
     id: 'c0000000-0000-0000-0000-000000000012',
-    name: 'Mere Golf Club',
-    club: 'The Mere Golf Resort',
-    postcode: 'WA16 6LJ',
-    verified: true,
+    name: 'Hartley Park',
+    club: 'Hartley Park Golf Club',
+    verified: false,
     tees: [
       { id: 'd0000000-0000-0000-0000-000000000030', colour: 'Yellow', rating_gender: 'men', rating: 70.2, slope: 126,
         pars: [4,5,3,4,4,3,5,4,4,4,3,4,5,4,3,4,5,4], sis: [9,3,17,1,7,15,5,11,13,4,18,8,2,12,16,6,10,14] },
@@ -116,10 +113,9 @@ var COURSES = [
   },
   {
     id: 'c0000000-0000-0000-0000-000000000013',
-    name: 'Delamere Forest',
-    club: 'Delamere Forest Golf Club',
-    postcode: 'CW8 2JE',
-    verified: true,
+    name: 'Moorcroft',
+    club: 'Moorcroft Golf Club',
+    verified: false,
     tees: [
       { id: 'd0000000-0000-0000-0000-000000000040', colour: 'Yellow', rating_gender: 'men', rating: 69.4, slope: 124,
         pars: [4,3,4,5,4,3,4,4,5,3,4,4,5,4,3,4,4,5], sis: [3,15,7,1,9,17,5,11,13,18,8,6,2,10,16,4,14,12] },
@@ -129,10 +125,9 @@ var COURSES = [
   },
   {
     id: 'c0000000-0000-0000-0000-000000000014',
-    name: 'Portal Golf Club — Premier',
-    club: 'Portal Golf Club',
-    postcode: 'CW5 6DH',
-    verified: true,
+    name: 'Ashdown Heath',
+    club: 'Ashdown Heath Golf Club',
+    verified: false,
     tees: [
       { id: 'd0000000-0000-0000-0000-000000000050', colour: 'Yellow', rating_gender: 'men', rating: 68.9, slope: 121,
         pars: [4,4,3,5,4,4,3,4,5,4,3,5,4,4,3,4,5,4], sis: [5,1,15,9,7,3,17,11,13,6,18,2,8,4,16,14,10,12] }
@@ -164,7 +159,7 @@ function buildPeople() {
       last_name: last,
       handicap_index: hi,
       email: email,
-      gender: gender
+      _rating: gender
     });
     return people[people.length - 1];
   }
@@ -267,6 +262,8 @@ async function seed() {
       await sbDelete('hole_scores?event_id=eq.' + oldEvents[i].id);
       await sbDelete('score_edits?event_id=eq.' + oldEvents[i].id);
       await sbDelete('payments?event_id=eq.' + oldEvents[i].id);
+      // Null out scorer FK before deleting players
+      await sbPatch('groups?event_id=eq.' + oldEvents[i].id, { scorer_player_id: null }).catch(function(){});
       await sbDelete('players?event_id=eq.' + oldEvents[i].id);
       await sbDelete('groups?event_id=eq.' + oldEvents[i].id);
     }
@@ -274,6 +271,10 @@ async function seed() {
     await sbDelete('people?organiser_id=eq.' + oldId);
     await sbDelete('plan_events?organiser_id=eq.' + oldId);
     await sbDelete('branding_versions?organiser_id=eq.' + oldId);
+    // Delete courses contributed by this org before deleting the organiser
+    await sbDelete('course_holes?course_id=in.(' + COURSES.map(function(c){return c.id;}).join(',') + ')').catch(function(){});
+    await sbDelete('course_tees?course_id=in.(' + COURSES.map(function(c){return c.id;}).join(',') + ')').catch(function(){});
+    await sbDelete('courses?contributed_by=eq.' + oldId).catch(function(){});
     await sbDelete('organisers?id=eq.' + oldId);
     console.log('  Deleted organiser ' + oldId);
   }
@@ -451,7 +452,7 @@ async function seed() {
 
       // For mixed field, use women's tee for women
       var playerTee = tee;
-      if (ev.mixedField && person.gender === 'women' && course.tees.length > 1) {
+      if (ev.mixedField && person._rating === 'women' && course.tees.length > 1) {
         playerTee = course.tees[course.tees.length - 1]; // last tee is women's
       }
 
