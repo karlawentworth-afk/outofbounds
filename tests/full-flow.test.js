@@ -1274,21 +1274,41 @@ async function stepI_offlineMode() {
 async function stepM_signOutBackIn() {
   console.log('\n--- Step m: Sign out + back in ---');
 
-  if (!state.authToken || state.authSkipped) {
-    // Auth was skipped — verify the demo org exists in the DB directly
-    var orgCheck = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=id,name&limit=1');
-    var org = orgCheck.data && orgCheck.data[0];
-    step('Re-auth (org exists in DB)', !!org, org ? 'org=' + org.name : 'not found');
+  // Generate a fresh magic link + verify to get a valid access_token
+  var linkRes = await sbAuth('POST', 'admin/generate_link', {
+    type: 'magiclink',
+    email: 'karla.wentworth@thatsclevermx.com'
+  });
+
+  var actionLink = linkRes.data && (linkRes.data.action_link || (linkRes.data.properties && linkRes.data.properties.action_link)) || '';
+  var hashedToken = linkRes.data && (linkRes.data.hashed_token || (linkRes.data.properties && linkRes.data.properties.hashed_token));
+  var otp = null;
+  var urlMatch = actionLink.match(/[?&]token=([^&#]+)/);
+  if (urlMatch) otp = decodeURIComponent(urlMatch[1]);
+  var tokenToUse = otp || hashedToken;
+
+  var freshToken = null;
+  if (tokenToUse) {
+    var verifyRes = await sbAuth('POST', 'verify', {
+      type: 'magiclink',
+      token_hash: tokenToUse
+    });
+    if (verifyRes.status === 200 && verifyRes.data) {
+      freshToken = verifyRes.data.access_token;
+    }
+  }
+
+  if (!freshToken) {
+    step('Re-auth (fresh token)', false, 'could not generate fresh access_token');
     return;
   }
 
   var authRes = await apiFetch('org-auth', {
-    body: { action: 'check', auth_token: state.authToken }
+    body: { action: 'check', auth_token: freshToken }
   });
 
-  // Demo org may not be linked to the auth user — accept user_id present as success
   var reAuthOk = authRes.status === 200 && authRes.data && authRes.data.user_id;
-  step('Re-auth with same token', reAuthOk,
+  step('Re-auth with fresh token', reAuthOk,
     'status=' + authRes.status +
     (authRes.data && authRes.data.organiser ? ' org=' + authRes.data.organiser.name : ' user_id=' + (authRes.data && authRes.data.user_id)));
 }
