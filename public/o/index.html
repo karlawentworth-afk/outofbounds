@@ -863,6 +863,8 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
+        <div id="live-paid-info" style="display:none;background:var(--green-light);border:1px solid var(--green);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--green);">
+        </div>
         <div class="invite-section">
           <h3 style="font-size:16px;margin-bottom:8px;">Share with your players</h3>
           <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Send this link. They tap their name, confirm their handicap, and they're in.</p>
@@ -2636,6 +2638,21 @@ Bob Wilson"></textarea>
   async function renderLiveView() {
     await loadPlayers();
     await loadGroups();
+
+    // Show paid info
+    var paidEl = $('live-paid-info');
+    var evd = state.currentEventData || {};
+    var orgIsPro = state.organiser && state.organiser.plan === 'pro';
+    if (orgIsPro) {
+      paidEl.style.display = 'block';
+      paidEl.innerHTML = '<strong>Included with Pro</strong>';
+    } else if (evd.paid && evd.paid_amount_pence) {
+      var paidDate = evd.paid_at ? new Date(evd.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+      paidEl.style.display = 'block';
+      paidEl.innerHTML = '<strong>Paid ' + formatPrice(evd.paid_amount_pence) + '</strong>' + (paidDate ? ' on ' + paidDate : '');
+    } else {
+      paidEl.style.display = 'none';
+    }
 
     // Build invite link
     var baseUrl = window.location.origin;

@@ -43,7 +43,7 @@ exports.handler = async function (event) {
     try {
       var events = await sb.sbGet(
         'events?organiser_id=eq.' + organiserId +
-        '&select=id,name,slug,event_date,format,status,starting_mode,paid,created_at,archived' +
+        '&select=id,name,slug,event_date,format,status,starting_mode,paid,paid_at,paid_amount_pence,created_at,archived' +
         '&order=created_at.desc'
       );
       return sb.respond(200, { events: events || [] });
