@@ -882,6 +882,9 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div id="golive-live" style="display:none;">
         <div id="live-paid-info" style="display:none;background:var(--green-light);border:1px solid var(--green);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--green);">
         </div>
+        <div id="live-score-my-round" style="display:none;margin-bottom:16px;">
+          <a id="score-my-round-link" href="#" target="_blank" class="btn btn-green btn-sm" style="text-decoration:none;">Score my round</a>
+        </div>
         <div class="invite-section">
           <h3 style="font-size:16px;margin-bottom:8px;">Share with your players</h3>
           <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Send this link. They tap their name, confirm their handicap, and they're in.</p>
@@ -2702,6 +2705,25 @@ Bob Wilson"></textarea>
       paidEl.innerHTML = '<strong>Paid ' + formatPrice(evd.paid_amount_pence) + '</strong>' + (paidDate ? ' on ' + paidDate : '');
     } else {
       paidEl.style.display = 'none';
+    }
+
+    // "Score my round" — find the organiser's player token
+    var orgName = (state.organiser ? state.organiser.name : '').toLowerCase();
+    var myPlayer = state.players.find(function (p) {
+      return (p.display_name || '').toLowerCase() === orgName && p.player_token;
+    });
+    var scoreEl = $('live-score-my-round');
+    if (myPlayer) {
+      var orgSlugForLink = state.organiser ? state.organiser.slug : '';
+      var evSlugForLink = state.currentEventData ? state.currentEventData.slug : '';
+      var playerLink = '/p/' + orgSlugForLink + '/' + evSlugForLink + '/' + myPlayer.player_token;
+      $('score-my-round-link').href = playerLink;
+      $('score-my-round-link').onclick = function () {
+        localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
+      };
+      scoreEl.style.display = '';
+    } else {
+      scoreEl.style.display = 'none';
     }
 
     // Build invite link

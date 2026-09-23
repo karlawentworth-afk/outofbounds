@@ -362,6 +362,10 @@ html, body {
     </div>
     <img class="org-logo" alt="">
   </div>
+  <!-- Organiser return link (only shown when navigated from organiser view) -->
+  <div id="org-return-bar" style="display:none;text-align:center;padding:4px 8px;background:var(--off-white);border-bottom:1px solid var(--line);">
+    <a id="org-return-link" href="/o/" style="font-size:12px;color:var(--muted);text-decoration:none;font-weight:500;">&#8592; Back to organiser</a>
+  </div>
   <!-- Scoring panel -->
   <div id="scoring-panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
     <div class="hole-bar">
@@ -455,6 +459,18 @@ html, body {
   var orgSlug   = parts[0] || '';
   var eventSlug = parts[1] || '';
   var token     = parts[2] || '';
+
+  // Show "Back to organiser" if navigated from organiser view
+  var orgReturnUrl = localStorage.getItem('oob-organiser-return');
+  if (orgReturnUrl) {
+    var retBar = document.getElementById('org-return-bar');
+    var retLink = document.getElementById('org-return-link');
+    if (retBar && retLink) {
+      retLink.href = orgReturnUrl;
+      retBar.style.display = '';
+    }
+    localStorage.removeItem('oob-organiser-return');
+  }
 
   if (!orgSlug || !eventSlug) {
     document.getElementById('loading-msg').textContent = 'No event link found. Check the URL you were sent.';
