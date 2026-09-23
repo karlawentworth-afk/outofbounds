@@ -301,7 +301,8 @@ exports.handler = async function (event) {
         'name', 'event_date', 'format', 'handicap_allowance', 'max_handicap',
         'starting_mode', 'leaderboard_freeze_hole', 'course_id', 'tee_id',
         'sponsor_name', 'sponsor_logo_url', 'headline_text',
-        'board_rows_per_page', 'board_show_full'
+        'board_rows_per_page', 'board_show_full',
+        'charity_name', 'charity_line', 'charity_url', 'charity_logo_url'
       ];
       var update = {};
       allowed.forEach(function (k) {

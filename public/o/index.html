@@ -829,6 +829,13 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div class="disclaimer" id="hcp-disclaimer">
         Handicaps can't be checked against the WHS. The organiser has the final say.
       </div>
+      <div class="form-section" style="margin-top:20px;">
+        <h3>Charity (optional)</h3>
+        <div class="form-row"><label>Charity name</label><input type="text" id="ev-charity-name" class="field-input" placeholder="e.g. Macmillan Cancer Support"></div>
+        <div class="form-row"><label>One line</label><input type="text" id="ev-charity-line" class="field-input" placeholder="e.g. Supporting families affected by cancer"></div>
+        <div class="form-row"><label>Donate link</label><input type="text" id="ev-charity-url" class="field-input" placeholder="https://..."></div>
+        <div class="form-row"><label>Charity logo URL</label><input type="text" id="ev-charity-logo" class="field-input" placeholder="https://..."></div>
+      </div>
       <button class="btn btn-green" onclick="saveEventDetails()" id="save-details-btn">Save details</button>
     </div>
 
@@ -2197,6 +2204,10 @@ Bob Wilson"></textarea>
       max_handicap: parseInt($('ev-max-hcp').value) || 54,
       starting_mode: mode,
       leaderboard_freeze_hole: parseInt($('ev-freeze').value) || 0,
+      charity_name: $('ev-charity-name').value.trim() || null,
+      charity_line: $('ev-charity-line').value.trim() || null,
+      charity_url: $('ev-charity-url').value.trim() || null,
+      charity_logo_url: $('ev-charity-logo').value.trim() || null,
       course_id: courseId,
       tee_id: teeId
     };
