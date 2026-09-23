@@ -942,6 +942,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
         </div>
 
         <div class="past-actions">
+          <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results to players</button>
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
           <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.5;">Export CSV<span class="pro-label" id="csv-pro-tag">Pro</span></button>
           <button class="btn btn-outline btn-sm" id="btn-archive" onclick="archiveEvent()">Archive</button>
@@ -3040,6 +3041,24 @@ Bob Wilson"></textarea>
 
   window.openPrizePresentation = function() {
     window.open('/o/#prizes-present-' + state.currentEvent, '_blank');
+  };
+
+  window.sendResultsEmail = async function() {
+    if (!confirm('Send results to all players with an email address?')) return;
+    var btn = $('btn-results-email');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+      var res = await api('results-email', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+      btn.textContent = 'Sent to ' + res.sent + ' players';
+    } catch (err) {
+      toast('Error: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = 'Email results to players';
+    }
   };
 
   window.archiveEvent = async function() {
