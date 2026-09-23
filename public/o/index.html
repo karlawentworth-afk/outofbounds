@@ -2424,9 +2424,20 @@ Bob Wilson"></textarea>
     }
     countEl.innerHTML = countHtml;
 
+    // Compute PH on display from current tee data
+    var tee = state.teeData;
+    var evd = state.currentEventData || {};
+    var allowance = parseFloat(evd.handicap_allowance) || 0.95;
+    var cap = parseInt(evd.max_handicap) || 54;
+
     el.innerHTML = state.players.map(function(p) {
       var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '-';
-      var phStr = p.playing_handicap != null ? p.playing_handicap : '-';
+      var phStr = '-';
+      if (p.handicap_index != null && tee) {
+        phStr = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
+      } else if (p.playing_handicap != null) {
+        phStr = p.playing_handicap;
+      }
       var statusDot = '';
       if (state.currentEventData && state.currentEventData.status === 'live') {
         statusDot = p.player_status === 'confirmed'
@@ -3797,6 +3808,14 @@ Bob Wilson"></textarea>
     $('install-banner').style.display = 'none';
     deferredPrompt = null;
   };
+
+  // ── 10s loading timeout ────────────────────────────────────────
+  setTimeout(function () {
+    if ($('screen-loading').classList.contains('active')) {
+      $('screen-loading').querySelector('.spinner').outerHTML =
+        '<div style="text-align:center;color:var(--muted);font-size:14px;">That didn\u2019t work. <a href="/o/" style="color:var(--green);font-weight:600;">Try again</a></div>';
+    }
+  }, 10000);
 
   // ── Init ──────────────────────────────────────────────────────
   init();
