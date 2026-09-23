@@ -1055,7 +1055,9 @@ async function stepI_offlineMode() {
     await ctx.setOffline(true);
 
     // Buffer a score while offline using localStorage (as the player UI does)
-    var offlineResult = await page.evaluate(function (eid, pid) {
+    var offlineArgs = { eid: state.eventId, pid: state.playerIds[0] };
+    var offlineResult = await page.evaluate(function (args) {
+      var eid = args.eid, pid = args.pid;
       // Write a pending score to localStorage like the player view does
       var key = 'oob-pending-' + eid + '-' + pid + '-4';
       localStorage.setItem(key, JSON.stringify({
@@ -1079,7 +1081,7 @@ async function stepI_offlineMode() {
       }).catch(function (err) {
         return { offline: true, stored: !!stored, hasPending: hasPending, err: err.message };
       });
-    }, state.eventId, state.playerIds[0]);
+    }, offlineArgs);
 
     step('Offline: score buffered to localStorage', offlineResult.offline && offlineResult.stored,
       'offline=' + offlineResult.offline + ' stored=' + offlineResult.stored);
@@ -1089,7 +1091,8 @@ async function stepI_offlineMode() {
     await sleep(3000);
 
     // Verify: the pending key should be flushed (removed) and amber bar should clear
-    var afterOnline = await page.evaluate(function (eid, pid) {
+    var afterOnline = await page.evaluate(function (args) {
+      var eid = args.eid, pid = args.pid;
       // Check if the pending key was flushed
       var key = 'oob-pending-' + eid + '-' + pid + '-4';
       var stillPending = !!localStorage.getItem(key);
@@ -1098,7 +1101,7 @@ async function stepI_offlineMode() {
       // Clean up if still there
       localStorage.removeItem(key);
       return { stillPending: stillPending, amberCleared: amberCleared };
-    }, state.eventId, state.playerIds[0]);
+    }, offlineArgs);
 
     step('Online: amber bar cleared after flush', afterOnline.amberCleared,
       'stillPending=' + afterOnline.stillPending + ' amberCleared=' + afterOnline.amberCleared);
