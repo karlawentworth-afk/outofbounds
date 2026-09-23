@@ -126,6 +126,35 @@ exports.handler = async function (event) {
 
     var ev = events[0];
 
+    // Pro organisers skip payment entirely
+    var planGate = require('./shared/plan-gate');
+    var orgIsPro = await planGate.isPro(body.organiser_id);
+    if (orgIsPro) {
+      // Set event live+paid directly, generate tokens
+      await sb.sbPatch('events?id=eq.' + body.event_id, {
+        paid: true,
+        paid_at: new Date().toISOString(),
+        status: 'live'
+      });
+
+      // Generate player tokens
+      var allPlayers = await sb.sbGet(
+        'players?event_id=eq.' + body.event_id + '&select=id,player_token'
+      );
+      if (allPlayers) {
+        var crypto = require('crypto');
+        for (var p = 0; p < allPlayers.length; p++) {
+          if (!allPlayers[p].player_token) {
+            await sb.sbPatch('players?id=eq.' + allPlayers[p].id, {
+              player_token: crypto.randomBytes(16).toString('hex')
+            });
+          }
+        }
+      }
+
+      return sb.respond(200, { free: true });
+    }
+
     if (ev.paid && !body.top_up) {
       return sb.respond(400, { error: 'Event already paid' });
     }

@@ -70,7 +70,7 @@ exports.handler = async function (event) {
     var action = body.action;
 
     if (action === 'go_live') {
-      // Generate player tokens, but don't change status (payment does that)
+      // Generate player tokens. Pro organisers also go live+paid directly.
       if (!body.event_id || !body.organiser_id) {
         return sb.respond(400, { error: 'Missing event_id or organiser_id' });
       }
@@ -93,6 +93,18 @@ exports.handler = async function (event) {
             'players?id=eq.' + toUpdate[i].id,
             { player_token: genToken() }
           );
+        }
+
+        // Pro organisers go live without payment
+        var planGate = require('./shared/plan-gate');
+        var orgIsPro = await planGate.isPro(body.organiser_id);
+        if (orgIsPro && ev.status === 'draft') {
+          await sb.sbPatch('events?id=eq.' + body.event_id, {
+            status: 'live',
+            paid: true,
+            paid_at: new Date().toISOString()
+          });
+          return sb.respond(200, { ok: true, tokens_generated: toUpdate.length, free: true });
         }
 
         return sb.respond(200, { ok: true, tokens_generated: toUpdate.length });

@@ -893,6 +893,50 @@ function bodyContainsNone(raw, forbidden) {
   );
 
   // -----------------------------------------------------------------------
+  // 2b. PRO vs PLAY GATING
+  // -----------------------------------------------------------------------
+  console.log('\n--- PRO vs PLAY GATING TESTS ---\n');
+
+  // Set org A to Pro, org B stays Play (per_event)
+  await sbPatch('organisers?id=eq.' + orgA.id, { plan: 'pro' });
+
+  // Pro org A: stripe-checkout should return {free:true} and set event live
+  // First reset event A to draft
+  await sbPatch('events?id=eq.' + evA.id, { status: 'draft', paid: false, paid_at: null });
+
+  r = await fnPost('stripe-checkout', {
+    event_id: evA.id,
+    organiser_id: orgA.id
+  });
+  assert(
+    'Pro org: stripe-checkout returns free=true',
+    r.status === 200 && r.body && r.body.free === true,
+    'status=' + r.status + ' body=' + JSON.stringify(r.body)
+  );
+
+  // Verify event A is now live+paid
+  var evACheck = await sbGet('events?id=eq.' + evA.id + '&select=status,paid');
+  assert(
+    'Pro org: event is now live+paid',
+    evACheck[0] && evACheck[0].status === 'live' && evACheck[0].paid === true,
+    'status=' + (evACheck[0] && evACheck[0].status) + ' paid=' + (evACheck[0] && evACheck[0].paid)
+  );
+
+  // Play org B: stripe-checkout should return a Stripe URL (not free)
+  r = await fnPost('stripe-checkout', {
+    event_id: evB.id,
+    organiser_id: orgB.id
+  });
+  assert(
+    'Play org: stripe-checkout returns Stripe URL',
+    r.status === 200 && r.body && r.body.url && r.body.url.indexOf('checkout.stripe.com') !== -1,
+    'status=' + r.status + ' hasUrl=' + !!(r.body && r.body.url)
+  );
+
+  // Reset org A back to per_event for cleanup
+  await sbPatch('organisers?id=eq.' + orgA.id, { plan: 'per_event' });
+
+  // -----------------------------------------------------------------------
   // 3. CLEANUP
   // -----------------------------------------------------------------------
   console.log('\n--- CLEANUP ---\n');

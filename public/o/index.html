@@ -685,7 +685,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
         <div id="finished-leaderboard"></div>
         <div class="past-actions">
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
-          <button class="btn btn-outline btn-sm" disabled style="opacity:.5;">Export CSV<span class="pro-label">Pro</span></button>
+          <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.5;">Export CSV<span class="pro-label" id="csv-pro-tag">Pro</span></button>
         </div>
       </div>
     </div>
@@ -939,6 +939,7 @@ Bob Wilson"></textarea>
 
     showScreen('screen-dashboard');
     window.location.hash = 'dashboard';
+    updateProGating();
     await loadEvents();
   };
 
@@ -1090,6 +1091,26 @@ Bob Wilson"></textarea>
       toast('Error: ' + err.message);
     }
   };
+
+  // ── Pro gating UI ─────────────────────────────────────────────
+  function updateProGating() {
+    var isPro = state.organiser && state.organiser.plan === 'pro';
+
+    // CSV export button
+    var csvBtn = $('btn-csv-export');
+    var csvTag = $('csv-pro-tag');
+    if (csvBtn) {
+      if (isPro) {
+        csvBtn.disabled = false;
+        csvBtn.style.opacity = '';
+        if (csvTag) csvTag.style.display = 'none';
+      } else {
+        csvBtn.disabled = true;
+        csvBtn.style.opacity = '.5';
+        if (csvTag) csvTag.style.display = '';
+      }
+    }
+  }
 
   // Handle ?upgraded=true in hash after Stripe redirect
   if (window.location.hash.indexOf('upgraded=true') !== -1) {
@@ -1801,12 +1822,22 @@ Bob Wilson"></textarea>
     $('golive-btn').style.display = '';
 
     var n = state.players.length;
-    var base = 999;
-    var perPlayer = 99;
-    var total = base + (n * perPlayer);
+    var orgIsPro = state.organiser && state.organiser.plan === 'pro';
 
-    $('golive-breakdown').innerHTML = formatPrice(base) + ' + ' + formatPrice(perPlayer) + ' &times; ' + n + ' player' + (n !== 1 ? 's' : '');
-    $('golive-price').textContent = formatPrice(total);
+    if (orgIsPro) {
+      $('golive-breakdown').innerHTML = n + ' player' + (n !== 1 ? 's' : '') + ' ready to go';
+      $('golive-price').textContent = 'Included with Pro';
+      $('golive-price').style.fontSize = '20px';
+      $('golive-btn').textContent = 'Go live';
+    } else {
+      var base = 999;
+      var perPlayer = 99;
+      var total = base + (n * perPlayer);
+      $('golive-breakdown').innerHTML = formatPrice(base) + ' + ' + formatPrice(perPlayer) + ' &times; ' + n + ' player' + (n !== 1 ? 's' : '');
+      $('golive-price').textContent = formatPrice(total);
+      $('golive-price').style.fontSize = '';
+      $('golive-btn').textContent = 'Go live and pay';
+    }
 
     if (n === 0) {
       $('golive-breakdown').innerHTML = 'Add players before going live.';
@@ -1831,6 +1862,14 @@ Bob Wilson"></textarea>
           organiser_id: state.organiser.id
         }
       });
+      if (res.free) {
+        // Pro organiser — event is already live
+        toast('Event is live!');
+        state.currentEventData.status = 'live';
+        state.currentEventData.paid = true;
+        updateGoLiveTab();
+        return;
+      }
       if (res.url) {
         window.location.href = res.url;
       } else {
@@ -1841,7 +1880,8 @@ Bob Wilson"></textarea>
     }
 
     $('golive-btn').disabled = false;
-    $('golive-btn').textContent = 'Go live and pay';
+    var orgIsPro = state.organiser && state.organiser.plan === 'pro';
+    $('golive-btn').textContent = orgIsPro ? 'Go live' : 'Go live and pay';
   };
 
   // ── Live view ─────────────────────────────────────────────────
