@@ -1426,6 +1426,7 @@ Bob Wilson"></textarea>
   };
 
   function renderAdminList(orgs) {
+    var myOrgId = state.organiser ? state.organiser.id : '';
     var html = orgs.map(function (o) {
       var planLabel = o.plan;
       if (o.plan_source === 'comp') planLabel = 'comp';
@@ -1434,8 +1435,13 @@ Bob Wilson"></textarea>
         if (d.getFullYear() < 2090) planLabel += ' until ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       }
 
+      // Labels
+      var nameLabel = esc(o.name);
+      if (o.slug === 'demo') nameLabel += ' <span style="color:var(--muted);font-weight:400;">(demo)</span>';
+      if (o.id === myOrgId) nameLabel += ' <span style="color:var(--green);font-weight:400;">(you)</span>';
+
       var actions = '<button class="btn btn-outline btn-sm" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Comp</button>';
-      if (o.slug === 'demo' || o.slug === 'demo-events') {
+      if (o.slug === 'demo') {
         actions += ' <button class="btn btn-outline btn-sm" onclick="openRebrandModal()">Rebrand</button>';
         actions += ' <button class="btn btn-outline btn-sm" onclick="resetDemo()">Reset</button>';
       }
@@ -1443,7 +1449,7 @@ Bob Wilson"></textarea>
       return '<div class="event-card" style="cursor:default;">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
           '<div>' +
-            '<div class="ev-name">' + esc(o.name) + (o.is_superadmin ? ' <span class="pro-label">SA</span>' : '') + '</div>' +
+            '<div class="ev-name">' + nameLabel + (o.is_superadmin ? ' <span class="pro-label">SA</span>' : '') + '</div>' +
             '<div class="ev-meta">' +
               '<span class="badge badge-' + (o.plan === 'pro' ? 'live' : 'draft') + '">' + planLabel + '</span>' +
               '<span>' + o.events_total + ' events</span>' +
