@@ -175,7 +175,8 @@ exports.handler = async function (event) {
               first_name: p.first_name,
               last_name: p.last_name,
               display_name: p.display_name,
-              handicap_index: p.handicap_index
+              handicap_index: p.handicap_index,
+              player_token: genToken()
             };
           });
           await sb.sbPost('players', newPlayers);
