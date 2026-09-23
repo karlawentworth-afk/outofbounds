@@ -279,6 +279,21 @@ async function stepA_signIn() {
 async function stepA2_signInScreen() {
   console.log('\n--- Step a2: Sign-in screen (no dashboard bleed) ---');
 
+  // Helper: count truly visible screens (offsetHeight > 0 means rendered on page)
+  var visibleScreensFn = function () {
+    var screens = document.querySelectorAll('.screen');
+    var visible = [];
+    for (var i = 0; i < screens.length; i++) {
+      if (screens[i].offsetHeight > 0) visible.push(screens[i].id);
+    }
+    var topBars = document.querySelectorAll('.top-bar');
+    var anyTopBarVisible = false;
+    for (var j = 0; j < topBars.length; j++) {
+      if (topBars[j].offsetHeight > 0) anyTopBarVisible = true;
+    }
+    return { visible: visible, topBarVisible: anyTopBarVisible };
+  };
+
   var browser = await chromium.launch({ headless: true });
   try {
     // 1. Open /o/ with no session — should show sign-in only
@@ -287,29 +302,14 @@ async function stepA2_signInScreen() {
     await page.goto(LIVE_URL + '/o/');
     await sleep(3000);
 
-    var noSessionResult = await page.evaluate(function () {
-      var screens = document.querySelectorAll('.screen');
-      var activeScreens = [];
-      for (var i = 0; i < screens.length; i++) {
-        if (getComputedStyle(screens[i]).display !== 'none') {
-          activeScreens.push(screens[i].id);
-        }
-      }
-      var topBar = document.querySelector('.top-bar');
-      var topBarVisible = topBar ? getComputedStyle(topBar).display !== 'none' : false;
-      return {
-        activeCount: activeScreens.length,
-        activeIds: activeScreens,
-        topBarVisible: topBarVisible
-      };
-    });
+    var noSession = await page.evaluate(visibleScreensFn);
 
-    step('No session: exactly one screen visible',
-      noSessionResult.activeCount === 1 && noSessionResult.activeIds[0] === 'screen-signin',
-      'active=' + noSessionResult.activeIds.join(',') + ' topBar=' + noSessionResult.topBarVisible);
+    step('No session: exactly one screen visible (sign-in)',
+      noSession.visible.length === 1 && noSession.visible[0] === 'screen-signin',
+      'visible=' + noSession.visible.join(','));
 
-    step('No session: no top bar visible', !noSessionResult.topBarVisible,
-      'topBarVisible=' + noSessionResult.topBarVisible);
+    step('No session: no top bar visible', !noSession.topBarVisible,
+      'topBarVisible=' + noSession.topBarVisible);
 
     // Check all three sign-in buttons have consistent style
     var btnResult = await page.evaluate(function () {
@@ -321,8 +321,7 @@ async function stepA2_signInScreen() {
         styles.push({
           bg: cs.backgroundColor,
           border: cs.borderWidth,
-          hasSvg: hasSvg,
-          text: btns[i].textContent.trim()
+          hasSvg: hasSvg
         });
       }
       return styles;
@@ -334,8 +333,7 @@ async function stepA2_signInScreen() {
     step('Sign-in buttons: white, hairline, icon', allWhite && allHairline && allIcons,
       btnResult.length + ' buttons, white=' + allWhite + ' hairline=' + allHairline + ' icons=' + allIcons);
 
-    // 2. Sign in via magic link and land on dashboard
-    // Use Supabase admin generateLink + inject session into browser
+    // 2. Sign in: generate magic link, verify server-side, inject session into browser
     var linkRes = await sbAuth('POST', 'admin/generate_link', {
       type: 'magiclink',
       email: 'karla.wentworth@thatsclevermx.com'
@@ -346,95 +344,75 @@ async function stepA2_signInScreen() {
     var otp = null;
     var urlMatch = actionLink.match(/[?&]token=([^&#]+)/);
     if (urlMatch) otp = decodeURIComponent(urlMatch[1]);
-
     var tokenToUse = otp || hashedToken;
-    var accessToken = null;
 
+    var sessionData = null;
     if (tokenToUse) {
       var verifyRes = await sbAuth('POST', 'verify', {
         type: 'magiclink',
         token_hash: tokenToUse
       });
       if (verifyRes.status === 200 && verifyRes.data && verifyRes.data.access_token) {
-        accessToken = verifyRes.data.access_token;
+        sessionData = verifyRes.data;
       }
     }
 
-    if (accessToken) {
-      // Inject session into the browser's Supabase client
-      var refreshToken = '';
-      // verify also returns refresh_token
-      if (tokenToUse) {
-        var vr = await sbAuth('POST', 'verify', {
-          type: 'magiclink',
-          token_hash: tokenToUse
-        });
-        // Token already consumed, use the session we got
-      }
-
-      // Navigate to /o/ with the access_token in the hash (simulates OAuth redirect)
-      await page.goto(LIVE_URL + '/o/#access_token=' + accessToken + '&type=magiclink');
-      await sleep(4000);
-
-      var dashResult = await page.evaluate(function () {
-        var screens = document.querySelectorAll('.screen');
-        var activeScreens = [];
-        for (var i = 0; i < screens.length; i++) {
-          if (getComputedStyle(screens[i]).display !== 'none') {
-            activeScreens.push(screens[i].id);
-          }
-        }
-        var topBar = document.querySelector('.top-bar');
-        var topBarVisible = topBar ? getComputedStyle(topBar).display !== 'none' : false;
-        var logo = document.querySelector('.top-bar .logo');
-        var logoVisible = logo ? getComputedStyle(logo).display !== 'none' : false;
-        var pill = document.querySelector('.user-pill');
-        var pillText = pill ? pill.textContent.trim() : '';
-        return {
-          activeCount: activeScreens.length,
-          activeIds: activeScreens,
-          topBarVisible: topBarVisible,
-          logoVisible: logoVisible,
-          pillText: pillText
-        };
+    if (sessionData) {
+      // Inject the full session into the browser's Supabase localStorage
+      // Supabase JS v2 stores session as: sb-<ref>-auth-token
+      var sbSession = JSON.stringify({
+        access_token: sessionData.access_token,
+        refresh_token: sessionData.refresh_token,
+        expires_in: sessionData.expires_in || 3600,
+        expires_at: sessionData.expires_at || Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer',
+        user: sessionData.user
       });
 
-      // May land on dashboard or onboard depending on org link
-      var onExpectedScreen = dashResult.activeCount === 1 &&
-        (dashResult.activeIds[0] === 'screen-dashboard' || dashResult.activeIds[0] === 'screen-onboard');
+      await page.evaluate(function (sess) {
+        localStorage.setItem('sb-ahutmswadskdkqhnrhhh-auth-token', sess);
+      }, sbSession);
+
+      // Reload to pick up the injected session
+      await page.goto(LIVE_URL + '/o/');
+      await sleep(4000);
+
+      var afterSignIn = await page.evaluate(visibleScreensFn);
+
+      // Should be on dashboard or onboard (if user not linked to an org)
+      var onExpected = afterSignIn.visible.length === 1 &&
+        (afterSignIn.visible[0] === 'screen-dashboard' || afterSignIn.visible[0] === 'screen-onboard');
 
       step('After sign-in: one screen visible',
-        onExpectedScreen,
-        'active=' + dashResult.activeIds.join(','));
+        onExpected,
+        'visible=' + afterSignIn.visible.join(','));
 
-      if (dashResult.activeIds[0] === 'screen-dashboard') {
-        step('Dashboard: top bar with logo and pill',
-          dashResult.topBarVisible && dashResult.logoVisible && dashResult.pillText.indexOf('Sign out') !== -1,
-          'topBar=' + dashResult.topBarVisible + ' logo=' + dashResult.logoVisible + ' pill="' + dashResult.pillText + '"');
+      if (afterSignIn.visible[0] === 'screen-dashboard') {
+        // Check top bar has logo and sign-out pill
+        var dashBar = await page.evaluate(function () {
+          var topBar = document.querySelector('#screen-dashboard .top-bar');
+          if (!topBar || topBar.offsetHeight === 0) return { ok: false };
+          var logo = topBar.querySelector('.logo');
+          var pill = topBar.querySelector('.user-pill');
+          return {
+            ok: true,
+            hasLogo: logo && logo.offsetHeight > 0,
+            pillText: pill ? pill.textContent.trim() : ''
+          };
+        });
+
+        step('Dashboard: top bar with logo and Sign out',
+          dashBar.ok && dashBar.hasLogo && dashBar.pillText.indexOf('Sign out') !== -1,
+          'logo=' + dashBar.hasLogo + ' pill="' + dashBar.pillText + '"');
 
         // 3. Reload — same assertions
         await page.reload();
         await sleep(4000);
 
-        var reloadResult = await page.evaluate(function () {
-          var screens = document.querySelectorAll('.screen');
-          var activeScreens = [];
-          for (var i = 0; i < screens.length; i++) {
-            if (getComputedStyle(screens[i]).display !== 'none') {
-              activeScreens.push(screens[i].id);
-            }
-          }
-          var pill = document.querySelector('.user-pill');
-          return {
-            activeCount: activeScreens.length,
-            activeIds: activeScreens,
-            pillText: pill ? pill.textContent.trim() : ''
-          };
-        });
-
-        step('Reload: still on dashboard, one screen',
-          reloadResult.activeCount === 1 && reloadResult.activeIds[0] === 'screen-dashboard',
-          'active=' + reloadResult.activeIds.join(','));
+        var afterReload = await page.evaluate(visibleScreensFn);
+        step('Reload: still one screen (dashboard)',
+          afterReload.visible.length === 1 && afterReload.visible[0] === 'screen-dashboard',
+          'visible=' + afterReload.visible.join(','));
       }
 
       // 4. Sign out — back to sign-in
@@ -443,22 +421,12 @@ async function stepA2_signInScreen() {
       });
       await sleep(2000);
 
-      var signOutResult = await page.evaluate(function () {
-        var screens = document.querySelectorAll('.screen');
-        var activeScreens = [];
-        for (var i = 0; i < screens.length; i++) {
-          if (getComputedStyle(screens[i]).display !== 'none') {
-            activeScreens.push(screens[i].id);
-          }
-        }
-        return { activeCount: activeScreens.length, activeIds: activeScreens };
-      });
-
+      var afterSignOut = await page.evaluate(visibleScreensFn);
       step('Sign out: back to sign-in, one screen',
-        signOutResult.activeCount === 1 && signOutResult.activeIds[0] === 'screen-signin',
-        'active=' + signOutResult.activeIds.join(','));
+        afterSignOut.visible.length === 1 && afterSignOut.visible[0] === 'screen-signin',
+        'visible=' + afterSignOut.visible.join(','));
     } else {
-      step('Sign-in via magic link (token not available)', false, 'could not get access_token for browser test');
+      step('Sign-in via magic link (token not available)', false, 'could not get session');
     }
 
     await ctx.close();
