@@ -22,18 +22,43 @@ exports.handler = async function (event) {
     var org = orgs[0];
 
     // ── Cancel action ──
+    // Monthly Pro is a 12-month term. Cancel sets cancel_at = term_end
+    // (start_date + 12 months), not the next billing period.
     if (body.action === 'cancel') {
       if (!org.stripe_subscription_id) {
         return sb.respond(400, { error: 'No active subscription' });
       }
 
+      // Fetch subscription to get start_date and interval
+      var sub = await stripe.stripeRequest('GET',
+        '/v1/subscriptions/' + org.stripe_subscription_id, null);
+
+      var interval = sub.items && sub.items.data[0] && sub.items.data[0].price
+        ? sub.items.data[0].price.recurring.interval : 'month';
+
+      var termEndUnix;
+      if (interval === 'year') {
+        // Annual: cancel at end of current period
+        var pe = sub.items && sub.items.data[0] ? sub.items.data[0].current_period_end : null;
+        termEndUnix = pe || (sub.start_date + 365 * 86400);
+      } else {
+        // Monthly: 12-month term from start_date
+        var startDate = new Date(sub.start_date * 1000);
+        startDate.setFullYear(startDate.getFullYear() + 1);
+        termEndUnix = Math.floor(startDate.getTime() / 1000);
+      }
+
+      // Set cancel_at to the term end (not cancel_at_period_end)
       await stripe.stripeRequest('POST',
         '/v1/subscriptions/' + org.stripe_subscription_id,
-        'cancel_at_period_end=true'
+        'cancel_at=' + termEndUnix
       );
 
+      var termEndISO = new Date(termEndUnix * 1000).toISOString();
+
       await sb.sbPatch('organisers?id=eq.' + body.organiser_id, {
-        cancel_at_period_end: true
+        cancel_at_period_end: true,
+        current_period_end: termEndISO
       });
 
       await sb.sbPost('plan_events', {
@@ -44,7 +69,7 @@ exports.handler = async function (event) {
         stripe_subscription_id: org.stripe_subscription_id
       });
 
-      return sb.respond(200, { ok: true, cancel_at_period_end: true });
+      return sb.respond(200, { ok: true, cancel_at: termEndISO });
     }
 
     // ── Resume (undo cancel) ──
@@ -53,9 +78,10 @@ exports.handler = async function (event) {
         return sb.respond(400, { error: 'No active subscription' });
       }
 
+      // Clear cancel_at
       await stripe.stripeRequest('POST',
         '/v1/subscriptions/' + org.stripe_subscription_id,
-        'cancel_at_period_end=false'
+        stripe.formEncode(['cancel_at=', 'cancel_at_period_end=false'])
       );
 
       await sb.sbPatch('organisers?id=eq.' + body.organiser_id, {
