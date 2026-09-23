@@ -1141,7 +1141,7 @@ Bob Wilson"></textarea>
       }
       if (res.organiser) {
         state.organiser = res.organiser;
-        goToDashboard();
+        if (!handleHashRoutes()) goToDashboard();
       } else {
         showScreen('screen-onboard');
       }
@@ -1586,7 +1586,13 @@ Bob Wilson"></textarea>
     }
     var banner = document.getElementById('viewing-as-banner');
     if (banner) banner.style.display = 'none';
-    goToDashboard();
+    window.location.hash = 'dashboard';
+    if (state.organiser) {
+      goToDashboard();
+    } else {
+      // Reload to re-auth if organiser context was lost
+      window.location.href = '/o/';
+    }
   };
 
   window.openCompModal = function(orgId, orgName, planSource) {
@@ -1961,38 +1967,38 @@ Bob Wilson"></textarea>
     if (uploadBtn) uploadBtn.style.display = isPro ? '' : 'none';
   }
 
-  // Handle #view-as-demo from the demo switcher
-  if (window.location.hash === '#view-as-demo') {
-    setTimeout(function() {
-      if (state.organiser && state.organiser.is_superadmin) {
-        // Fetch demo org and switch
-        api('org-admin', { query: { organiser_id: state.organiser.id } }).then(function(res) {
-          var demo = (res.organisers || []).find(function(o) { return o.slug === 'demo'; });
-          if (demo) {
-            state.realOrganiser = Object.assign({}, state.organiser);
-            state.organiser = demo;
-            state.organiser.is_superadmin = false;
-            var banner = document.getElementById('viewing-as-banner');
-            if (!banner) {
-              banner = document.createElement('div');
-              banner.id = 'viewing-as-banner';
-              banner.style.cssText = 'background:#E0A800;color:#fff;text-align:center;padding:6px 16px;font-size:13px;font-weight:600;z-index:999;';
-              document.body.insertBefore(banner, document.body.firstChild);
-            }
-            banner.innerHTML = 'You are viewing as <strong>' + esc(demo.name) + '</strong>. <a href="#" onclick="returnToMyAccount();return false;" style="color:#fff;text-decoration:underline;margin-left:8px;">Back to my account</a>';
-            banner.style.display = '';
-            goToDashboard();
-          }
-        });
-      }
-    }, 500);
-  }
+  // Hash-based route handling — runs AFTER auth resolves
+  function handleHashRoutes() {
+    var hash = window.location.hash;
 
-  // Handle #my-account to return to own account
-  if (window.location.hash === '#my-account') {
-    setTimeout(function() {
+    if (hash === '#view-as-demo' && state.organiser && state.organiser.is_superadmin) {
+      api('org-admin', { query: { organiser_id: state.organiser.id } }).then(function(res) {
+        var demo = (res.organisers || []).find(function(o) { return o.slug === 'demo'; });
+        if (demo) {
+          state.realOrganiser = Object.assign({}, state.organiser);
+          state.organiser = demo;
+          state.organiser.is_superadmin = false;
+          var banner = document.getElementById('viewing-as-banner');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'viewing-as-banner';
+            banner.style.cssText = 'background:#E0A800;color:#fff;text-align:center;padding:6px 16px;font-size:13px;font-weight:600;z-index:999;';
+            document.body.insertBefore(banner, document.body.firstChild);
+          }
+          banner.innerHTML = 'You are viewing as <strong>' + esc(demo.name) + '</strong>. <a href="#" onclick="returnToMyAccount();return false;" style="color:#fff;text-decoration:underline;margin-left:8px;">Back to my account</a>';
+          banner.style.display = '';
+          goToDashboard();
+        }
+      }).catch(function () { goToDashboard(); });
+      return true; // handled
+    }
+
+    if (hash === '#my-account') {
       returnToMyAccount();
-    }, 500);
+      return true;
+    }
+
+    return false; // not handled
   }
 
   // Handle ?upgraded=true in hash after Stripe redirect
