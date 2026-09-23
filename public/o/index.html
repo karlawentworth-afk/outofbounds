@@ -867,6 +867,12 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       </div>
 
       <div class="player-count" id="player-count"></div>
+      <div class="player-item" style="border-bottom:2px solid var(--line);font-size:12px;color:var(--muted);font-weight:600;">
+        <span class="pi-name">Name</span>
+        <span class="pi-idx">Index</span>
+        <span class="pi-ph">Plays off</span>
+        <span style="width:32px;"></span>
+      </div>
       <div id="player-list"></div>
     </div>
 
@@ -2594,10 +2600,14 @@ Bob Wilson"></textarea>
     if (!state.currentEvent) { toast('Save event details first'); return; }
     if (!state.organiser) return;
 
-    // Check if already added
-    var orgName = (state.organiser.name || '').toLowerCase();
+    // Check if already added (match by name parts, case-insensitive)
+    var orgName = (state.organiser.name || '').toLowerCase().trim();
+    var orgParts = orgName.split(/\s+/);
     var alreadyAdded = state.players.some(function (p) {
-      return (p.display_name || '').toLowerCase() === orgName;
+      var dn = (p.display_name || '').toLowerCase().trim();
+      return dn === orgName || (orgParts.length >= 2 &&
+        (p.first_name || '').toLowerCase() === orgParts[0] &&
+        (p.last_name || '').toLowerCase() === orgParts.slice(1).join(' '));
     });
     if (alreadyAdded) { toast('You are already in this event'); return; }
 
