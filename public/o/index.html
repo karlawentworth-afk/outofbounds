@@ -722,6 +722,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <button class="tab-btn active" data-tab="details" onclick="switchTab(this)">Details</button>
       <button class="tab-btn" data-tab="players" onclick="switchTab(this)">Players</button>
       <button class="tab-btn" data-tab="groups" onclick="switchTab(this)">Groups</button>
+      <button class="tab-btn" data-tab="prizes" onclick="switchTab(this)">Prizes</button>
       <button class="tab-btn" data-tab="golive" onclick="switchTab(this)">Go live</button>
     </div>
 
@@ -878,6 +879,16 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div id="groups-list"></div>
     </div>
 
+    <!-- PRIZES TAB -->
+    <div class="tab-panel" id="tab-prizes">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:16px;">Optional. Set them up any time; winners fill in when you finish.</p>
+      <div id="prizes-setup-list"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-outline btn-sm" onclick="seedPrizes()">Add standard prizes</button>
+        <button class="btn btn-outline btn-sm" onclick="addCustomPrize()">+ Custom prize</button>
+      </div>
+    </div>
+
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
@@ -947,13 +958,6 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div id="golive-finished" style="display:none;">
         <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
         <div id="finished-leaderboard"></div>
-        <h3 style="font-size:16px;margin:20px 0 12px;">Prizes</h3>
-        <div id="prizes-list"></div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="btn btn-outline btn-sm" onclick="seedPrizes()">Set up prizes</button>
-          <button class="btn btn-outline btn-sm" onclick="openPrizePresentation()">Present prizes</button>
-        </div>
-
         <div class="past-actions">
           <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results to players</button>
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
@@ -2130,6 +2134,7 @@ Bob Wilson"></textarea>
     if (tab === 'players') renderPlayerList();
     if (tab === 'groups') renderGroupsList();
     if (tab === 'golive') updateGoLiveTab();
+    if (tab === 'prizes') loadPrizes();
   };
 
   // ── Format change → default allowance ────────────────────────
@@ -3120,21 +3125,58 @@ Bob Wilson"></textarea>
   };
 
   // ── Prizes ────────────────────────────────────────────────────
+  state.prizeData = { prizes: [], players: [] };
+
   async function loadPrizes() {
     if (!state.currentEvent) return;
     try {
       var res = await api('org-prizes', { query: { event_id: state.currentEvent } });
-      var prizes = res.prizes || [];
-      var html = prizes.map(function (p) {
-        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;">' +
-          '<span style="font-weight:600;flex:1;">' + esc(p.category) + '</span>' +
-          '<input type="text" value="' + esc(p.winner_text || '') + '" placeholder="Winner" ' +
-            'onchange="savePrize(\'' + p.id + '\', this.value)" ' +
-            'style="flex:2;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;">' +
-        '</div>';
-      }).join('');
-      $('prizes-list').innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No prizes set up yet.</p>';
+      state.prizeData = res;
+      renderPrizesTab();
     } catch (err) { /* silent */ }
+  }
+
+  function renderPrizesTab() {
+    var prizes = state.prizeData.prizes || [];
+    var players = state.prizeData.players || [];
+
+    if (prizes.length === 0) {
+      $('prizes-setup-list').innerHTML = '<p style="color:var(--muted);font-size:13px;">No prizes set up yet. Tap "Add standard prizes" to get started.</p>';
+      return;
+    }
+
+    var html = prizes.map(function (p) {
+      var winnerHtml;
+      if (p.prize_type === 'manual') {
+        // Dropdown of players
+        var opts = '<option value="">Pick a player</option>';
+        players.forEach(function (pl) {
+          var sel = pl.id === p.player_id ? ' selected' : '';
+          opts += '<option value="' + pl.id + '"' + sel + '>' + esc(pl.display_name) + '</option>';
+        });
+        winnerHtml = '<select onchange="savePrizeWinner(\'' + p.id + '\',this.value)" style="flex:2;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;">' + opts + '</select>';
+      } else {
+        // Positional: show auto-filled winner name or "Fills from leaderboard"
+        var winnerName = '';
+        if (p.player_id) {
+          var found = players.find(function (pl) { return pl.id === p.player_id; });
+          winnerName = found ? found.display_name : '';
+        }
+        winnerHtml = '<span style="flex:2;font-size:13px;color:' + (winnerName ? 'var(--ink)' : 'var(--muted)') + ';">' +
+          (winnerName || 'Fills from leaderboard on finish') + '</span>';
+      }
+
+      var prizeText = p.prize_text
+        ? '<div style="font-size:11px;color:var(--muted);">' + esc(p.prize_text) + '</div>'
+        : '';
+
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;">' +
+        '<div style="flex:1;"><span style="font-weight:600;">' + esc(p.category) + '</span>' + prizeText + '</div>' +
+        winnerHtml +
+      '</div>';
+    }).join('');
+
+    $('prizes-setup-list').innerHTML = html;
   }
 
   window.seedPrizes = async function() {
@@ -3144,21 +3186,26 @@ Bob Wilson"></textarea>
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'seed' }
       });
       loadPrizes();
-      toast('Prize categories added');
+      toast('Standard prizes added');
     } catch (err) { toast('Error: ' + err.message); }
   };
 
-  window.savePrize = async function(prizeId, text) {
+  window.addCustomPrize = function() {
+    var cat = prompt('Prize name (e.g. Sweep, Best dressed):');
+    if (!cat) return;
+    api('org-prizes', {
+      method: 'POST',
+      body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'add', category: cat }
+    }).then(loadPrizes).catch(function (err) { toast('Error: ' + err.message); });
+  };
+
+  window.savePrizeWinner = async function(prizeId, playerId) {
     try {
       await api('org-prizes', {
         method: 'POST',
-        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, winner_text: text }
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, player_id: playerId || null }
       });
     } catch (err) { toast('Error: ' + err.message); }
-  };
-
-  window.openPrizePresentation = function() {
-    window.open('/o/#prizes-present-' + state.currentEvent, '_blank');
   };
 
   window.sendResultsEmail = async function() {
