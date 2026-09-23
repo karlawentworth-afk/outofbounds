@@ -927,6 +927,13 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <div id="golive-finished" style="display:none;">
         <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
         <div id="finished-leaderboard"></div>
+        <h3 style="font-size:16px;margin:20px 0 12px;">Prizes</h3>
+        <div id="prizes-list"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="seedPrizes()">Set up prizes</button>
+          <button class="btn btn-outline btn-sm" onclick="openPrizePresentation()">Present prizes</button>
+        </div>
+
         <div class="past-actions">
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
           <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.5;">Export CSV<span class="pro-label" id="csv-pro-tag">Pro</span></button>
@@ -2641,6 +2648,7 @@ Bob Wilson"></textarea>
       $('golive-live').style.display = 'none';
       $('golive-finished').style.display = 'block';
       loadFinishedLeaderboard();
+      loadPrizes();
       return;
     }
 
@@ -2979,6 +2987,48 @@ Bob Wilson"></textarea>
     } catch (err) {
       toast('Error: ' + err.message);
     }
+  };
+
+  // ── Prizes ────────────────────────────────────────────────────
+  async function loadPrizes() {
+    if (!state.currentEvent) return;
+    try {
+      var res = await api('org-prizes', { query: { event_id: state.currentEvent } });
+      var prizes = res.prizes || [];
+      var html = prizes.map(function (p) {
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;">' +
+          '<span style="font-weight:600;flex:1;">' + esc(p.category) + '</span>' +
+          '<input type="text" value="' + esc(p.winner_text || '') + '" placeholder="Winner" ' +
+            'onchange="savePrize(\'' + p.id + '\', this.value)" ' +
+            'style="flex:2;padding:6px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;font-family:inherit;">' +
+        '</div>';
+      }).join('');
+      $('prizes-list').innerHTML = html || '<p style="color:var(--muted);font-size:13px;">No prizes set up yet.</p>';
+    } catch (err) { /* silent */ }
+  }
+
+  window.seedPrizes = async function() {
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'seed' }
+      });
+      loadPrizes();
+      toast('Prize categories added');
+    } catch (err) { toast('Error: ' + err.message); }
+  };
+
+  window.savePrize = async function(prizeId, text) {
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, winner_text: text }
+      });
+    } catch (err) { toast('Error: ' + err.message); }
+  };
+
+  window.openPrizePresentation = function() {
+    window.open('/o/#prizes-present-' + state.currentEvent, '_blank');
   };
 
   window.archiveEvent = async function() {
