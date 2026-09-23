@@ -17,6 +17,10 @@
   [functions."demo-reset"]
     schedule = "0 2 * * *"
 
+  # Auto-finish: nightly at 23:59 UK (22:59 UTC summer, 23:59 UTC winter)
+  [functions."auto-finish"]
+    schedule = "59 22 * * *"
+
 
 [[headers]]
   for = "/*.html"
