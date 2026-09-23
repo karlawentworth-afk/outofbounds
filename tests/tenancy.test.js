@@ -923,6 +923,9 @@ function bodyContainsNone(raw, forbidden) {
   );
 
   // Play org B: stripe-checkout should return a Stripe URL (not free)
+  // Reset event B to draft first
+  await sbPatch('events?id=eq.' + evB.id, { status: 'draft', paid: false, paid_at: null });
+
   r = await fnPost('stripe-checkout', {
     event_id: evB.id,
     organiser_id: orgB.id
