@@ -314,31 +314,35 @@ async function seed() {
       id: c.id,
       name: c.name,
       club: c.club,
-      postcode: c.postcode,
       verified: c.verified,
       contributed_by: DEMO_ORG_ID
     });
 
     for (var ti = 0; ti < c.tees.length; ti++) {
       var t = c.tees[ti];
+      var parTotal = t.pars.reduce(function (a, b) { return a + b; }, 0);
       await sbPost('course_tees', {
         id: t.id,
         course_id: c.id,
-        colour: t.colour,
+        tee_name: t.colour,
+        colour: t.colour.toLowerCase(),
         rating_gender: t.rating_gender,
         rating: t.rating,
-        slope: t.slope
+        slope: t.slope,
+        par_total: parTotal,
+        number_of_holes: 18
       });
 
-      // Insert holes
-      for (var h = 0; h < 18; h++) {
-        await sbPost('course_holes', {
-          course_id: c.id,
-          tee_id: t.id,
-          hole_number: h + 1,
-          par: t.pars[h],
-          stroke_index: t.sis[h]
-        });
+      // Insert holes only for the first tee (shared across tees in this schema)
+      if (ti === 0) {
+        for (var h = 0; h < 18; h++) {
+          await sbPost('course_holes', {
+            course_id: c.id,
+            hole_number: h + 1,
+            par: t.pars[h],
+            stroke_index: t.sis[h]
+          });
+        }
       }
     }
     console.log('  Course: ' + c.name + ' (' + c.tees.length + ' tees)');
@@ -553,7 +557,7 @@ async function seed() {
         old_gross: 6,
         new_gross: 5,
         reason: 'Scorer corrected — player called in with right score',
-        organiser_id: DEMO_ORG_ID
+        edited_by: DEMO_ORG_ID
       });
       await sbPost('score_edits', {
         event_id: eventId,
@@ -562,7 +566,7 @@ async function seed() {
         old_gross: 4,
         new_gross: 7,
         reason: 'Wrong card picked up at turn — verified with group',
-        organiser_id: DEMO_ORG_ID
+        edited_by: DEMO_ORG_ID
       });
     }
   }
