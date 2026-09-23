@@ -582,9 +582,16 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
           <input type="text" id="brand-display-name" class="field-input" placeholder="As shown to players" oninput="updateBrandPreview()">
         </div>
         <div class="form-row">
-          <label>Logo URL</label>
-          <input type="text" id="brand-logo-url" class="field-input" placeholder="https://..." oninput="updateBrandPreview()">
-          <div class="hint">PNG, SVG or JPG, max 2 MB, resized to 600 px wide</div>
+          <label>Logo</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <label style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;background:var(--green);color:#fff;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;">
+              Choose photo
+              <input type="file" id="brand-logo-file" accept="image/png,image/jpeg,image/svg+xml" style="display:none;" onchange="uploadBrandLogo(this)">
+            </label>
+            <img id="brand-logo-thumb" src="" alt="" style="height:32px;display:none;border-radius:4px;">
+          </div>
+          <input type="text" id="brand-logo-url" class="field-input" placeholder="or paste a URL" oninput="updateBrandPreview()" style="font-size:13px;">
+          <div class="hint">PNG, SVG or JPG, max 2 MB</div>
         </div>
         <div class="form-row">
           <label>Logo for dark backgrounds (optional)</label>
@@ -1656,6 +1663,33 @@ Bob Wilson"></textarea>
     var bLogo = $('bp-board-logo');
     var darkLogo = logoDark || logoUrl;
     if (darkLogo) { bLogo.src = darkLogo; bLogo.style.display = ''; } else { bLogo.style.display = 'none'; }
+  };
+
+  window.uploadBrandLogo = function(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast('File too large. Maximum 2 MB.'); return; }
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      // Resize to max 600px wide
+      var img = new Image();
+      img.onload = function () {
+        var maxW = 600;
+        var w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/png');
+        $('brand-logo-url').value = dataUrl;
+        $('brand-logo-thumb').src = dataUrl;
+        $('brand-logo-thumb').style.display = '';
+        updateBrandPreview();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   window.saveBranding = async function() {
