@@ -7,11 +7,18 @@ function genToken() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-/** Upsert players into the people table (Pro organisers only). */
+/** Upsert players into the people table. Play: capped at 40. Pro: unlimited. */
 async function upsertPeople(organiserId, players) {
+  // Check current count for Play cap
   var planGate = require('./shared/plan-gate');
   var isPro = await planGate.isPro(organiserId);
-  if (!isPro) return;
+  var currentCount = 0;
+  if (!isPro) {
+    var existing = await sb.sbGet(
+      'people?organiser_id=eq.' + organiserId + '&deleted_at=is.null&select=id'
+    );
+    currentCount = existing ? existing.length : 0;
+  }
 
   for (var i = 0; i < players.length; i++) {
     var p = players[i];
@@ -32,6 +39,9 @@ async function upsertPeople(organiserId, players) {
           continue;
         }
       }
+      // Play cap: skip if at 40
+      if (!isPro && currentCount >= 40) continue;
+
       await sb.sbPost('people', {
         organiser_id: organiserId,
         first_name: p.first_name || '',
@@ -42,6 +52,7 @@ async function upsertPeople(organiserId, players) {
         last_event_at: new Date().toISOString(),
         events_count: 1
       });
+      currentCount++;
     } catch (e) {
       // Swallow — people upsert is best-effort
       console.warn('People upsert failed:', e.message);

@@ -13,9 +13,7 @@ exports.handler = async function (event) {
     var orgId = qs.organiser_id;
     if (!orgId) return sb.respond(400, { error: 'Missing organiser_id' });
 
-    try { await planGate.assertPro(orgId); }
-    catch (e) { return sb.respond(e.status || 403, { error: e.error || 'Pro feature' }); }
-
+    // People list available to all plans (Play capped at 40)
     try {
       var filter = 'people?organiser_id=eq.' + orgId +
         '&deleted_at=is.null' +
@@ -44,9 +42,7 @@ exports.handler = async function (event) {
 
   if (!body.organiser_id) return sb.respond(400, { error: 'Missing organiser_id' });
 
-  try { await planGate.assertPro(body.organiser_id); }
-  catch (e) { return sb.respond(e.status || 403, { error: e.error || 'Pro feature' }); }
-
+  // People available to all plans; Play capped at 40
   try {
     var action = body.action;
 
@@ -54,6 +50,20 @@ exports.handler = async function (event) {
     if (action === 'save') {
       if (!body.first_name || !body.last_name) {
         return sb.respond(400, { error: 'Missing first_name or last_name' });
+      }
+
+      // Cap check for Play organisers (40 max)
+      if (!body.id) {
+        var isPro = await planGate.isPro(body.organiser_id);
+        if (!isPro) {
+          var count = await sb.sbGet(
+            'people?organiser_id=eq.' + body.organiser_id +
+            '&deleted_at=is.null&select=id'
+          );
+          if (count && count.length >= 40) {
+            return sb.respond(400, { error: 'Play plan is limited to 40 people. Upgrade to Pro for unlimited.' });
+          }
+        }
       }
 
       if (body.id) {
