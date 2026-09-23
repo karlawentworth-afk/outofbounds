@@ -433,9 +433,54 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
   <div class="container">
     <div class="dash-header">
       <h2>Your events</h2>
-      <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="goToBilling()">Billing</button>
+        <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
+      </div>
     </div>
     <div id="event-list" class="event-list"></div>
+  </div>
+</div>
+
+<!-- Billing -->
+<div id="screen-billing" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-bill" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 style="font-size:20px;margin-bottom:24px;">Billing</h2>
+
+    <div id="billing-current" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:700;" id="billing-plan-label"></div>
+      <div style="color:var(--muted);font-size:14px;margin-top:4px;" id="billing-status"></div>
+    </div>
+
+    <!-- Upgrade panel (Play users) -->
+    <div id="billing-upgrade" style="background:var(--white);border:2px solid var(--green);border-radius:var(--radius);padding:24px;margin-bottom:20px;text-align:center;">
+      <h3 style="font-size:18px;margin-bottom:8px;">Upgrade to Pro</h3>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Big screen board, branding, people directory, CSV export, helpers and more.</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">
+        <button class="btn btn-green btn-sm" id="toggle-month" onclick="setBillingInterval('month')" style="min-width:140px;">Monthly &#163;14.99</button>
+        <button class="btn btn-outline btn-sm" id="toggle-year" onclick="setBillingInterval('year')" style="min-width:140px;">Annual &#163;149</button>
+      </div>
+      <p id="billing-save-hint" style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:16px;display:none;">Save &#163;30.88 a year</p>
+      <button class="btn btn-green" id="btn-upgrade" onclick="upgradeToPro()">Upgrade to Pro</button>
+    </div>
+
+    <!-- Manage panel (Pro users) -->
+    <div id="billing-manage" style="display:none;">
+      <button class="btn btn-outline" onclick="openPortal()" style="margin-bottom:10px;">Manage billing on Stripe</button>
+      <button class="btn btn-outline" id="btn-cancel" onclick="cancelPro()" style="color:var(--red);border-color:var(--red);">Cancel Pro</button>
+    </div>
+
+    <!-- Cancelling notice -->
+    <div id="billing-cancelling" style="display:none;background:#FFF8E1;border:1px solid var(--amber);border-radius:var(--radius);padding:16px;margin-bottom:20px;">
+      <p style="font-weight:600;color:#7A5A00;">Pro active until <span id="billing-term-end"></span></p>
+      <p style="font-size:13px;color:#7A5A00;margin-top:4px;">You won't be charged again. Pro features stay until this date.</p>
+      <button class="btn btn-green btn-sm" onclick="resumePro()" style="margin-top:12px;">Keep Pro</button>
+    </div>
   </div>
 </div>
 
@@ -925,6 +970,142 @@ Bob Wilson"></textarea>
         '</div>' +
       '</div>';
     }).join('');
+  }
+
+  // ── Billing ────────────────────────────────────────────────────
+  state.billingInterval = 'month';
+
+  window.goToBilling = function() {
+    // Update pill
+    var name = state.organiser ? state.organiser.name : 'Sign out';
+    $('user-pill-bill').textContent = name + ' \u00B7 Sign out';
+
+    showScreen('screen-billing');
+    window.location.hash = 'billing';
+
+    var org = state.organiser || {};
+    var isPro = org.plan === 'pro';
+    var cancelling = isPro && org.cancel_at_period_end;
+
+    // Current plan label
+    $('billing-plan-label').textContent = isPro ? 'Out of Bounds Pro' : 'Play (pay per event)';
+
+    if (isPro && org.current_period_end) {
+      var end = new Date(org.current_period_end);
+      $('billing-status').textContent = cancelling
+        ? 'Cancels on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'Renews on ' + end.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else if (isPro) {
+      $('billing-status').textContent = 'Active';
+    } else {
+      $('billing-status').textContent = '\u00A39.99 + 99p per player, each event';
+    }
+
+    // Show/hide panels
+    $('billing-upgrade').style.display = isPro ? 'none' : 'block';
+    $('billing-manage').style.display = (isPro && !cancelling) ? 'block' : 'none';
+    $('billing-cancelling').style.display = cancelling ? 'block' : 'none';
+
+    if (cancelling && org.current_period_end) {
+      $('billing-term-end').textContent = new Date(org.current_period_end)
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  };
+
+  window.setBillingInterval = function(interval) {
+    state.billingInterval = interval;
+    if (interval === 'year') {
+      $('toggle-year').className = 'btn btn-green btn-sm';
+      $('toggle-month').className = 'btn btn-outline btn-sm';
+      $('billing-save-hint').style.display = 'block';
+    } else {
+      $('toggle-month').className = 'btn btn-green btn-sm';
+      $('toggle-year').className = 'btn btn-outline btn-sm';
+      $('billing-save-hint').style.display = 'none';
+    }
+  };
+
+  window.upgradeToPro = async function() {
+    $('btn-upgrade').disabled = true;
+    $('btn-upgrade').innerHTML = '<span class="spinner"></span>';
+    try {
+      var res = await api('stripe-subscribe', {
+        method: 'POST',
+        body: {
+          organiser_id: state.organiser.id,
+          price_interval: state.billingInterval
+        }
+      });
+      if (res.url) {
+        window.location.href = res.url;
+      } else {
+        toast('Unexpected response');
+        $('btn-upgrade').disabled = false;
+        $('btn-upgrade').textContent = 'Upgrade to Pro';
+      }
+    } catch (err) {
+      toast('Error: ' + err.message);
+      $('btn-upgrade').disabled = false;
+      $('btn-upgrade').textContent = 'Upgrade to Pro';
+    }
+  };
+
+  window.openPortal = async function() {
+    try {
+      var res = await api('stripe-portal', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id }
+      });
+      if (res.url) window.location.href = res.url;
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.cancelPro = async function() {
+    if (!confirm('Cancel Pro? Your features will stay until the end of the billing period.')) return;
+    try {
+      await api('stripe-subscribe', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'cancel' }
+      });
+      state.organiser.cancel_at_period_end = true;
+      goToBilling();
+      toast('Pro will cancel at the end of your billing period');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.resumePro = async function() {
+    try {
+      await api('stripe-subscribe', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'resume' }
+      });
+      state.organiser.cancel_at_period_end = false;
+      goToBilling();
+      toast('Pro renewed');
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  // Handle ?upgraded=true in hash after Stripe redirect
+  if (window.location.hash.indexOf('upgraded=true') !== -1) {
+    setTimeout(function() {
+      // Re-check organiser to pick up new plan
+      if (state.authToken) {
+        api('org-auth', { method: 'POST', body: { action: 'check', auth_token: state.authToken } })
+          .then(function(res) {
+            if (res.organiser) {
+              state.organiser = res.organiser;
+              goToBilling();
+              toast('Welcome to Pro!');
+            }
+          });
+      }
+    }, 500);
   }
 
   // ── New / Open Event ──────────────────────────────────────────
