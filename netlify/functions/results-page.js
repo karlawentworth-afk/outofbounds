@@ -109,7 +109,11 @@ exports.handler = async function (event) {
       .replace(/\{\{PAGE_TITLE\}\}/g, esc(ogTitle + ' \u2014 Out of Bounds'))
       .replace(/\{\{EVENT_DATE\}\}/g, esc(dateFormatted))
       .replace(/\{\{ORG_SLUG\}\}/g, esc(orgSlug))
-      .replace(/\{\{EVENT_SLUG\}\}/g, esc(eventSlug));
+      .replace(/\{\{EVENT_SLUG\}\}/g, esc(eventSlug))
+      .replace(/\{\{PRIMARY_COLOUR\}\}/g, esc(org.primary_colour || '#10344E'))
+      .replace(/\{\{TEXT_ON_PRIMARY\}\}/g, esc(org.text_on_primary || '#FFFFFF'))
+      .replace(/\{\{ORG_LOGO\}\}/g, esc(org.logo_url || ''))
+      .replace(/\{\{ORG_DISPLAY_NAME\}\}/g, esc(org.display_name || org.name || ''));
 
     return {
       statusCode: 200,

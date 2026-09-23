@@ -107,6 +107,12 @@ export default async (req) => {
 
     var baseUrl = process.env.APP_BASE_URL || 'https://score.outofboundsevents.com';
     var fromAddr = process.env.RESEND_FROM || 'noreply@outofboundsevents.com';
+
+    // Fetch branding colours for email button
+    var orgBranding = await sbGet('organisers?id=eq.' + organiser_id + '&select=primary_colour,text_on_primary');
+    var brandColour = (orgBranding && orgBranding[0] && orgBranding[0].primary_colour) || '#2F7A45';
+    var brandText = (orgBranding && orgBranding[0] && orgBranding[0].text_on_primary) || '#FFFFFF';
+
     var sent = 0;
 
     for (var j = 0; j < queued.length; j++) {
@@ -138,7 +144,7 @@ export default async (req) => {
       htmlBody += '<p>You\'re playing in <strong>' + (ev.name || 'an event') + '</strong>';
       if (eventDate) htmlBody += ' on ' + eventDate;
       htmlBody += '.</p>';
-      htmlBody += '<p><a href="' + personalLink + '" style="display:inline-block;padding:12px 28px;background:#2F7A45;color:#fff;text-decoration:none;border-radius:999px;font-weight:600;">Open your scorecard</a></p>';
+      htmlBody += '<p><a href="' + personalLink + '" style="display:inline-block;padding:12px 28px;background:' + brandColour + ';color:' + brandText + ';text-decoration:none;border-radius:999px;font-weight:600;">Open your scorecard</a></p>';
       htmlBody += '<p style="font-size:13px;color:#666;margin-top:24px;">' + orgName + ' keeps your name, email and handicap so they can invite you to future events. Ask them to remove you at any time, or <a href="' + removeLink + '">remove me</a>.</p>';
       htmlBody += '<p style="font-size:11px;color:#999;margin-top:16px;">Scored with Out of Bounds</p>';
       htmlBody += '</div>';

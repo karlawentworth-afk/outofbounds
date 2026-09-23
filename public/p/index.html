@@ -661,6 +661,12 @@ html, body {
           el.style.background = org.primary_colour;
           if (org.text_on_primary) el.style.color = org.text_on_primary;
         });
+        var saveBar = document.querySelector('.save-bar');
+        if (saveBar) {
+          saveBar.style.setProperty('--save-bg', org.primary_colour);
+          saveBar.style.background = org.primary_colour;
+          if (org.text_on_primary) saveBar.style.color = org.text_on_primary;
+        }
       }
 
       if (!token) {
