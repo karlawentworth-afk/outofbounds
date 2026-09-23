@@ -16,6 +16,13 @@ token, org. Use "free Pro", "Play", "you", "link".
 
 "Done" means the stranger test passes, not that the function runs.
 
+## No browser dialogs
+
+Never use `window.prompt()`, `window.alert()`, or `window.confirm()`.
+Use the site's own bottom sheet or modal (oobConfirm, oobPrompt,
+oobAlert in /o/; showSheet in /p/). The only exception is
+`deferredPrompt.prompt()` for the PWA install flow.
+
 ## Build rules
 
 - **Vanilla HTML/JS/CSS.** No frameworks. No build step.

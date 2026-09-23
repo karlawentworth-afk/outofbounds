@@ -817,11 +817,11 @@ html, body {
   };
 
   window.releaseMyName = function () {
-    if (confirm('Release your name so someone else can claim it?')) {
+    showSheet('Release your name so someone else can claim it?', 'Release', function () {
       token = '';
       location.hash = '#/' + orgSlug + '/' + eventSlug;
       location.reload();
-    }
+    });
   };
 
   window.confirmIdentity = async function () {
@@ -846,7 +846,7 @@ html, body {
     } catch (err) {
       btn.disabled = false;
       btn.textContent = "That's me";
-      alert('Error: ' + err.message);
+      showSheet('Error: ' + err.message, 'OK', function () {});
     }
   };
 

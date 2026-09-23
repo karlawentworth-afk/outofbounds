@@ -1000,6 +1000,20 @@ Bob Wilson"></textarea>
   </div>
 </div>
 
+<!-- Generic confirm/prompt sheet -->
+<div id="oob-sheet-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px;padding-bottom:max(28px,env(safe-area-inset-bottom));width:100%;max-width:500px;text-align:center;">
+    <div id="oob-sheet-text" style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:12px;line-height:1.5;"></div>
+    <div id="oob-sheet-input-wrap" style="display:none;margin-bottom:16px;">
+      <input type="text" id="oob-sheet-input" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:var(--radius);font-size:16px;font-family:inherit;outline:none;">
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button id="oob-sheet-cancel" style="flex:1;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--off-white);color:var(--ink);border:2px solid var(--line);">Cancel</button>
+      <button id="oob-sheet-ok" style="flex:1;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--green);color:#fff;"></button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Install prompt — top bar, max 2 shows -->
@@ -1430,7 +1444,7 @@ Bob Wilson"></textarea>
   };
 
   window.cancelPro = async function() {
-    if (!confirm('Cancel Pro? Your features will stay until the end of the billing period.')) return;
+    if (!(await oobConfirm('Cancel Pro? Your features stay until the end of the billing period.', 'Cancel Pro'))) return;
     try {
       await api('stripe-subscribe', {
         method: 'POST',
@@ -1653,7 +1667,7 @@ Bob Wilson"></textarea>
   };
 
   window.resetDemo = async function() {
-    if (!confirm('Reset the demo organiser? All demo data will be regenerated.')) return;
+    if (!(await oobConfirm('Reset the demo? All demo data will be regenerated.', 'Reset'))) return;
     try {
       await api('demo-reset', {
         method: 'POST',
@@ -1867,7 +1881,7 @@ Bob Wilson"></textarea>
   };
 
   window.revokeTeamMember = async function(memberId) {
-    if (!confirm('Remove this team member?')) return;
+    if (!(await oobConfirm('Remove this team member?', 'Remove'))) return;
     try {
       await api('org-team', {
         method: 'POST',
@@ -2485,7 +2499,7 @@ Bob Wilson"></textarea>
     var player = state.players.find(function (p) { return p.id === playerId; });
     if (!player) return;
 
-    var newHI = prompt('Handicap index for ' + player.display_name + ':', player.handicap_index != null ? player.handicap_index : '');
+    var newHI = await oobPrompt('Handicap index for ' + player.display_name, 'Save', player.handicap_index != null ? String(player.handicap_index) : '');
     if (newHI === null) return; // cancelled
 
     var hi = newHI.trim() === '' ? null : parseFloat(newHI);
@@ -2518,12 +2532,12 @@ Bob Wilson"></textarea>
         toast('WhatsApp message copied!');
       });
     } else {
-      prompt('Copy this message:', text);
+      oobAlert('Copy this message: ' + text);
     }
   };
 
   window.deletePlayer = async function(playerId) {
-    if (!confirm('Remove this player?')) return;
+    if (!(await oobConfirm('Remove this player?', 'Remove'))) return;
     try {
       await api('org-players', {
         method: 'POST',
@@ -3105,7 +3119,7 @@ Bob Wilson"></textarea>
     var msg = countedHoles < 18
       ? 'Finish and count holes 1 to ' + countedHoles + '? Results will be published.'
       : 'Finish this event? Scores will be locked and results published.';
-    if (!confirm(msg)) return;
+    if (!(await oobConfirm(msg, 'Finish'))) return;
     try {
       await api('org-events', {
         method: 'POST',
@@ -3191,7 +3205,7 @@ Bob Wilson"></textarea>
   };
 
   window.addCustomPrize = function() {
-    var cat = prompt('Prize name (e.g. Sweep, Best dressed):');
+    var cat = await oobPrompt('Prize name (e.g. Sweep, Best dressed)', 'Add');
     if (!cat) return;
     api('org-prizes', {
       method: 'POST',
@@ -3209,7 +3223,7 @@ Bob Wilson"></textarea>
   };
 
   window.sendResultsEmail = async function() {
-    if (!confirm('Send results to all players with an email address?')) return;
+    if (!(await oobConfirm('Send results to all players with an email address?', 'Send'))) return;
     var btn = $('btn-results-email');
     btn.disabled = true;
     btn.textContent = 'Sending...';
@@ -3243,7 +3257,7 @@ Bob Wilson"></textarea>
   };
 
   window.abandonEvent = async function() {
-    if (!confirm('Abandon this event? No results will be published. This cannot be undone.')) return;
+    if (!(await oobConfirm('Abandon this event? No results will be published. This cannot be undone.', 'Abandon'))) return;
     try {
       await api('org-events', {
         method: 'POST',
@@ -3698,6 +3712,46 @@ Bob Wilson"></textarea>
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
+  }
+
+  // ── Custom confirm/prompt (replaces browser confirm/alert/prompt) ──
+  function oobConfirm(text, okLabel) {
+    return new Promise(function (resolve) {
+      var overlay = $('oob-sheet-overlay');
+      $('oob-sheet-text').textContent = text;
+      $('oob-sheet-ok').textContent = okLabel || 'Yes';
+      $('oob-sheet-input-wrap').style.display = 'none';
+      overlay.style.display = 'flex';
+      $('oob-sheet-ok').onclick = function () { overlay.style.display = 'none'; resolve(true); };
+      $('oob-sheet-cancel').onclick = function () { overlay.style.display = 'none'; resolve(false); };
+    });
+  }
+
+  function oobPrompt(text, okLabel, defaultValue) {
+    return new Promise(function (resolve) {
+      var overlay = $('oob-sheet-overlay');
+      $('oob-sheet-text').textContent = text;
+      $('oob-sheet-ok').textContent = okLabel || 'OK';
+      $('oob-sheet-input-wrap').style.display = '';
+      var inp = $('oob-sheet-input');
+      inp.value = defaultValue || '';
+      overlay.style.display = 'flex';
+      inp.focus();
+      $('oob-sheet-ok').onclick = function () { overlay.style.display = 'none'; resolve(inp.value); };
+      $('oob-sheet-cancel').onclick = function () { overlay.style.display = 'none'; resolve(null); };
+    });
+  }
+
+  function oobAlert(text) {
+    return new Promise(function (resolve) {
+      var overlay = $('oob-sheet-overlay');
+      $('oob-sheet-text').textContent = text;
+      $('oob-sheet-ok').textContent = 'OK';
+      $('oob-sheet-input-wrap').style.display = 'none';
+      $('oob-sheet-cancel').style.display = 'none';
+      overlay.style.display = 'flex';
+      $('oob-sheet-ok').onclick = function () { overlay.style.display = 'none'; $('oob-sheet-cancel').style.display = ''; resolve(); };
+    });
   }
 
   // ── Install prompt ────────────────────────────────────────────
