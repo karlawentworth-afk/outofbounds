@@ -328,6 +328,7 @@ html, body {
     <input type="email" id="conf-email" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;outline:none;margin-bottom:24px;" placeholder="you@example.com" autocomplete="email">
 
     <button id="conf-btn" style="width:100%;padding:16px;background:var(--green);color:#fff;border:none;border-radius:999px;font-size:17px;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;" onclick="confirmIdentity()">That's me</button>
+    <button style="width:100%;padding:12px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;margin-top:8px;font-family:inherit;" onclick="pickAgain()">Not you? Pick again</button>
 
     <p style="font-size:11px;color:var(--muted);margin-top:16px;line-height:1.5;" id="conf-disclaimer"></p>
   </div>
@@ -363,9 +364,12 @@ html, body {
     </div>
     <img class="org-logo" alt="">
   </div>
-  <!-- Organiser return link (only shown when navigated from organiser view) -->
+  <!-- Organiser return link / release name -->
   <div id="org-return-bar" style="display:none;text-align:center;padding:4px 8px;background:var(--off-white);border-bottom:1px solid var(--line);">
     <a id="org-return-link" href="/o/" style="font-size:12px;color:var(--muted);text-decoration:none;font-weight:500;">&#8592; Back to organiser</a>
+  </div>
+  <div style="text-align:center;padding:2px 8px;background:var(--off-white);">
+    <button onclick="releaseMyName()" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;">This isn't me</button>
   </div>
   <!-- Scoring panel -->
   <div id="scoring-panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
@@ -749,6 +753,8 @@ html, body {
         var html = '';
         players.forEach(function (p) {
           if (f && (p.display_name || '').toLowerCase().indexOf(f) === -1) return;
+          // Hide players who have already confirmed (claimed their name)
+          if (p.player_status === 'confirmed') return;
           html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + esc(p.display_name) + '</div>';
         });
         if (!html) html = '<div style="padding:24px;text-align:center;color:var(--muted)">No players found</div>';
@@ -803,6 +809,20 @@ html, body {
       }
     }
   }
+
+  window.pickAgain = function () {
+    token = '';
+    location.hash = '#/' + orgSlug + '/' + eventSlug;
+    showScreen('s-find');
+  };
+
+  window.releaseMyName = function () {
+    if (confirm('Release your name so someone else can claim it?')) {
+      token = '';
+      location.hash = '#/' + orgSlug + '/' + eventSlug;
+      location.reload();
+    }
+  };
 
   window.confirmIdentity = async function () {
     var btn = document.getElementById('conf-btn');
