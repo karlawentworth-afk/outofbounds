@@ -439,14 +439,24 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <div class="dash-header">
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" id="btn-admin" onclick="goToAdmin()" style="display:none;">Admin</button>
-        <button class="btn btn-outline btn-sm" id="btn-team" onclick="goToTeam()" style="display:none;">Team<span class="pro-label" id="team-pro-tag">Pro</span></button>
-        <button class="btn btn-outline btn-sm" id="btn-branding" onclick="goToBranding()" style="display:none;">Branding<span class="pro-label" id="branding-pro-tag">Pro</span></button>
-        <button class="btn btn-outline btn-sm" onclick="goToBilling()">Billing</button>
+        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;" title="Settings">&#9881;</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
       </div>
     </div>
     <div id="event-list" class="event-list"></div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="screen-settings" class="screen">
+  <div class="top-bar">
+    <img src="/img/logo-white.png" alt="OOB" class="logo">
+    <button class="user-pill" id="user-pill-settings" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <h2 style="font-size:20px;margin-bottom:20px;">Settings</h2>
+    <div class="event-list" id="settings-list"></div>
   </div>
 </div>
 
@@ -1732,32 +1742,32 @@ Bob Wilson"></textarea>
     }
   };
 
+  // ── Settings ──────────────────────────────────────────────────
+  window.goToSettings = function() {
+    var name = state.organiser ? state.organiser.name : 'Sign out';
+    $('user-pill-settings').textContent = name + ' \u00B7 Sign out';
+    showScreen('screen-settings');
+    window.location.hash = 'settings';
+
+    var org = state.organiser || {};
+    var isPro = org.plan === 'pro';
+
+    var html = '';
+    html += '<div class="event-card" onclick="goToBilling()" style="cursor:pointer;"><div class="ev-name">Billing</div><div class="ev-meta"><span>' + (isPro ? 'Pro' : 'Play') + '</span></div></div>';
+    html += '<div class="event-card" onclick="' + (isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature\')') + '" style="cursor:pointer;' + (isPro ? '' : 'opacity:.5;') + '"><div class="ev-name">Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>') + '</div><div class="ev-meta"><span>Logo, colours, display name</span></div></div>';
+    html += '<div class="event-card" onclick="' + (isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')') + '" style="cursor:pointer;' + (isPro ? '' : 'opacity:.5;') + '"><div class="ev-name">Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>') + '</div><div class="ev-meta"><span>Organisers and helpers</span></div></div>';
+    if (org.is_superadmin) {
+      html += '<div class="event-card" onclick="goToAdmin()" style="cursor:pointer;"><div class="ev-name">Admin</div><div class="ev-meta"><span>All organisers, comp, demo</span></div></div>';
+    }
+    $('settings-list').innerHTML = html;
+  };
+
   // ── Pro gating UI ─────────────────────────────────────────────
   function updateProGating() {
     var org = state.organiser || {};
     var isPro = org.plan === 'pro';
 
-    // Admin button (superadmin only)
-    var adminBtn = $('btn-admin');
-    if (adminBtn) adminBtn.style.display = org.is_superadmin ? '' : 'none';
-
-    // Team button (always visible, Pro-gated)
-    var teamBtn = $('btn-team');
-    var teamTag = $('team-pro-tag');
-    if (teamBtn) {
-      teamBtn.style.display = '';
-      if (isPro) {
-        teamBtn.style.opacity = '';
-        teamBtn.onclick = function() { goToTeam(); };
-        if (teamTag) teamTag.style.display = 'none';
-      } else {
-        teamBtn.style.opacity = '.5';
-        teamBtn.onclick = function() { toast('Team is a Pro feature. Upgrade in Billing.'); };
-        if (teamTag) teamTag.style.display = '';
-      }
-    }
-
-    // Branding button (always visible, but Pro-gated)
+    // Branding button — no longer on dashboard, managed via Settings
     var brandBtn = $('btn-branding');
     var brandTag = $('branding-pro-tag');
     if (brandBtn) {
