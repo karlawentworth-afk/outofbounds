@@ -16,6 +16,12 @@ token, org. Use "free Pro", "Play", "you", "link".
 
 "Done" means the stranger test passes, not that the function runs.
 
+## No endless spinners
+
+Every spinner or loading state must resolve within 10 seconds to
+either the expected content or a plain message: "That didn't work,
+try again." Never an endless spinner.
+
 ## No browser dialogs
 
 Never use `window.prompt()`, `window.alert()`, or `window.confirm()`.
