@@ -170,8 +170,8 @@ exports.handler = async function (event) {
       }
 
     } else if (action === 'assign') {
-      // Assign a player to a group
-      if (!body.event_id || !body.organiser_id || !body.player_id || !body.group_id) {
+      // Assign a player to a group (or null to unassign)
+      if (!body.event_id || !body.organiser_id || !body.player_id) {
         return sb.respond(400, { error: 'Missing required fields' });
       }
       try {
@@ -237,6 +237,7 @@ exports.handler = async function (event) {
       var update = {};
       if (body.tee_time !== undefined) update.tee_time = body.tee_time;
       if (body.starting_hole !== undefined) update.starting_hole = body.starting_hole;
+      if (body.group_number !== undefined) update.group_number = body.group_number;
 
       var updated = await sb.sbPatch('groups?id=eq.' + body.id, update);
 

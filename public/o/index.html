@@ -878,9 +878,14 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
     <!-- GROUPS TAB -->
     <div class="tab-panel" id="tab-groups">
+      <div id="unassigned-section" style="display:none;margin-bottom:16px;background:#FFF8E1;border:1px solid var(--amber);border-radius:var(--radius);padding:12px 16px;">
+        <div style="font-size:14px;font-weight:600;color:#7A5A00;margin-bottom:8px;" id="unassigned-count"></div>
+        <div id="unassigned-players" style="font-size:13px;color:#7A5A00;"></div>
+      </div>
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill groups</button>
-        <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ Add group</button>
+        <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill unassigned</button>
+        <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ New group</button>
+        <button class="btn btn-outline btn-sm" onclick="startAgainGroups()" style="color:var(--red);border-color:var(--red);">Start again</button>
       </div>
       <div id="groups-list"></div>
     </div>
@@ -2667,61 +2672,80 @@ Bob Wilson"></textarea>
 
   function renderGroupsList() {
     var el = $('groups-list');
+    var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+    var isShotgun = startingMode === 'shotgun';
+
+    // Unassigned section at top
+    var unassigned = state.players.filter(function(p) { return !p.group_id; });
+    var unEl = $('unassigned-section');
+    if (unassigned.length > 0) {
+      unEl.style.display = '';
+      $('unassigned-count').textContent = unassigned.length + ' not in a group';
+      $('unassigned-players').innerHTML = unassigned.map(function (p) {
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">' +
+          '<span>' + esc(p.display_name) + '</span>' +
+          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">Add to group</button>' +
+        '</div>';
+      }).join('');
+    } else {
+      unEl.style.display = 'none';
+    }
+
     if (state.groups.length === 0) {
       el.innerHTML = '<div class="empty-state"><p>No groups yet. Use auto-fill or add manually.</p></div>';
       return;
     }
 
-    var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
-    var isShotgun = startingMode === 'shotgun';
+    // Compute PH for display
+    var tee = state.teeData;
+    var evd = state.currentEventData || {};
+    var allowance = parseFloat(evd.handicap_allowance) || 0.95;
+    var cap = parseInt(evd.max_handicap) || 54;
 
-    el.innerHTML = state.groups.map(function(g) {
+    el.innerHTML = state.groups.map(function(g, idx) {
       var members = state.players.filter(function(p) { return p.group_id === g.id; });
       var membersHtml = members.map(function(p) {
-        return '<div class="gc-player">' +
-          '<span class="gcp-name">' + esc(p.display_name) + (p.pair_key ? ' <span style="color:var(--muted);font-size:11px;">(' + p.pair_key + ')</span>' : '') + '</span>' +
-          '<span class="gcp-ph">' + (p.playing_handicap != null ? p.playing_handicap : '-') + '</span>' +
+        var ph = '-';
+        if (p.handicap_index != null && tee) {
+          ph = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
+        }
+        return '<div class="gc-player" style="cursor:pointer;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">' +
+          '<span class="gcp-name">' + esc(p.display_name) + '</span>' +
+          '<span class="gcp-ph">' + ph + '</span>' +
         '</div>';
       }).join('');
 
       var timeInput = '';
       if (isShotgun) {
-        timeInput = '<div class="gc-time"><label style="font-size:12px;color:var(--muted);">Start hole</label>' +
-          '<input type="number" min="1" max="18" value="' + (g.starting_hole || 1) + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{starting_hole:parseInt(this.value)})" style="width:60px;padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
-          '</div>';
+        timeInput = '<input type="number" min="1" max="18" value="' + (g.starting_hole || 1) + '" ' +
+          'onchange="updateGroup(\'' + g.id + '\',{starting_hole:parseInt(this.value)})" ' +
+          'style="width:50px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;text-align:center;" title="Start hole">';
       } else {
-        var tv = g.tee_time || '';
-        timeInput = '<div class="gc-time"><label style="font-size:12px;color:var(--muted);">Tee time</label>' +
-          '<input type="time" value="' + tv + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{tee_time:this.value||null})" style="width:100px;padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
-          '</div>';
+        timeInput = '<input type="time" value="' + (g.tee_time || '') + '" ' +
+          'onchange="updateGroup(\'' + g.id + '\',{tee_time:this.value||null})" ' +
+          'style="width:90px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;" title="Tee time">';
       }
+
+      // Reorder arrows
+      var arrows = '<div style="display:flex;gap:2px;">';
+      if (idx > 0) arrows += '<button onclick="moveGroupUp(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move up">&uarr;</button>';
+      if (idx < state.groups.length - 1) arrows += '<button onclick="moveGroupDown(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move down">&darr;</button>';
+      arrows += '</div>';
+
+      var emptyBtn = members.length === 0
+        ? '<button onclick="deleteGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--red);">Delete</button>'
+        : '<button onclick="emptyGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--muted);">Empty</button>';
 
       return '<div class="group-card">' +
         '<div class="gc-header">' +
+          arrows +
           '<span class="gc-num">Group ' + g.group_number + '</span>' +
           timeInput +
+          emptyBtn +
         '</div>' +
-        '<div class="gc-members">' + (membersHtml || '<span style="font-size:13px;color:var(--muted);">No players</span>') + '</div>' +
+        '<div class="gc-members">' + (membersHtml || '<span style="font-size:13px;color:var(--muted);">Empty</span>') + '</div>' +
       '</div>';
     }).join('');
-
-    // Show unassigned players
-    var unassigned = state.players.filter(function(p) { return !p.group_id; });
-    if (unassigned.length > 0) {
-      el.innerHTML += '<div style="margin-top:16px;"><h3 style="font-size:14px;color:var(--muted);margin-bottom:8px;">Unassigned (' + unassigned.length + ')</h3>' +
-        unassigned.map(function(p) {
-          return '<div class="player-item" style="padding:8px 0;">' +
-            '<span class="pi-name">' + esc(p.display_name) + '</span>' +
-            '<select onchange="assignToGroup(\'' + p.id + '\',this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:4px;font-size:13px;">' +
-              '<option value="">Assign...</option>' +
-              state.groups.map(function(g) { return '<option value="' + g.id + '">Group ' + g.group_number + '</option>'; }).join('') +
-            '</select>' +
-          '</div>';
-        }).join('') +
-      '</div>';
-    }
   }
 
   window.autoFillGroups = async function() {
@@ -2781,6 +2805,119 @@ Bob Wilson"></textarea>
     } catch (err) {
       toast('Error: ' + err.message);
     }
+  };
+
+  // Move player sheet — tap player, choose target group
+  window.showMoveSheet = async function(playerId, playerName) {
+    var opts = state.groups.map(function (g) {
+      return '<button onclick="movePlayerToGroup(\'' + playerId + '\',\'' + g.id + '\')" ' +
+        'style="width:100%;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--white);cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;margin-bottom:6px;">' +
+        'Group ' + g.group_number + '</button>';
+    }).join('');
+    opts += '<button onclick="movePlayerToGroup(\'' + playerId + '\',\'new\')" ' +
+      'style="width:100%;padding:12px;border:1px solid var(--green);border-radius:8px;background:var(--green-light);cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;color:var(--green);margin-bottom:6px;">' +
+      '+ New group</button>';
+    opts += '<button onclick="movePlayerToGroup(\'' + playerId + '\',\'none\')" ' +
+      'style="width:100%;padding:12px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;">' +
+      'Remove from group</button>';
+
+    var overlay = $('oob-sheet-overlay');
+    $('oob-sheet-text').innerHTML = 'Move <strong>' + esc(playerName) + '</strong> to:';
+    $('oob-sheet-input-wrap').style.display = 'none';
+    $('oob-sheet-ok').style.display = 'none';
+    $('oob-sheet-cancel').textContent = 'Cancel';
+    // Replace OK with the options list
+    var container = $('oob-sheet-ok').parentElement;
+    var optDiv = document.createElement('div');
+    optDiv.id = 'move-options';
+    optDiv.innerHTML = opts;
+    container.parentElement.insertBefore(optDiv, container);
+    $('oob-sheet-cancel').onclick = function () {
+      overlay.style.display = 'none';
+      var od = document.getElementById('move-options');
+      if (od) od.remove();
+      $('oob-sheet-ok').style.display = '';
+    };
+    overlay.style.display = 'flex';
+  };
+
+  window.movePlayerToGroup = async function(playerId, targetGroupId) {
+    $('oob-sheet-overlay').style.display = 'none';
+    var od = document.getElementById('move-options');
+    if (od) od.remove();
+    $('oob-sheet-ok').style.display = '';
+
+    try {
+      if (targetGroupId === 'new') {
+        await api('org-groups', { method: 'POST', body: { action: 'create_group', event_id: state.currentEvent, organiser_id: state.organiser.id } });
+        await loadGroups();
+        var newGroup = state.groups[state.groups.length - 1];
+        targetGroupId = newGroup.id;
+      }
+
+      if (targetGroupId === 'none') {
+        await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: playerId, group_id: null } });
+      } else {
+        await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: playerId, group_id: targetGroupId } });
+      }
+      await loadGroups();
+      renderGroupsList();
+    } catch (err) { toast('Error: ' + err.message); }
+  };
+
+  window.emptyGroup = async function(groupId) {
+    if (!(await oobConfirm('Move all players out of this group?', 'Empty'))) return;
+    var members = state.players.filter(function (p) { return p.group_id === groupId; });
+    for (var i = 0; i < members.length; i++) {
+      await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: members[i].id, group_id: null } });
+    }
+    await loadGroups();
+    renderGroupsList();
+    toast('Group emptied');
+  };
+
+  window.deleteGroup = async function(groupId) {
+    try {
+      // Delete empty group via PATCH to remove, or just filter it out
+      // For now, we can't delete groups via the API easily. Empty groups are harmless.
+      // TODO: add delete_group action to org-groups
+      toast('Empty groups are removed on auto-fill');
+    } catch (err) { toast('Error: ' + err.message); }
+  };
+
+  window.moveGroupUp = async function(groupId) {
+    var idx = state.groups.findIndex(function (g) { return g.id === groupId; });
+    if (idx <= 0) return;
+    // Swap group_number with the one above
+    var above = state.groups[idx - 1];
+    var current = state.groups[idx];
+    await api('org-groups', { method: 'PATCH', body: { id: current.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: above.group_number } });
+    await api('org-groups', { method: 'PATCH', body: { id: above.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: current.group_number } });
+    await loadGroups();
+    renderGroupsList();
+  };
+
+  window.moveGroupDown = async function(groupId) {
+    var idx = state.groups.findIndex(function (g) { return g.id === groupId; });
+    if (idx >= state.groups.length - 1) return;
+    var below = state.groups[idx + 1];
+    var current = state.groups[idx];
+    await api('org-groups', { method: 'PATCH', body: { id: current.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: below.group_number } });
+    await api('org-groups', { method: 'PATCH', body: { id: below.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: current.group_number } });
+    await loadGroups();
+    renderGroupsList();
+  };
+
+  window.startAgainGroups = async function() {
+    if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Start again'))) return;
+    for (var i = 0; i < state.players.length; i++) {
+      if (state.players[i].group_id) {
+        await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: state.players[i].id, group_id: null } });
+      }
+    }
+    await loadGroups();
+    renderGroupsList();
+    toast('All players unassigned');
   };
 
   window.updateGroup = async function(groupId, updates) {
