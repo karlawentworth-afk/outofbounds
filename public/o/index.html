@@ -2074,32 +2074,46 @@ Bob Wilson"></textarea>
     // Clear existing hole rows
     while (grid.children.length > 3) grid.removeChild(grid.lastChild);
 
-    for (var h = 1; h <= 18; h++) {
-      var numEl = document.createElement('span');
-      numEl.style.fontWeight = '600';
-      numEl.textContent = h;
-      grid.appendChild(numEl);
+    function addSection(label, start, end) {
+      var hdr = document.createElement('span');
+      hdr.style.cssText = 'font-weight:700;color:var(--navy);font-size:13px;grid-column:1/-1;padding:8px 0 4px;border-top:1px solid var(--line);';
+      hdr.textContent = label;
+      if (start === 1) hdr.style.borderTop = 'none';
+      grid.appendChild(hdr);
 
-      var parSel = document.createElement('select');
-      parSel.id = 'ci-hole-par-' + h;
-      [3,4,5,6].forEach(function(p) {
-        var o = document.createElement('option');
-        o.value = p; o.textContent = p;
-        if (p === 4) o.selected = true;
-        parSel.appendChild(o);
-      });
-      grid.appendChild(parSel);
+      for (var h = start; h <= end; h++) {
+        var numEl = document.createElement('span');
+        numEl.style.fontWeight = '600';
+        numEl.textContent = h;
+        grid.appendChild(numEl);
 
-      var siSel = document.createElement('select');
-      siSel.id = 'ci-hole-si-' + h;
-      for (var s = 1; s <= 18; s++) {
-        var o = document.createElement('option');
-        o.value = s; o.textContent = s;
-        if (s === h) o.selected = true;
-        siSel.appendChild(o);
+        var parSel = document.createElement('select');
+        parSel.id = 'ci-hole-par-' + h;
+        [3,4,5,6].forEach(function(p) {
+          var o = document.createElement('option');
+          o.value = p; o.textContent = p;
+          if (p === 4) o.selected = true;
+          parSel.appendChild(o);
+        });
+        grid.appendChild(parSel);
+
+        var siSel = document.createElement('select');
+        siSel.id = 'ci-hole-si-' + h;
+        // Default to blank (no pre-selected SI)
+        var blank = document.createElement('option');
+        blank.value = ''; blank.textContent = '-';
+        siSel.appendChild(blank);
+        for (var s = 1; s <= 18; s++) {
+          var o = document.createElement('option');
+          o.value = s; o.textContent = s;
+          siSel.appendChild(o);
+        }
+        grid.appendChild(siSel);
       }
-      grid.appendChild(siSel);
     }
+
+    addSection('Front 9', 1, 9);
+    addSection('Back 9', 10, 18);
   }
 
   window.saveCourseInline = async function() {
@@ -2108,10 +2122,12 @@ Bob Wilson"></textarea>
 
     var holes = [];
     for (var h = 1; h <= 18; h++) {
+      var siVal = $('ci-hole-si-' + h).value;
+      if (!siVal) { toast('Set the stroke index for hole ' + h); return; }
       holes.push({
         hole_number: h,
         par: parseInt($('ci-hole-par-' + h).value),
-        stroke_index: parseInt($('ci-hole-si-' + h).value)
+        stroke_index: parseInt(siVal)
       });
     }
 
