@@ -830,12 +830,15 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
         <div class="invite-section">
-          <h3 style="font-size:16px;margin-bottom:8px;">Player links</h3>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Share the find-your-name link or copy individual player links.</p>
+          <h3 style="font-size:16px;margin-bottom:8px;">Share with your players</h3>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Send this link. They tap their name, confirm their handicap, and they're in.</p>
           <div class="qr-wrap" id="invite-qr-wrap"></div>
           <div class="invite-url" id="invite-url"></div>
-          <button class="btn btn-outline btn-sm" onclick="copyInviteLink()" style="margin-bottom:8px;">Copy link</button>
-          <button class="btn btn-outline btn-sm" onclick="copyAllPlayerLinks()">Copy all player links</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="shareWhatsApp()" style="background:#25D366;color:#fff;border:none;flex:1;min-width:140px;">WhatsApp</button>
+            <button class="btn btn-outline btn-sm" onclick="copyInviteLink()" style="flex:1;min-width:100px;">Copy link</button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="copyAllPlayerLinks()" style="margin-top:8px;width:100%;">Copy all individual links</button>
         </div>
 
         <h3 style="font-size:16px;margin:20px 0 12px;">Groups</h3>
@@ -2676,6 +2679,13 @@ Bob Wilson"></textarea>
   };
 
   // ── Invite link / QR ─────────────────────────────────────────
+  window.shareWhatsApp = function() {
+    var evName = state.currentEventData ? state.currentEventData.name : 'the event';
+    var url = $('invite-url').textContent;
+    var text = "You're playing in " + evName + "! Tap your name and confirm your handicap: " + url;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  };
+
   window.copyInviteLink = function() {
     var url = $('invite-url').textContent;
     navigator.clipboard.writeText(url).then(function() { toast('Link copied'); });
