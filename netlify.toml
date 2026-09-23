@@ -9,6 +9,10 @@
     included_files = []
     timeout = 26
 
+  # People cleanup: monthly scheduled function
+  [functions."people-cleanup"]
+    schedule = "0 3 1 * *"
+
 
 [[headers]]
   for = "/*.html"

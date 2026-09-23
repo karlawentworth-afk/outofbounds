@@ -7,6 +7,48 @@ function genToken() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+/** Upsert players into the people table (Pro organisers only). */
+async function upsertPeople(organiserId, players) {
+  var planGate = require('./shared/plan-gate');
+  var isPro = await planGate.isPro(organiserId);
+  if (!isPro) return;
+
+  for (var i = 0; i < players.length; i++) {
+    var p = players[i];
+    if (!p.first_name && !p.last_name) continue;
+
+    try {
+      if (p.email) {
+        var existing = await sb.sbGet(
+          'people?organiser_id=eq.' + organiserId +
+          '&email=eq.' + encodeURIComponent(p.email) +
+          '&deleted_at=is.null&select=id&limit=1'
+        );
+        if (existing && existing.length) {
+          await sb.sbPatch('people?id=eq.' + existing[0].id, {
+            handicap_index: p.handicap_index || null,
+            last_event_at: new Date().toISOString()
+          });
+          continue;
+        }
+      }
+      await sb.sbPost('people', {
+        organiser_id: organiserId,
+        first_name: p.first_name || '',
+        last_name: p.last_name || '',
+        email: p.email || null,
+        handicap_index: p.handicap_index || null,
+        source: 'typed',
+        last_event_at: new Date().toISOString(),
+        events_count: 1
+      });
+    } catch (e) {
+      // Swallow — people upsert is best-effort
+      console.warn('People upsert failed:', e.message);
+    }
+  }
+}
+
 /**
  * Verify organiser owns the event.
  */
@@ -277,6 +319,9 @@ exports.handler = async function (event) {
 
         var created = await sb.sbPost('players', players);
 
+        // Upsert into people (Pro only, best-effort)
+        await upsertPeople(body.organiser_id, players);
+
         return sb.respond(200, { players: Array.isArray(created) ? created : [created], count: players.length });
       } catch (err) {
         console.error('org-players paste error:', err);
@@ -323,6 +368,9 @@ exports.handler = async function (event) {
         });
 
         var created = await sb.sbPost('players', rows);
+
+        // Upsert into people (Pro only, best-effort)
+        await upsertPeople(body.organiser_id, rows);
 
         return sb.respond(200, { players: Array.isArray(created) ? created : [created] });
       } catch (err) {
