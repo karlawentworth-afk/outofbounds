@@ -300,7 +300,7 @@ async function stepA2_signInScreen() {
     var ctx = await browser.newContext({ viewport: { width: 375, height: 667 } });
     var page = await ctx.newPage();
     await page.goto(LIVE_URL + '/o/');
-    await sleep(5000);
+    await sleep(8000);
 
     var noSession = await page.evaluate(visibleScreensFn);
 
