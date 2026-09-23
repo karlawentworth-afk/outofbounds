@@ -119,6 +119,20 @@ async function handleEventPayment(session) {
   return sb.respond(200, { received: true });
 }
 
+// ── Subscription helpers ────────────────────────────────────────
+
+/**
+ * Get current_period_end from a subscription object.
+ * Newer Stripe API versions put it on items.data[0], not the root.
+ */
+function getSubPeriodEnd(sub) {
+  if (sub.current_period_end) return sub.current_period_end;
+  if (sub.items && sub.items.data && sub.items.data[0]) {
+    return sub.items.data[0].current_period_end;
+  }
+  return null;
+}
+
 // ── Subscription handlers ───────────────────────────────────────
 
 async function handleSubscriptionCheckout(session) {
@@ -138,8 +152,9 @@ async function handleSubscriptionCheckout(session) {
   var stripe = require('./shared/stripe');
   var sub = await stripe.stripeRequest('GET', '/v1/subscriptions/' + subscriptionId, null);
 
-  var periodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
+  var rawPeriodEnd = getSubPeriodEnd(sub);
+  var periodEnd = rawPeriodEnd
+    ? new Date(rawPeriodEnd * 1000).toISOString()
     : null;
 
   // Get current plan for audit log
@@ -173,8 +188,9 @@ async function handleSubscriptionUpdated(sub) {
     return sb.respond(200, { received: true, applied: false });
   }
 
-  var periodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
+  var rawPeriodEnd = getSubPeriodEnd(sub);
+  var periodEnd = rawPeriodEnd
+    ? new Date(rawPeriodEnd * 1000).toISOString()
     : null;
 
   var update = {
