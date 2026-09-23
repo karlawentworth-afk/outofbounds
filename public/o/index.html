@@ -911,6 +911,18 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
           </div>
         </div>
 
+        <div class="invite-section" style="margin-top:16px;">
+          <h3 style="font-size:16px;margin-bottom:8px;">Put this on the big screen</h3>
+          <div class="invite-url" id="board-url"></div>
+          <button class="btn btn-outline btn-sm" onclick="copyBoardLink()" style="margin-bottom:8px;">Copy board link</button>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6;">
+            <strong>Laptop + HDMI:</strong> Open the link in Chrome, press F11 for full screen.<br>
+            <strong>Fire Stick / Chromecast:</strong> Open the link in the device's browser.<br>
+            <strong>Phone / iPad:</strong> Mirror your screen to the TV.<br>
+            The board keeps the screen awake and hides the cursor automatically.
+          </p>
+        </div>
+
         <h3 style="font-size:16px;margin:20px 0 12px;">Groups</h3>
         <div id="live-groups-list"></div>
 
@@ -2792,6 +2804,10 @@ Bob Wilson"></textarea>
     // Generate QR code
     renderQR(inviteUrl, $('invite-qr-wrap'));
 
+    // Board URL
+    var boardUrl = baseUrl + '/board/#/' + orgSlug + '/' + evSlug;
+    $('board-url').textContent = boardUrl;
+
     // Render group cards with status
     renderLiveGroups();
 
@@ -3216,6 +3232,11 @@ Bob Wilson"></textarea>
     navigator.clipboard.writeText(snippet).then(function () {
       toast('Embed snippet copied');
     });
+  };
+
+  window.copyBoardLink = function() {
+    var url = $('board-url').textContent;
+    navigator.clipboard.writeText(url).then(function () { toast('Board link copied'); });
   };
 
   window.copyInviteLink = function() {
