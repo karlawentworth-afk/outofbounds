@@ -26,7 +26,7 @@ exports.handler = async function (event) {
     // 1. Look up the player by token
     var players = await sb.sbGet(
       'players?player_token=eq.' + encodeURIComponent(token) +
-      '&select=id,event_id,first_name,last_name,display_name,handicap_index,playing_handicap,group_id,pair_key' +
+      '&select=id,event_id,first_name,last_name,display_name,handicap_index,playing_handicap,group_id,pair_key,player_status' +
       '&limit=1'
     );
 

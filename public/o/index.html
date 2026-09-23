@@ -1990,17 +1990,40 @@ Bob Wilson"></textarea>
       return;
     }
 
+    var confirmed = state.players.filter(function(p) { return p.player_status === 'confirmed'; }).length;
+    var invited = state.players.length - confirmed;
     var missing = state.players.filter(function(p) { return p.handicap_index == null; }).length;
+
     var countHtml = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
+    if (state.currentEventData && state.currentEventData.status === 'live') {
+      countHtml += ' &middot; <strong>' + confirmed + ' of ' + state.players.length + ' confirmed</strong>';
+    }
     if (missing > 0) {
       countHtml += ' &middot; <span class="warn">' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
+    }
+    if (invited > 0 && state.currentEventData && state.currentEventData.status === 'live') {
+      var invitedNames = state.players
+        .filter(function(p) { return p.player_status !== 'confirmed'; })
+        .map(function(p) { return p.first_name; })
+        .join(', ');
+      countHtml += '<br><button class="btn btn-outline btn-sm" style="margin-top:8px;font-size:12px;" onclick="nudgeInvited()">' +
+        'Nudge ' + invited + ' invited</button>';
+      // Store for nudge
+      state._invitedNames = invitedNames;
     }
     countEl.innerHTML = countHtml;
 
     el.innerHTML = state.players.map(function(p) {
       var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '-';
       var phStr = p.playing_handicap != null ? p.playing_handicap : '-';
+      var statusDot = '';
+      if (state.currentEventData && state.currentEventData.status === 'live') {
+        statusDot = p.player_status === 'confirmed'
+          ? '<span style="color:var(--green);font-size:10px;margin-right:6px;" title="Confirmed">&#9679;</span>'
+          : '<span style="color:var(--amber);font-size:10px;margin-right:6px;" title="Invited">&#9675;</span>';
+      }
       return '<div class="player-item">' +
+        statusDot +
         '<span class="pi-name">' + esc(p.display_name) + '</span>' +
         '<span class="pi-idx">' + idxStr + '</span>' +
         '<span class="pi-ph">' + phStr + '</span>' +
@@ -2059,6 +2082,22 @@ Bob Wilson"></textarea>
       toast('Player added');
     } catch (err) {
       toast('Error: ' + err.message);
+    }
+  };
+
+  window.nudgeInvited = function() {
+    var names = state._invitedNames || 'your mates';
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+    var link = window.location.origin + '/p/#/' + orgSlug + '/' + evSlug;
+    var text = 'Hey ' + names + ' — tap your name and confirm your handicap so we can get going: ' + link;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast('WhatsApp message copied!');
+      });
+    } else {
+      prompt('Copy this message:', text);
     }
   };
 

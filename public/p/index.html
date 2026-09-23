@@ -305,6 +305,30 @@ html, body {
   </div>
 </div>
 
+<!-- CONFIRM IDENTITY -->
+<div class="screen" id="s-confirm">
+  <div class="top-bar">
+    <span class="ev-name" id="conf-ev"></span>
+    <div></div>
+    <img class="org-logo" alt="">
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;padding:24px 16px;max-width:400px;margin:0 auto;width:100%;">
+    <h2 style="font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;margin-bottom:4px;" id="conf-name"></h2>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Confirm your details to start scoring.</p>
+
+    <label style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;">Handicap index</label>
+    <input type="number" id="conf-handicap" step="0.1" min="-10" max="54" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;font-size:18px;font-family:inherit;outline:none;margin-bottom:4px;-webkit-appearance:none;" placeholder="e.g. 18.4">
+    <p style="font-size:11px;color:var(--muted);margin-bottom:20px;">Your WHS handicap index. Used to calculate your playing handicap for this event.</p>
+
+    <label style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;">Email <span style="font-weight:400;">(optional, for your results)</span></label>
+    <input type="email" id="conf-email" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;outline:none;margin-bottom:24px;" placeholder="you@example.com" autocomplete="email">
+
+    <button id="conf-btn" style="width:100%;padding:16px;background:var(--green);color:#fff;border:none;border-radius:999px;font-size:17px;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;" onclick="confirmIdentity()">That's me</button>
+
+    <p style="font-size:11px;color:var(--muted);margin-top:16px;line-height:1.5;" id="conf-disclaimer"></p>
+  </div>
+</div>
+
 <!-- WELCOME -->
 <div class="screen" id="s-welcome">
   <div class="top-bar">
@@ -697,7 +721,7 @@ html, body {
         var html = '';
         players.forEach(function (p) {
           if (f && (p.display_name || '').toLowerCase().indexOf(f) === -1) return;
-          html += '<div class="find-item" data-token="' + esc(p.token) + '">' + esc(p.display_name) + '</div>';
+          html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + esc(p.display_name) + '</div>';
         });
         if (!html) html = '<div style="padding:24px;text-align:center;color:var(--muted)">No players found</div>';
         listEl.innerHTML = html;
@@ -710,16 +734,73 @@ html, body {
         var item = e.target.closest('.find-item');
         if (!item) return;
         var t = item.getAttribute('data-token');
+        var name = item.textContent;
+        var hi = item.getAttribute('data-hi');
+        var status = item.getAttribute('data-status');
         if (t) {
           token = t;
           location.hash = '#/' + orgSlug + '/' + eventSlug + '/' + t;
-          loadContext();
+          if (status === 'confirmed') {
+            // Already confirmed — go straight to scoring
+            loadContext();
+          } else {
+            // Show confirm screen
+            showConfirmScreen(name, hi);
+          }
         }
       });
     } catch (err) {
       document.getElementById('find-list').innerHTML = '<div style="padding:24px;color:var(--muted)">' + esc(err.message) + '</div>';
     }
   }
+
+  /* ── CONFIRM IDENTITY ── */
+  function showConfirmScreen(name, hi) {
+    showScreen('s-confirm');
+    document.getElementById('conf-ev').textContent = config && config.event ? config.event.name : '';
+    document.getElementById('conf-name').textContent = name;
+    document.getElementById('conf-handicap').value = hi || '';
+    document.getElementById('conf-email').value = '';
+
+    var orgName = config && config.organiser ? (config.organiser.display_name || config.organiser.name) : 'The organiser';
+    document.getElementById('conf-disclaimer').textContent =
+      orgName + ' keeps your name, email and handicap so they can invite you to future events. Ask them to remove you at any time.';
+
+    // Apply branding to confirm screen top bar
+    if (config && config.organiser && config.organiser.primary_colour) {
+      var topBar = document.querySelector('#s-confirm .top-bar');
+      if (topBar) {
+        topBar.style.background = config.organiser.primary_colour;
+        if (config.organiser.text_on_primary) topBar.style.color = config.organiser.text_on_primary;
+      }
+    }
+  }
+
+  window.confirmIdentity = async function () {
+    var btn = document.getElementById('conf-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+      var hi = document.getElementById('conf-handicap').value;
+      var email = document.getElementById('conf-email').value.trim();
+
+      await OOB.api('player-confirm', {
+        method: 'POST',
+        body: {
+          token: token,
+          handicap_index: hi ? parseFloat(hi) : null,
+          email: email || null
+        }
+      });
+
+      loadContext();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "That's me";
+      alert('Error: ' + err.message);
+    }
+  };
 
   /* ── LOAD CONTEXT ── */
   async function loadContext() {
@@ -733,6 +814,15 @@ html, body {
 
     if (ctx.organiser && ctx.organiser.logo_url) setOrgLogos(ctx.organiser.logo_url);
     if (ctx.event) setEventNames(ctx.event.name);
+
+    // If player hasn't confirmed yet, show confirm screen
+    if (ctx.player && ctx.player.player_status !== 'confirmed') {
+      showConfirmScreen(
+        ctx.player.display_name,
+        ctx.player.handicap_index != null ? String(ctx.player.handicap_index) : ''
+      );
+      return;
+    }
 
     // Load existing scores
     if (ctx.scores) {

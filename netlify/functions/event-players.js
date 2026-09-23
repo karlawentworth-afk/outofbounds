@@ -24,7 +24,7 @@ exports.handler = async function (event) {
   try {
     var players = await sb.sbGet(
       'players?event_id=eq.' + eventId +
-      '&select=id,display_name,first_name,last_name,player_token,group_id' +
+      '&select=id,display_name,first_name,last_name,player_token,group_id,player_status,handicap_index' +
       '&order=display_name.asc'
     );
 
@@ -35,7 +35,9 @@ exports.handler = async function (event) {
           display_name: p.display_name,
           first_name: p.first_name,
           last_name: p.last_name,
-          token: p.player_token
+          token: p.player_token,
+          player_status: p.player_status || 'invited',
+          handicap_index: p.handicap_index
         };
       })
     });
