@@ -2318,7 +2318,7 @@ Bob Wilson"></textarea>
     var idxNum = idx ? parseFloat(idx) : null;
 
     try {
-      await api('org-players', {
+      var res = await api('org-players', {
         method: 'POST',
         body: {
           event_id: state.currentEvent,
@@ -2329,7 +2329,18 @@ Bob Wilson"></textarea>
       await loadPlayers();
       renderPlayerList();
       hideAddPlayer();
-      toast('Player added');
+
+      // If live event on Play, the server flags that a 99p top-up is needed
+      if (res.top_up_required) {
+        toast('Player added — 99p top-up required');
+        var topUp = await api('stripe-checkout', {
+          method: 'POST',
+          body: { event_id: state.currentEvent, organiser_id: state.organiser.id, top_up: true }
+        });
+        if (topUp.url) window.location.href = topUp.url;
+      } else {
+        toast('Player added');
+      }
     } catch (err) {
       toast('Error: ' + err.message);
     }

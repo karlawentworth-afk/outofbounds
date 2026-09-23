@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
+var audit = require('./shared/audit');
 
 function genToken() {
   return crypto.randomBytes(16).toString('hex');
@@ -188,6 +189,9 @@ exports.handler = async function (event) {
         req.on('error', function (err) { clearTimeout(timer); reject(err); });
         req.end();
       });
+
+      // Audit log
+      await audit.log(body.event_id, 'player_removed', { player_id: body.id }, body.organiser_id);
 
       return sb.respond(200, { ok: true });
     } catch (err) {
@@ -380,10 +384,27 @@ exports.handler = async function (event) {
 
         var created = await sb.sbPost('players', rows);
 
-        // Upsert into people (Pro only, best-effort)
+        // Upsert into people (best-effort, Play capped at 40)
         await upsertPeople(body.organiser_id, rows);
 
-        return sb.respond(200, { players: Array.isArray(created) ? created : [created] });
+        // Audit log for each player added
+        var createdArr = Array.isArray(created) ? created : [created];
+        for (var ai = 0; ai < createdArr.length; ai++) {
+          await audit.log(body.event_id, 'player_added', {
+            player_id: createdArr[ai].id,
+            name: createdArr[ai].display_name
+          }, body.organiser_id);
+        }
+
+        // If live event on Play, flag top-up needed
+        var needsTopUp = ev.status === 'live' && ev.paid;
+        var planGateCheck = require('./shared/plan-gate');
+        var orgIsPro = await planGateCheck.isPro(body.organiser_id);
+        if (needsTopUp && !orgIsPro) {
+          return sb.respond(200, { players: createdArr, top_up_required: true, top_up_count: createdArr.length });
+        }
+
+        return sb.respond(200, { players: createdArr });
       } catch (err) {
         console.error('org-players POST error:', err);
         return sb.respond(500, { error: err.message });

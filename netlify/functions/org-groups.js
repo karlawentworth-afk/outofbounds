@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var audit = require('./shared/audit');
 
 /**
  * Verify organiser owns the event.
@@ -182,6 +183,11 @@ exports.handler = async function (event) {
 
         await sb.sbPatch('players?id=eq.' + body.player_id, patchData);
 
+        await audit.log(body.event_id, 'player_moved', {
+          player_id: body.player_id,
+          to_group: body.group_id
+        }, body.organiser_id);
+
         return sb.respond(200, { ok: true });
       } catch (err) {
         console.error('org-groups assign error:', err);
@@ -233,6 +239,14 @@ exports.handler = async function (event) {
       if (body.starting_hole !== undefined) update.starting_hole = body.starting_hole;
 
       var updated = await sb.sbPatch('groups?id=eq.' + body.id, update);
+
+      // Audit tee_time and starting_hole changes
+      if (body.tee_time !== undefined) {
+        await audit.log(body.event_id, 'tee_time_changed', { group_id: body.id, tee_time: body.tee_time }, body.organiser_id);
+      }
+      if (body.starting_hole !== undefined) {
+        await audit.log(body.event_id, 'starting_hole_changed', { group_id: body.id, starting_hole: body.starting_hole }, body.organiser_id);
+      }
 
       return sb.respond(200, { group: Array.isArray(updated) ? updated[0] : updated });
     } catch (err) {
