@@ -55,7 +55,7 @@ exports.handler = async function (event) {
       var events = await sb.sbGet(
         'events?organiser_id=eq.' + org.id +
         '&slug=eq.' + encodeURIComponent(eventSlug) +
-        '&select=id,name,event_date,format,handicap_allowance,sponsor_name,sponsor_logo_url,headline_text,status,board_rows_per_page,leaderboard_freeze_hole,board_show_full' +
+        '&select=id,name,event_date,format,handicap_allowance,sponsor_name,sponsor_logo_url,headline_text,status,board_rows_per_page,leaderboard_freeze_hole,board_show_full,counted_holes,results_published_at,auto_closed' +
         '&limit=1'
       );
 

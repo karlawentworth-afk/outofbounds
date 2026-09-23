@@ -100,6 +100,13 @@ exports.handler = async function (event) {
       scoreRow
     );
 
+    // If finished event, update the results timestamp
+    if (ev.status === 'finished') {
+      await sb.sbPatch('events?id=eq.' + eventId, {
+        results_published_at: new Date().toISOString()
+      });
+    }
+
     return sb.respond(200, { ok: true, edit_id: edit ? edit.id : null });
   } catch (err) {
     console.error('org-score-edit error:', err);
