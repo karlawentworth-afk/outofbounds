@@ -1429,6 +1429,115 @@ async function stepConsoleErrors() {
   }
 }
 
+// ── Missing-score sheet test ─────────────────────────────────────
+async function stepMissingScoreSheet() {
+  console.log('\n--- Missing-score sheet (demo event) ---');
+
+  var browser = await chromium.launch({ headless: true });
+  try {
+    var ctx = await browser.newContext({ viewport: { width: 375, height: 667 } });
+    var page = await ctx.newPage();
+    var errors = [];
+    page.on('pageerror', function (e) { errors.push(e.message); });
+
+    await page.goto(LIVE_URL + '/p/demo/autumn-invitational/demo-scorer-group-001-token');
+
+    // Wait for scoring screen, clicking through welcome
+    for (var w = 0; w < 20; w++) {
+      await sleep(1000);
+      var screen = await page.evaluate(function () {
+        var ss = document.querySelectorAll('.screen');
+        for (var i = 0; i < ss.length; i++) if (ss[i].offsetHeight > 0) return ss[i].id;
+        return 'none';
+      });
+      if (screen === 's-scoring') break;
+      await page.evaluate(function () {
+        var b = document.getElementById('btn-go');
+        if (b && b.offsetHeight > 0) b.click();
+      });
+    }
+
+    if (screen !== 's-scoring') {
+      step('Missing-score: reached scoring screen', false, 'screen=' + screen);
+      await ctx.close();
+      return;
+    }
+
+    // Should be on hole 12 (first unscored)
+    var holeText = await page.evaluate(function () { return document.getElementById('hole-num').textContent; });
+    step('Missing-score: opens on hole 12', holeText.indexOf('12') !== -1, 'hole=' + holeText);
+
+    // Score players 0, 1, 2 but NOT player 3
+    var playerNames = await page.evaluate(function () {
+      var rows = document.querySelectorAll('.player-row');
+      return Array.from(rows).map(function (r) { return r.querySelector('.p-name').textContent; });
+    });
+
+    for (var pi = 0; pi < 3; pi++) {
+      await page.evaluate(function (idx) {
+        document.querySelectorAll('.player-row')[idx].click();
+        var keys = document.querySelectorAll('.kp-key');
+        for (var i = 0; i < keys.length; i++) {
+          var t = keys[i].childNodes[0];
+          if (t && t.textContent && t.textContent.trim() === '5') { keys[i].click(); break; }
+        }
+      }, pi);
+      await sleep(200);
+    }
+
+    // Check button shows "1 missing"
+    var btnBefore = await page.evaluate(function () { return document.getElementById('btn-save').textContent; });
+    step('Missing-score: button shows 1 missing', btnBefore.indexOf('1 missing') !== -1, 'text=' + btnBefore);
+
+    // Tap Save
+    await page.evaluate(function () { document.getElementById('btn-save').click(); });
+    await sleep(800);
+
+    // Assert sheet is visible and names the missing player
+    var sheetState = await page.evaluate(function () {
+      var sheet = document.getElementById('sheet');
+      var text = document.getElementById('sheet-text');
+      var yes = document.getElementById('sheet-yes');
+      return {
+        visible: sheet ? sheet.classList.contains('show') : false,
+        text: text ? text.textContent : '',
+        yesLabel: yes ? yes.textContent : ''
+      };
+    });
+
+    step('Missing-score: sheet names the player',
+      sheetState.visible && sheetState.text.indexOf(playerNames[3]) !== -1,
+      'visible=' + sheetState.visible + ' text="' + sheetState.text + '"');
+
+    step('Missing-score: sheet offers save-without',
+      sheetState.yesLabel.indexOf('Save without') !== -1,
+      'yes="' + sheetState.yesLabel + '"');
+
+    // Tap "Save without"
+    await page.evaluate(function () {
+      var yes = document.getElementById('sheet-yes');
+      if (yes) yes.click();
+    });
+
+    // Wait for save to resolve
+    for (var sw = 0; sw < 10; sw++) {
+      await sleep(1000);
+      var btnAfter = await page.evaluate(function () { return document.getElementById('btn-save').textContent; });
+      if (btnAfter === 'Saved' || btnAfter.indexOf('Save hole') !== -1) break;
+    }
+
+    step('Missing-score: saved successfully', btnAfter === 'Saved' || btnAfter.indexOf('Save hole') !== -1,
+      'btnAfter="' + btnAfter + '"');
+
+    step('Missing-score: no JS errors', errors.length === 0,
+      errors.length ? errors.join('; ') : 'clean');
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
 // ── UC1 Fix Tests ────────────────────────────────────────────────
 async function stepUC1_fixes() {
   console.log('\n--- UC1 Fix Tests ---');
@@ -1567,6 +1676,9 @@ async function main() {
 
     // VIEWPORT
     await stepN_viewportFit();
+
+    // MISSING SCORE SHEET (demo event)
+    await stepMissingScoreSheet();
 
     // CONSOLE ERROR SCAN
     await stepConsoleErrors();
