@@ -300,7 +300,12 @@ async function stepA2_signInScreen() {
     var ctx = await browser.newContext({ viewport: { width: 375, height: 667 } });
     var page = await ctx.newPage();
     await page.goto(LIVE_URL + '/o/');
-    await sleep(8000);
+    // Poll until loading screen disappears (max 15s)
+    for (var wait = 0; wait < 15; wait++) {
+      await sleep(1000);
+      var check = await page.evaluate(visibleScreensFn);
+      if (check.visible.length === 1 && check.visible[0] !== 'screen-loading') break;
+    }
 
     var noSession = await page.evaluate(visibleScreensFn);
 
