@@ -123,7 +123,8 @@ exports.handler = async function (event) {
         display_name: player.display_name,
         handicap_index: player.handicap_index,
         playing_handicap: player.playing_handicap,
-        pair_key: player.pair_key
+        pair_key: player.pair_key,
+        player_status: player.player_status || 'invited'
       },
       group: groupRow
         ? {
