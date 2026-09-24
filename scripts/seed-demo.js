@@ -466,6 +466,9 @@ async function seed() {
         playerToken = ev.isDraft ? null : token();
       }
 
+      // Fixed-token demo players are pre-confirmed so they skip the confirm screen
+      var isFixedDemo = ev.isLive && isFirstInGroup && groupIdx < 3;
+
       var playerRow = {
         event_id: eventId,
         first_name: person.first_name,
@@ -475,7 +478,9 @@ async function seed() {
         handicap_index: person.handicap_index,
         playing_handicap: ph,
         group_id: ev.isDraft ? null : groups[groupIdx],
-        player_token: playerToken || token()
+        player_token: playerToken || token(),
+        player_status: isFixedDemo ? 'confirmed' : 'invited',
+        handicap_source: isFixedDemo ? 'player' : 'organiser'
       };
 
       var createdPlayer = await sbPost('players', playerRow);

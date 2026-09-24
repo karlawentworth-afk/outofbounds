@@ -83,7 +83,7 @@
     var tabs = [
       { label: 'Organiser', href: '/o/#view-as-demo' },
       { label: 'Scoreboard', href: '/board/#/demo/autumn-invitational' },
-      { label: 'Player', href: '/p/demo/autumn-invitational/demo-scorer-group-001-token' },
+      { label: 'Demo player', href: '/p/demo/autumn-invitational/demo-scorer-group-001-token' },
       { label: 'Results', href: '/r/demo/spring-charity-classic' },
       { label: 'My account', href: '/o/#my-account' }
     ];

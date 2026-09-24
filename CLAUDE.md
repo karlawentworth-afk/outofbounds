@@ -68,6 +68,14 @@ curl -s "https://outofboundsscoring.netlify.app/<path>?_cb=$(date +%s)" | grep '
 Golf scorecards are holes 1-9 (front nine / OUT) and 10-18
 (back nine / IN), never 1-10 and 11-18.
 
+## Verified live
+
+Never say "verified live" unless you have opened the deployed URL
+in a browser (Playwright counts) and seen the expected behaviour.
+A curl to the HTML or a function endpoint is not verification —
+the page must render and the feature must work. If you cannot
+verify in a browser, say "deployed but not browser-tested".
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in

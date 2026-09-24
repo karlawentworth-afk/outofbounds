@@ -818,9 +818,15 @@ html, body {
 
   window.releaseMyName = function () {
     showSheet('Release your name so someone else can claim it?', 'Release', function () {
-      token = '';
-      location.hash = '#/' + orgSlug + '/' + eventSlug;
-      location.reload();
+      // Reset player status to invited on the server
+      OOB.api('player-confirm', {
+        method: 'POST',
+        body: { token: token, action: 'release' }
+      }).catch(function () {}).then(function () {
+        token = '';
+        location.hash = '#/' + orgSlug + '/' + eventSlug;
+        location.reload();
+      });
     });
   };
 

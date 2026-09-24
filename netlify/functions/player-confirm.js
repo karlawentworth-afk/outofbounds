@@ -31,6 +31,15 @@ exports.handler = async function (event) {
 
     var player = players[0];
 
+    // Release action: reset to invited
+    if (body.action === 'release') {
+      await sb.sbPatch('players?id=eq.' + player.id, {
+        player_status: 'invited',
+        handicap_source: 'organiser'
+      });
+      return sb.respond(200, { ok: true, released: true });
+    }
+
     // Build update
     var update = {
       player_status: 'confirmed',

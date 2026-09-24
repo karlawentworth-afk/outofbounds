@@ -1260,19 +1260,33 @@ Bob Wilson"></textarea>
     updateProGating();
 
     // Apply branding to organiser top bars
-    if (state.organiser && state.organiser.plan === 'pro') {
-      var org = state.organiser;
-      if (org.primary_colour) {
-        document.querySelectorAll('.top-bar').forEach(function (el) {
-          el.style.background = org.primary_colour;
-          if (org.text_on_primary) {
-            el.style.color = org.text_on_primary;
-            el.querySelectorAll('.user-pill').forEach(function (p) {
-              p.style.color = org.text_on_primary;
-            });
-          }
-        });
-      }
+    var org = state.organiser || {};
+    if (org.plan === 'pro' && org.primary_colour) {
+      document.querySelectorAll('.top-bar').forEach(function (el) {
+        el.style.background = org.primary_colour;
+        if (org.text_on_primary) {
+          el.style.color = org.text_on_primary;
+          el.querySelectorAll('.user-pill').forEach(function (p) {
+            p.style.color = org.text_on_primary;
+          });
+        }
+        // Replace logo with org logo if available
+        var logo = el.querySelector('.logo');
+        if (logo && org.logo_url) {
+          logo.src = org.logo_url;
+        } else if (logo) {
+          logo.src = '/img/icon-white.png';
+        }
+      });
+    } else {
+      // Reset to default branding
+      document.querySelectorAll('.top-bar').forEach(function (el) {
+        el.style.background = '';
+        el.style.color = '';
+        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = ''; });
+        var logo = el.querySelector('.logo');
+        if (logo) logo.src = '/img/icon-white.png';
+      });
     }
 
     await loadEvents();
