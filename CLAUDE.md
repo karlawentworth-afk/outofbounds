@@ -54,6 +54,15 @@ with the appropriate context (`--context production` or
 `--context branch-deploy`). If a local `.env` is needed, confirm it
 is in `.gitignore` and delete it when done.
 
+## Branching and extraction
+
+Any change that touches more than one screen, or more than 200 lines,
+goes on a branch with a Netlify branch deploy. Main is the demo.
+Karla walks the preview before it merges.
+
+Before restructuring a file, extract first with no behaviour change
+and tests unchanged, then change behaviour.
+
 ## Every push
 
 Fetch the live URL with a cache-buster and grep for a string only in
