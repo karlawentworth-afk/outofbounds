@@ -2523,7 +2523,7 @@ Bob Wilson"></textarea>
     }
   };
 
-  window.editPlayer = function(playerId) {
+  window.editPlayer = async function(playerId) {
     var player = state.players.find(function (p) { return p.id === playerId; });
     if (!player) return;
 
@@ -3368,7 +3368,7 @@ Bob Wilson"></textarea>
     } catch (err) { toast('Error: ' + err.message); }
   };
 
-  window.addCustomPrize = function() {
+  window.addCustomPrize = async function() {
     var cat = await oobPrompt('Prize name (e.g. Sweep, Best dressed)', 'Add');
     if (!cat) return;
     api('org-prizes', {
