@@ -754,9 +754,16 @@ html, body {
         players.forEach(function (p) {
           if (f && (p.display_name || '').toLowerCase().indexOf(f) === -1) return;
           var confirmed = p.player_status === 'confirmed';
-          var label = esc(p.display_name);
-          if (confirmed) label += ' <span style="color:var(--muted);font-size:12px;">(confirmed)</span>';
-          html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + label + '</div>';
+          if (confirmed) {
+            html += '<div class="find-item" style="opacity:0.4;pointer-events:none;">' +
+              esc(p.display_name) + ' <span style="font-size:12px;">Already scoring</span>' +
+              '</div>' +
+              '<div style="text-align:right;margin-top:-8px;margin-bottom:8px;">' +
+              '<button class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="confirmed" ' +
+              'style="font-size:11px;color:var(--muted);background:none;border:none;padding:4px 0;cursor:pointer;font-family:inherit;">That\u2019s me on another phone</button></div>';
+          } else {
+            html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + esc(p.display_name) + '</div>';
+          }
         });
         if (!html) html = '<div style="padding:24px;text-align:center;color:var(--muted)">No players found</div>';
         listEl.innerHTML = html;
@@ -1272,27 +1279,47 @@ html, body {
       if (!sd || (!sd.gross && !sd.pickedUp)) missing.push(m.first_name || m.display_name.split(' ')[0]);
     });
 
+    // Always enabled — if missing, tap shows a sheet
+    btn.disabled = false;
     if (missing.length > 0) {
-      btn.disabled = true;
-      btn.textContent = 'Enter a score for ' + missing[0];
+      btn.textContent = 'Save hole (' + missing.length + ' missing)';
     } else {
-      btn.disabled = false;
       btn.textContent = 'Save hole';
     }
   }
 
   async function saveCurrentHole() {
     var ms2 = members();
-    var scores = [];
+    var scored = [];
+    var missing = [];
     ms2.forEach(function (m) {
       var sd = getScore(m.id, currentHole);
-      if (!sd) return;
-      var entry = { player_id: m.id, hole_number: currentHole };
-      if (sd.pickedUp) { entry.picked_up = true; }
-      else { entry.gross_score = sd.gross; }
-      scores.push(entry);
+      if (sd && (sd.gross || sd.pickedUp)) {
+        var entry = { player_id: m.id, hole_number: currentHole };
+        if (sd.pickedUp) { entry.picked_up = true; }
+        else { entry.gross_score = sd.gross; }
+        scored.push(entry);
+      } else {
+        missing.push(m);
+      }
     });
 
+    // If missing scores, show a sheet
+    if (missing.length > 0 && scored.length > 0) {
+      var names = missing.map(function (m) { return m.first_name || m.display_name.split(' ')[0]; }).join(', ');
+      showSheet(
+        names + (missing.length === 1 ? ' has' : ' have') + ' no score for this hole.',
+        'Save without ' + (missing.length === 1 ? names : 'them'),
+        function () { doSave(scored); }
+      );
+      return;
+    }
+
+    if (scored.length === 0) return;
+    doSave(scored);
+  }
+
+  async function doSave(scores) {
     if (scores.length === 0) return;
 
     var btn = document.getElementById('btn-save');
