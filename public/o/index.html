@@ -2821,6 +2821,19 @@ Bob Wilson"></textarea>
       'style="width:100%;padding:12px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);font-family:inherit;">' +
       'Remove from group</button>';
 
+    // Swap section: players in other groups
+    var currentGroup = (state.players.find(function (p) { return p.id === playerId; }) || {}).group_id;
+    var othersInOtherGroups = state.players.filter(function (p) { return p.group_id && p.group_id !== currentGroup && p.id !== playerId; });
+    if (othersInOtherGroups.length > 0 && othersInOtherGroups.length <= 30) {
+      opts += '<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;">Or swap with</div>';
+      othersInOtherGroups.forEach(function (other) {
+        var gNum = (state.groups.find(function (g) { return g.id === other.group_id; }) || {}).group_number || '?';
+        opts += '<button onclick="swapPlayers(\'' + playerId + '\',\'' + other.id + '\')" ' +
+          'style="width:100%;padding:8px 12px;border:none;background:none;cursor:pointer;font-size:13px;font-family:inherit;text-align:left;color:var(--ink);">' +
+          esc(other.display_name) + ' <span style="color:var(--muted);">(Group ' + gNum + ')</span></button>';
+      });
+    }
+
     var overlay = $('oob-sheet-overlay');
     $('oob-sheet-text').innerHTML = 'Move <strong>' + esc(playerName) + '</strong> to:';
     $('oob-sheet-input-wrap').style.display = 'none';
@@ -2865,6 +2878,26 @@ Bob Wilson"></textarea>
     } catch (err) { toast('Error: ' + err.message); }
   };
 
+  window.swapPlayers = async function(playerAId, playerBId) {
+    $('oob-sheet-overlay').style.display = 'none';
+    var od = document.getElementById('move-options');
+    if (od) od.remove();
+    $('oob-sheet-ok').style.display = '';
+
+    var playerA = state.players.find(function (p) { return p.id === playerAId; });
+    var playerB = state.players.find(function (p) { return p.id === playerBId; });
+    if (!playerA || !playerB) return;
+
+    try {
+      // Swap: assign A to B's group, B to A's group
+      await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: playerAId, group_id: playerB.group_id } });
+      await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: playerBId, group_id: playerA.group_id } });
+      await loadGroups();
+      renderGroupsList();
+      toast('Swapped ' + playerA.first_name + ' and ' + playerB.first_name);
+    } catch (err) { toast('Error: ' + err.message); }
+  };
+
   window.emptyGroup = async function(groupId) {
     if (!(await oobConfirm('Move all players out of this group?', 'Empty'))) return;
     var members = state.players.filter(function (p) { return p.group_id === groupId; });
@@ -2885,28 +2918,52 @@ Bob Wilson"></textarea>
     } catch (err) { toast('Error: ' + err.message); }
   };
 
-  window.moveGroupUp = async function(groupId) {
+  async function reorderGroups(groupId, direction) {
     var idx = state.groups.findIndex(function (g) { return g.id === groupId; });
-    if (idx <= 0) return;
-    // Swap group_number with the one above
-    var above = state.groups[idx - 1];
-    var current = state.groups[idx];
-    await api('org-groups', { method: 'PATCH', body: { id: current.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: above.group_number } });
-    await api('org-groups', { method: 'PATCH', body: { id: above.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: current.group_number } });
-    await loadGroups();
-    renderGroupsList();
-  };
+    var otherIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (otherIdx < 0 || otherIdx >= state.groups.length) return;
 
-  window.moveGroupDown = async function(groupId) {
-    var idx = state.groups.findIndex(function (g) { return g.id === groupId; });
-    if (idx >= state.groups.length - 1) return;
-    var below = state.groups[idx + 1];
     var current = state.groups[idx];
-    await api('org-groups', { method: 'PATCH', body: { id: current.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: below.group_number } });
-    await api('org-groups', { method: 'PATCH', body: { id: below.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: current.group_number } });
+    var other = state.groups[otherIdx];
+
+    // Swap group_numbers
+    await api('org-groups', { method: 'PATCH', body: { id: current.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: other.group_number } });
+    await api('org-groups', { method: 'PATCH', body: { id: other.id, event_id: state.currentEvent, organiser_id: state.organiser.id, group_number: current.group_number } });
     await loadGroups();
     renderGroupsList();
-  };
+
+    // Check if tee times are set — offer to renumber
+    var hasTimes = state.groups.some(function (g) { return g.tee_time; });
+    if (hasTimes) {
+      var renumber = await oobConfirm('Renumber tee times to match the new order?', 'Renumber');
+      if (renumber) {
+        // Find the earliest time and interval
+        var times = state.groups.filter(function (g) { return g.tee_time; }).map(function (g) { return g.tee_time; }).sort();
+        if (times.length >= 2) {
+          var t0 = times[0].split(':');
+          var t1 = times[1].split(':');
+          var mins0 = parseInt(t0[0]) * 60 + parseInt(t0[1]);
+          var mins1 = parseInt(t1[0]) * 60 + parseInt(t1[1]);
+          var interval = mins1 - mins0;
+          if (interval > 0) {
+            var startMins = mins0;
+            for (var gi = 0; gi < state.groups.length; gi++) {
+              var newMins = startMins + gi * interval;
+              var hh = String(Math.floor(newMins / 60)).padStart(2, '0');
+              var mm = String(newMins % 60).padStart(2, '0');
+              await api('org-groups', { method: 'PATCH', body: { id: state.groups[gi].id, event_id: state.currentEvent, organiser_id: state.organiser.id, tee_time: hh + ':' + mm } });
+            }
+            await loadGroups();
+            renderGroupsList();
+            toast('Tee times renumbered');
+          }
+        }
+      }
+    }
+  }
+
+  window.moveGroupUp = function(groupId) { reorderGroups(groupId, 'up'); };
+  window.moveGroupDown = function(groupId) { reorderGroups(groupId, 'down'); };
 
   window.startAgainGroups = async function() {
     if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Start again'))) return;
