@@ -232,6 +232,70 @@ assert('Countback: Amy first', cbResult[0].names, 'Amy');
 assert('Countback: both have countback string', cbResult[0].countback !== null, true);
 assert('Countback: Beth second', cbResult[1].names, 'Beth');
 
+// ── Withdrawals: 2-from-4 with 3 players ────────────────────────
+// Group of 3 instead of 4: best 2 of 3 should still work
+(function () {
+  var holes = [];
+  for (var h = 1; h <= 18; h++) holes.push({ hole_number: h, par: 4, stroke_index: h });
+
+  var players = [
+    { id: 'w1', display_name: 'A', playing_handicap: 10, group_id: 'gw', pair_key: null },
+    { id: 'w2', display_name: 'B', playing_handicap: 15, group_id: 'gw', pair_key: null },
+    { id: 'w3', display_name: 'C', playing_handicap: 20, group_id: 'gw', pair_key: null }
+  ];
+  var groups = [{ id: 'gw', group_number: 1 }];
+
+  // All 3 score hole 1: A=4 (2pts), B=5 (2pts with stroke), C=4 (3pts with stroke)
+  var scores = {};
+  scores['w1'] = {}; scores['w2'] = {}; scores['w3'] = {};
+  for (var h = 1; h <= 18; h++) {
+    scores['w1'][h] = 4; // par, no stroke on h>10 → 2pts for h<=10, 2pts for h>10
+    scores['w2'][h] = 5; // bogey, stroke on h<=15 → 2pts for h<=15, 1pt for h>15
+    scores['w3'][h] = 5; // bogey, stroke on all h<=18 (ph=20) → 2pts when strokes, varies
+  }
+
+  var entries = engine.buildStandings({
+    scores: scores, pickedUp: {}, holes: holes, players: players, groups: groups,
+    format: 'better_ball_2from4', maxHole: 18
+  });
+
+  assert('2from4 with 3 players: has entry', entries.length, 1);
+  assert('2from4 with 3 players: has played', entries[0].hasPlayed, true);
+  // Best 2 of 3 per hole should give > 0 points
+  assert('2from4 with 3 players: points > 0', entries[0].points > 0, true);
+  console.log('  2from4 with 3 players: ' + entries[0].points + ' pts');
+})();
+
+// ── Withdrawals: pairs with 1 missing ──────────────────────────
+// Pair where one player has no scores at all
+(function () {
+  var holes = [];
+  for (var h = 1; h <= 18; h++) holes.push({ hole_number: h, par: 4, stroke_index: h });
+
+  var players = [
+    { id: 'p1', display_name: 'Active', playing_handicap: 12, group_id: 'gp', pair_key: 'A' },
+    { id: 'p2', display_name: 'Missing', playing_handicap: 18, group_id: 'gp', pair_key: 'A' }
+  ];
+  var groups = [{ id: 'gp', group_number: 1 }];
+
+  var scores = {};
+  scores['p1'] = {};
+  // p2 has NO scores (withdrew)
+  for (var h = 1; h <= 18; h++) {
+    scores['p1'][h] = 4; // par
+  }
+
+  var entries = engine.buildStandings({
+    scores: scores, pickedUp: {}, holes: holes, players: players, groups: groups,
+    format: 'better_ball_pairs', maxHole: 18
+  });
+
+  assert('Pairs with 1 missing: has entry', entries.length, 1);
+  assert('Pairs with 1 missing: has played', entries[0].hasPlayed, true);
+  assert('Pairs with 1 missing: points > 0', entries[0].points > 0, true);
+  console.log('  Pairs with 1 missing: ' + entries[0].points + ' pts (solo player)');
+})();
+
 // ── Results ─────────────────────────────────────────────────────
 
 console.log('');
