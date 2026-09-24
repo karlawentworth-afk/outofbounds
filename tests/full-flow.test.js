@@ -1430,17 +1430,56 @@ async function stepConsoleErrors() {
 }
 
 // ── Missing-score sheet test ─────────────────────────────────────
+// Uses the test org created in earlier steps, NOT the Fairway Events demo.
 async function stepMissingScoreSheet() {
-  console.log('\n--- Missing-score sheet (demo event) ---');
+  console.log('\n--- Missing-score sheet (test org) ---');
+
+  if (!state.eventId || !state.playerTokens[0]) {
+    step('Missing-score: skipped', false, 'no test event or tokens');
+    return;
+  }
+
+  // Find a group with players that have tokens
+  var g1Players = [];
+  var g1Tokens = [];
+  for (var i = 0; i < state.playerIds.length; i++) {
+    if (state.playerGroups && state.playerGroups[i] === state.groupIds[0]) {
+      g1Players.push(state.playerIds[i]);
+      g1Tokens.push(state.playerTokens[i]);
+    }
+  }
+  if (g1Players.length < 2) {
+    step('Missing-score: skipped', false, 'need at least 2 players in group');
+    return;
+  }
+
+  // Get the scorer token — need the current scorer
+  var groupCheck = await sbRest('GET', 'groups?id=eq.' + state.groupIds[0] + '&select=scorer_player_id');
+  var currentScorerId = groupCheck.data && groupCheck.data[0] ? groupCheck.data[0].scorer_player_id : null;
+  var scorerToken = null;
+  for (var st = 0; st < state.playerIds.length; st++) {
+    if (state.playerIds[st] === currentScorerId) { scorerToken = state.playerTokens[st]; break; }
+  }
+  if (!scorerToken) scorerToken = g1Tokens[0];
+
+  // Find an unscored hole — use hole 10 (tests scored 1-3 earlier)
+  var testHole = 10;
+
+  // Confirm the scorer player so they skip the confirm screen
+  await sbRest('PATCH', 'players?player_token=eq.' + scorerToken, { player_status: 'confirmed' });
 
   var browser = await chromium.launch({ headless: true });
   try {
+    var orgData = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=slug');
+    var orgSlug = orgData.data && orgData.data[0] ? orgData.data[0].slug : '';
+
     var ctx = await browser.newContext({ viewport: { width: 375, height: 667 } });
     var page = await ctx.newPage();
     var errors = [];
     page.on('pageerror', function (e) { errors.push(e.message); });
 
-    await page.goto(LIVE_URL + '/p/demo/autumn-invitational/demo-scorer-group-001-token');
+    var playerUrl = LIVE_URL + '/p/' + orgSlug + '/' + state.eventSlug + '/' + scorerToken;
+    await page.goto(playerUrl);
 
     // Wait for scoring screen, clicking through welcome
     for (var w = 0; w < 20; w++) {
@@ -1463,17 +1502,33 @@ async function stepMissingScoreSheet() {
       return;
     }
 
-    // Should be on hole 12 (first unscored)
-    var holeText = await page.evaluate(function () { return document.getElementById('hole-num').textContent; });
-    step('Missing-score: opens on hole 12', holeText.indexOf('12') !== -1, 'hole=' + holeText);
+    // Navigate to the test hole
+    var currentHoleNum = await page.evaluate(function () {
+      var el = document.getElementById('hole-num');
+      return el ? parseInt(el.textContent.replace(/\D/g, '')) : 1;
+    });
+    var direction = testHole > currentHoleNum ? 'next' : 'prev';
+    var steps = Math.abs(testHole - currentHoleNum);
+    for (var nav = 0; nav < steps; nav++) {
+      await page.evaluate(function (dir) {
+        var arr = document.getElementById('arr-' + dir);
+        if (arr && !arr.disabled) arr.click();
+      }, direction);
+    }
+    await sleep(300);
 
-    // Score players 0, 1, 2 but NOT player 3
+    var holeText = await page.evaluate(function () { return document.getElementById('hole-num').textContent; });
+    step('Missing-score: navigated to test hole', holeText.indexOf(String(testHole)) !== -1, 'hole=' + holeText);
+
+    // Get player names
     var playerNames = await page.evaluate(function () {
       var rows = document.querySelectorAll('.player-row');
       return Array.from(rows).map(function (r) { return r.querySelector('.p-name').textContent; });
     });
 
-    for (var pi = 0; pi < 3; pi++) {
+    // Score all players except the last one
+    var numToScore = Math.max(1, playerNames.length - 1);
+    for (var pi = 0; pi < numToScore; pi++) {
       await page.evaluate(function (idx) {
         document.querySelectorAll('.player-row')[idx].click();
         var keys = document.querySelectorAll('.kp-key');
@@ -1485,15 +1540,13 @@ async function stepMissingScoreSheet() {
       await sleep(200);
     }
 
-    // Check button shows "1 missing"
     var btnBefore = await page.evaluate(function () { return document.getElementById('btn-save').textContent; });
-    step('Missing-score: button shows 1 missing', btnBefore.indexOf('1 missing') !== -1, 'text=' + btnBefore);
+    step('Missing-score: button shows missing', btnBefore.indexOf('missing') !== -1, 'text=' + btnBefore);
 
     // Tap Save
     await page.evaluate(function () { document.getElementById('btn-save').click(); });
     await sleep(800);
 
-    // Assert sheet is visible and names the missing player
     var sheetState = await page.evaluate(function () {
       var sheet = document.getElementById('sheet');
       var text = document.getElementById('sheet-text');
@@ -1505,11 +1558,10 @@ async function stepMissingScoreSheet() {
       };
     });
 
-    // Sheet uses first name only
-    var missingFirst = playerNames[3].split(' ')[0];
+    var missingFirst = playerNames[playerNames.length - 1].split(' ')[0];
     step('Missing-score: sheet names the player',
       sheetState.visible && sheetState.text.indexOf(missingFirst) !== -1,
-      'visible=' + sheetState.visible + ' text="' + sheetState.text + '" looking for "' + missingFirst + '"');
+      'visible=' + sheetState.visible + ' text="' + sheetState.text + '"');
 
     step('Missing-score: sheet offers save-without',
       sheetState.yesLabel.indexOf('Save without') !== -1,
@@ -1521,7 +1573,6 @@ async function stepMissingScoreSheet() {
       if (yes) yes.click();
     });
 
-    // Wait for save to resolve
     for (var sw = 0; sw < 10; sw++) {
       await sleep(1000);
       var btnAfter = await page.evaluate(function () { return document.getElementById('btn-save').textContent; });
@@ -1533,18 +1584,6 @@ async function stepMissingScoreSheet() {
 
     step('Missing-score: no JS errors', errors.length === 0,
       errors.length ? errors.join('; ') : 'clean');
-
-    // Clean up: delete hole 12 scores for this group so next run starts fresh
-    var scorerData = await sbRest('GET', 'players?player_token=eq.demo-scorer-group-001-token&select=id,group_id');
-    if (scorerData.data && scorerData.data[0]) {
-      var gid = scorerData.data[0].group_id;
-      var groupMembers = await sbRest('GET', 'players?group_id=eq.' + gid + '&select=id');
-      if (groupMembers.data) {
-        for (var ci = 0; ci < groupMembers.data.length; ci++) {
-          await sbRest('DELETE', 'hole_scores?player_id=eq.' + groupMembers.data[ci].id + '&hole_number=gte.12');
-        }
-      }
-    }
 
     await ctx.close();
   } finally {

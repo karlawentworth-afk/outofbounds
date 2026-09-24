@@ -68,6 +68,13 @@ curl -s "https://outofboundsscoring.netlify.app/<path>?_cb=$(date +%s)" | grep '
 Golf scorecards are holes 1-9 (front nine / OUT) and 10-18
 (back nine / IN), never 1-10 and 11-18.
 
+## Tests never touch the demo
+
+Playwright and tenancy tests must never write to the Fairway Events
+demo organiser (`slug=demo`, ID `a0000000-...-000000000099`). Seed a
+separate "Test Org" for each test run and clean it up after. The demo
+only changes when Karla or the nightly reset touches it.
+
 ## Verified live
 
 Never say "verified live" unless you have opened the deployed URL
