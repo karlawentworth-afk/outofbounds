@@ -959,11 +959,12 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
-        <div class="go-live-box">
-          <h3>Ready to go live?</h3>
-          <div class="breakdown" id="golive-breakdown"></div>
-          <div class="price" id="golive-price"></div>
-          <button class="btn btn-green" onclick="goLiveAndPay()" id="golive-btn">Go live and pay</button>
+        <div id="golive-review" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
+          <p id="golive-summary" style="font-size:15px;line-height:1.6;margin-bottom:16px;"></p>
+          <div class="breakdown" id="golive-breakdown" style="font-size:14px;color:var(--muted);margin-bottom:4px;"></div>
+          <div class="price" id="golive-price" style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:700;color:var(--green);margin-bottom:16px;"></div>
+          <div class="disclaimer" style="margin-bottom:16px;">Handicaps can't be checked against the WHS. The organiser has the final say.</div>
+          <button class="btn btn-green" onclick="goLiveAndPay()" id="golive-btn" style="width:100%;">Go live</button>
         </div>
       </div>
 
@@ -3234,7 +3235,15 @@ Bob Wilson"></textarea>
     $('golive-btn').style.display = '';
 
     var n = state.players.length;
+    var gn = state.groups ? state.groups.length : 0;
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
+
+    // Build review summary
+    var summary = '<strong>' + esc(ev.name || 'Your event') + '</strong>';
+    if (ev.event_date) summary += ' on ' + formatDate(ev.event_date);
+    summary += '. ' + n + ' player' + (n !== 1 ? 's' : '') + ' in ' + gn + ' group' + (gn !== 1 ? 's' : '') + '.';
+    var summaryEl = $('golive-summary');
+    if (summaryEl) summaryEl.innerHTML = summary;
 
     if (orgIsPro) {
       $('golive-breakdown').innerHTML = n + ' player' + (n !== 1 ? 's' : '') + ' ready to go';
