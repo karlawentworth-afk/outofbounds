@@ -1379,6 +1379,56 @@ async function stepN_viewportFit() {
   }
 }
 
+// ── Console error scan — every page ─────────────────────────────
+async function stepConsoleErrors() {
+  console.log('\n--- Console error scan ---');
+
+  var browser = await chromium.launch({ headless: true });
+  try {
+    var orgData = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=slug');
+    var orgSlug = orgData.data && orgData.data[0] ? orgData.data[0].slug : '';
+
+    var pages = [
+      { name: '/o/ (organiser)', url: LIVE_URL + '/o/' },
+      { name: '/p/ (player find)', url: LIVE_URL + '/p/' + orgSlug + '/' + state.eventSlug },
+      { name: '/p/ (player scoring)', url: LIVE_URL + '/p/' + orgSlug + '/' + state.eventSlug + '/' + state.playerTokens[0] },
+      { name: '/board/ (scoreboard)', url: LIVE_URL + '/board/#/' + orgSlug + '/' + state.eventSlug },
+      { name: '/r/ (results)', url: LIVE_URL + '/r/' + orgSlug + '/' + state.eventSlug }
+    ];
+
+    var allErrors = [];
+
+    for (var i = 0; i < pages.length; i++) {
+      var p = pages[i];
+      var ctx = await browser.newContext({ viewport: { width: 375, height: 667 } });
+      var page = await ctx.newPage();
+
+      var errors = [];
+      page.on('pageerror', function (err) {
+        errors.push(err.message);
+      });
+
+      try {
+        await page.goto(p.url, { waitUntil: 'networkidle', timeout: 15000 });
+      } catch (e) {
+        // timeout is OK for pages that poll
+      }
+      await sleep(3000);
+
+      if (errors.length > 0) {
+        allErrors.push(p.name + ': ' + errors.join('; '));
+      }
+
+      await ctx.close();
+    }
+
+    step('No JS errors on any page', allErrors.length === 0,
+      allErrors.length === 0 ? 'all ' + pages.length + ' pages clean' : allErrors.join(' | '));
+  } finally {
+    await browser.close();
+  }
+}
+
 // ── UC1 Fix Tests ────────────────────────────────────────────────
 async function stepUC1_fixes() {
   console.log('\n--- UC1 Fix Tests ---');
@@ -1517,6 +1567,9 @@ async function main() {
 
     // VIEWPORT
     await stepN_viewportFit();
+
+    // CONSOLE ERROR SCAN
+    await stepConsoleErrors();
 
     // UC1 FIX TESTS
     await stepUC1_fixes();
