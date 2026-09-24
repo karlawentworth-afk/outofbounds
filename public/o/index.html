@@ -336,24 +336,46 @@ a { color: inherit; text-decoration: none; }
 .price-row .big { font-family: Poppins, sans-serif; font-weight: 800; font-size: 28px; }
 .note { background: var(--paper); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 14px; }
 
-/* Live event */
-.status-dot {
-  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+/* Live control room — groups grid */
+.groups-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 520px) { .groups-grid { grid-template-columns: repeat(2, 1fr); } }
+.g-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; text-align: left; cursor: pointer;
 }
+.g-card .gn {
+  font-family: Poppins, sans-serif; font-weight: 700; font-size: 15px;
+  display: flex; align-items: center; gap: 8px;
+}
+.g-card .gn::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--green); }
+.g-card.amber .gn::before { background: var(--amber); }
+.g-card.red .gn::before { background: var(--red); }
+.g-card .gs { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+/* Leaderboard card */
+.lb-card .r { display: grid; grid-template-columns: 28px 1fr 44px 52px; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); align-items: center; font-size: 16px; }
+.lb-card .r:last-child { border: 0; }
+.lb-card .p { font-family: Poppins, sans-serif; font-weight: 700; color: var(--green); }
+.lb-card .th { color: var(--muted); text-align: right; font-size: 14px; }
+.lb-card .pt { font-family: Poppins, sans-serif; font-weight: 700; text-align: right; }
+.lb-card .r.top .pt { color: var(--navy); }
+
+/* Finish */
+.finish-section { margin: 26px 0 40px; }
+.finish-section .btn { width: 100%; padding: 18px; }
+.finish-section p { text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+
+/* Share card */
+.share-card { display: grid; grid-template-columns: 110px 1fr; gap: 18px; align-items: center; }
+@media (max-width: 520px) { .share-card { grid-template-columns: 1fr; } }
+.share-card .lnk { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: var(--paper); padding: 10px 12px; border-radius: 10px; word-break: break-all; }
+.share-card .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* compat: old status dots still used in some renders */
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .status-dot.green { background: var(--green); }
 .status-dot.amber { background: var(--amber); }
 .status-dot.red { background: var(--red); }
-
-.live-group-card {
-  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
-}
-.live-group-card:hover { border-color: var(--muted); }
-.live-group-card .lgc-row {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.live-group-card .lgc-group { font-weight: 600; font-size: 15px; }
-.live-group-card .lgc-meta { font-size: 13px; color: var(--muted); }
 
 /* Leaderboard */
 .lb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
