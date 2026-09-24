@@ -159,23 +159,41 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 .empty-state { text-align: center; padding: 48px 16px; color: var(--muted); }
 .empty-state p { font-size: 15px; margin-bottom: 16px; }
 
-/* Event detail — tabs */
-.tab-bar {
-  display: flex; gap: 0; border-bottom: 2px solid var(--line); margin-bottom: 24px;
+/* Event detail — step strip */
+.step-strip {
+  display: flex; gap: 0; margin-bottom: 24px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border-bottom: 2px solid var(--line);
 }
-.tab-btn {
-  padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--muted);
-  border: none; background: none; cursor: pointer; font-family: inherit;
-  white-space: nowrap; position: relative;
+.step-btn {
+  flex: 1; padding: 10px 8px 12px; border: none; background: none; cursor: pointer;
+  font-family: inherit; text-align: center; position: relative; min-width: 0;
 }
-.tab-btn.active { color: var(--green); }
-.tab-btn.active::after {
+.step-btn .step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: 700;
+  background: var(--line); color: var(--muted); margin-bottom: 2px;
+}
+.step-btn.active .step-num { background: var(--green); color: #fff; }
+.step-btn.done .step-num { background: var(--green); color: #fff; font-size: 0; }
+.step-btn.done .step-num::after { content: '\2713'; font-size: 12px; }
+.step-btn .step-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+.step-btn.active .step-label { color: var(--green); }
+.step-btn.done .step-label { color: var(--green); }
+.step-btn .step-state { display: block; font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-btn.active::after {
   content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
   height: 2px; background: var(--green);
 }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
+
+/* Sticky next button */
+.step-next {
+  position: sticky; bottom: 0; z-index: 50; padding: 12px 16px;
+  background: var(--off-white); border-top: 1px solid var(--line);
+  margin: 24px -16px -40px;
+}
 
 /* Event form */
 .form-section { margin-bottom: 20px; }
@@ -718,12 +736,27 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
     <h2 id="ev-title" style="font-size:20px;margin-bottom:16px;">New event</h2>
 
-    <div class="tab-bar" id="ev-tabs">
-      <button class="tab-btn active" data-tab="details" onclick="switchTab(this)">Details</button>
-      <button class="tab-btn" data-tab="players" onclick="switchTab(this)">Players</button>
-      <button class="tab-btn" data-tab="groups" onclick="switchTab(this)">Groups</button>
-      <button class="tab-btn" data-tab="prizes" onclick="switchTab(this)">Prizes</button>
-      <button class="tab-btn" data-tab="golive" onclick="switchTab(this)">Go live</button>
+    <div class="step-strip" id="ev-tabs">
+      <button class="step-btn active" data-tab="details" onclick="switchTab(this)">
+        <span class="step-num">1</span>
+        <span class="step-label">Details</span>
+        <span class="step-state" id="step-state-details"></span>
+      </button>
+      <button class="step-btn" data-tab="players" onclick="switchTab(this)">
+        <span class="step-num">2</span>
+        <span class="step-label">Players</span>
+        <span class="step-state" id="step-state-players"></span>
+      </button>
+      <button class="step-btn" data-tab="groups" onclick="switchTab(this)">
+        <span class="step-num">3</span>
+        <span class="step-label">Groups</span>
+        <span class="step-state" id="step-state-groups"></span>
+      </button>
+      <button class="step-btn" data-tab="golive" onclick="switchTab(this)">
+        <span class="step-num">4</span>
+        <span class="step-label">Go live</span>
+        <span class="step-state" id="step-state-golive"></span>
+      </button>
     </div>
 
     <!-- DETAILS TAB -->
@@ -2061,7 +2094,7 @@ Bob Wilson"></textarea>
     window.location.hash = 'new-event';
     $('ev-title').textContent = 'New event';
     resetEventForm();
-    switchTab(document.querySelector('.tab-btn[data-tab="details"]'));
+    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
     updateGoLiveTab();
   };
 
@@ -2091,24 +2124,26 @@ Bob Wilson"></textarea>
     // Determine which tab set to show based on status
     if (state.currentEventData && state.currentEventData.status === 'live') {
       updateTabsForStatus('live');
-      switchTab(document.querySelector('.tab-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
     } else if (state.currentEventData && state.currentEventData.status === 'finished') {
       updateTabsForStatus('finished');
-      switchTab(document.querySelector('.tab-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
     } else {
       updateTabsForStatus('draft');
-      switchTab(document.querySelector('.tab-btn[data-tab="details"]'));
+      switchTab(document.querySelector('.step-btn[data-tab="details"]'));
     }
 
     // Load players and groups
     await loadPlayers();
     await loadGroups();
     updateGoLiveTab();
+    addNextButtons();
+    updateStepStates();
   };
 
   function updateTabsForStatus(status) {
     // All tabs visible, but golive tab label changes
-    var goliveBtn = document.querySelector('.tab-btn[data-tab="golive"]');
+    var goliveBtn = document.querySelector('.step-btn[data-tab="golive"]');
     if (status === 'live') goliveBtn.textContent = 'Live';
     else if (status === 'finished') goliveBtn.textContent = 'Results';
     else goliveBtn.textContent = 'Go live';
@@ -2183,7 +2218,7 @@ Bob Wilson"></textarea>
   window.switchTab = function(btn) {
     if (!btn) return;
     var tab = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.step-btn').forEach(function(b) { b.classList.remove('active'); });
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
     btn.classList.add('active');
     $('tab-' + tab).classList.add('active');
@@ -2192,7 +2227,80 @@ Bob Wilson"></textarea>
     if (tab === 'groups') renderGroupsList();
     if (tab === 'golive') updateGoLiveTab();
     if (tab === 'prizes') loadPrizes();
+
+    updateStepStates();
   };
+
+  function updateStepStates() {
+    var evd = state.currentEventData || {};
+    var detailsDone = !!(evd.name && evd.course_id);
+    var playerCount = state.players ? state.players.length : 0;
+    var missingHcp = state.players ? state.players.filter(function(p) { return p.handicap_index == null; }).length : 0;
+    var playersDone = playerCount >= 2;
+    var groupCount = state.groups ? state.groups.length : 0;
+    var unassigned = state.players ? state.players.filter(function(p) { return !p.group_id; }).length : 0;
+    var groupsDone = groupCount > 0 && unassigned === 0;
+
+    // Details step
+    var ds = $('step-state-details');
+    var db = document.querySelector('.step-btn[data-tab="details"]');
+    if (ds) ds.textContent = detailsDone ? (evd.name || '') : '';
+    if (db) { if (detailsDone) db.classList.add('done'); else db.classList.remove('done'); }
+
+    // Players step
+    var ps = $('step-state-players');
+    var pb = document.querySelector('.step-btn[data-tab="players"]');
+    if (ps) {
+      if (playerCount > 0) {
+        var txt = playerCount + ' player' + (playerCount !== 1 ? 's' : '');
+        if (missingHcp > 0) txt += ', ' + missingHcp + ' handicap missing';
+        ps.textContent = txt;
+      } else {
+        ps.textContent = '';
+      }
+    }
+    if (pb) { if (playersDone) pb.classList.add('done'); else pb.classList.remove('done'); }
+
+    // Groups step
+    var gs = $('step-state-groups');
+    var gb = document.querySelector('.step-btn[data-tab="groups"]');
+    if (gs) {
+      if (groupCount > 0) {
+        var gtxt = groupCount + ' group' + (groupCount !== 1 ? 's' : '');
+        if (unassigned > 0) gtxt += ', ' + unassigned + ' unassigned';
+        gs.textContent = gtxt;
+      } else {
+        gs.textContent = '';
+      }
+    }
+    if (gb) { if (groupsDone) gb.classList.add('done'); else gb.classList.remove('done'); }
+
+    // Go live step
+    var ls = $('step-state-golive');
+    if (ls) {
+      if (evd.status === 'live') ls.textContent = 'Live';
+      else if (evd.status === 'finished') ls.textContent = 'Finished';
+      else if (detailsDone && playersDone && groupsDone) ls.textContent = 'Ready';
+      else ls.textContent = '';
+    }
+  }
+
+  // Add "Next" buttons to each panel
+  function addNextButtons() {
+    var steps = [
+      { tab: 'details', next: 'players', label: 'Next: Players' },
+      { tab: 'players', next: 'groups', label: 'Next: Groups' },
+      { tab: 'groups', next: 'golive', label: 'Next: Go live' }
+    ];
+    steps.forEach(function (s) {
+      var panel = $('tab-' + s.tab);
+      if (!panel || panel.querySelector('.step-next')) return;
+      var div = document.createElement('div');
+      div.className = 'step-next';
+      div.innerHTML = '<button class="btn btn-green" onclick="switchTab(document.querySelector(\'.step-btn[data-tab=&quot;' + s.next + '&quot;]\'))">' + s.label + '</button>';
+      panel.appendChild(div);
+    });
+  }
 
   // ── Format change → default allowance ────────────────────────
   $('ev-format').addEventListener('change', function() {
@@ -2397,7 +2505,7 @@ Bob Wilson"></textarea>
         state.currentEventData = res.event;
         window.location.hash = 'event-' + res.event.id;
         $('ev-title').textContent = name;
-        switchTab(document.querySelector('.tab-btn[data-tab="players"]'));
+        switchTab(document.querySelector('.step-btn[data-tab="players"]'));
         toast('Event created — add your players');
       }
       $('ev-title').textContent = name;
