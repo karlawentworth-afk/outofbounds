@@ -1381,7 +1381,7 @@ Bob Wilson"></textarea>
     var showArchived = state.showArchived || false;
 
     if (state.events.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No events yet. Create your first one.</p></div>';
+      el.innerHTML = '<div class="empty-state"><p>No events yet.</p><button class="btn btn-green btn-sm" onclick="newEvent()">Create your first event</button></div>';
       return;
     }
 
