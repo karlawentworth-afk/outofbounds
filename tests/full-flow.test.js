@@ -1505,9 +1505,11 @@ async function stepMissingScoreSheet() {
       };
     });
 
+    // Sheet uses first name only
+    var missingFirst = playerNames[3].split(' ')[0];
     step('Missing-score: sheet names the player',
-      sheetState.visible && sheetState.text.indexOf(playerNames[3]) !== -1,
-      'visible=' + sheetState.visible + ' text="' + sheetState.text + '"');
+      sheetState.visible && sheetState.text.indexOf(missingFirst) !== -1,
+      'visible=' + sheetState.visible + ' text="' + sheetState.text + '" looking for "' + missingFirst + '"');
 
     step('Missing-score: sheet offers save-without',
       sheetState.yesLabel.indexOf('Save without') !== -1,
@@ -1531,6 +1533,18 @@ async function stepMissingScoreSheet() {
 
     step('Missing-score: no JS errors', errors.length === 0,
       errors.length ? errors.join('; ') : 'clean');
+
+    // Clean up: delete hole 12 scores for this group so next run starts fresh
+    var scorerData = await sbRest('GET', 'players?player_token=eq.demo-scorer-group-001-token&select=id,group_id');
+    if (scorerData.data && scorerData.data[0]) {
+      var gid = scorerData.data[0].group_id;
+      var groupMembers = await sbRest('GET', 'players?group_id=eq.' + gid + '&select=id');
+      if (groupMembers.data) {
+        for (var ci = 0; ci < groupMembers.data.length; ci++) {
+          await sbRest('DELETE', 'hole_scores?player_id=eq.' + groupMembers.data[ci].id + '&hole_number=gte.12');
+        }
+      }
+    }
 
     await ctx.close();
   } finally {
