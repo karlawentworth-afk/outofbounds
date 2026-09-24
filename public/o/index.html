@@ -877,11 +877,12 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
     <!-- PLAYERS TAB -->
     <div class="tab-panel" id="tab-players">
+      <div id="players-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
+        <p style="font-size:15px;margin-bottom:12px;">No players yet. Add them one at a time, paste a list from WhatsApp, or upload a spreadsheet.</p>
+      </div>
       <div class="player-actions">
-        <button class="btn btn-green btn-sm" onclick="showAddPlayer()">+ Add a player</button>
-        <button class="btn btn-outline btn-sm" onclick="showPasteModal()">Paste a list</button>
-        <button class="btn btn-outline btn-sm" id="btn-upload-list" onclick="showUploadModal()" style="display:none;">Upload a file</button>
-        <button class="btn btn-outline btn-sm" onclick="addMeAsPlayer()">Add me</button>
+        <button class="btn btn-green btn-sm" onclick="showAddPlayersSheet()">Add players</button>
+        <a href="#" onclick="addMeAsPlayer();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;margin-left:8px;">Add me</a>
       </div>
 
       <!-- Inline add player -->
@@ -2556,11 +2557,14 @@ Bob Wilson"></textarea>
     var el = $('player-list');
     var countEl = $('player-count');
 
+    var emptyEl = $('players-empty-state');
     if (state.players.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No players yet.</p></div>';
+      el.innerHTML = '';
       countEl.textContent = '';
+      if (emptyEl) emptyEl.style.display = '';
       return;
     }
+    if (emptyEl) emptyEl.style.display = 'none';
 
     var confirmed = state.players.filter(function(p) { return p.player_status === 'confirmed'; }).length;
     var invited = state.players.length - confirmed;
@@ -2614,6 +2618,47 @@ Bob Wilson"></textarea>
       '</div>';
     }).join('');
   }
+
+  window.showAddPlayersSheet = function() {
+    var overlay = $('oob-sheet-overlay');
+    $('oob-sheet-text').textContent = 'How do you want to add players?';
+    $('oob-sheet-input-wrap').style.display = 'none';
+    $('oob-sheet-ok').style.display = 'none';
+    $('oob-sheet-cancel').textContent = 'Cancel';
+
+    var opts = '<button onclick="closeSheet();showAddPlayer()" style="width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--white);cursor:pointer;font-size:15px;font-weight:500;font-family:inherit;margin-bottom:8px;text-align:left;">One at a time</button>';
+    opts += '<button onclick="closeSheet();showPasteModal()" style="width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--white);cursor:pointer;font-size:15px;font-weight:500;font-family:inherit;margin-bottom:8px;text-align:left;">Paste a list</button>';
+    var isPro = state.organiser && state.organiser.plan === 'pro';
+    if (isPro) {
+      opts += '<button onclick="closeSheet();showUploadModal()" style="width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--white);cursor:pointer;font-size:15px;font-weight:500;font-family:inherit;margin-bottom:8px;text-align:left;">Upload a spreadsheet</button>';
+      opts += '<button onclick="closeSheet();showPeoplePicker()" style="width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--white);cursor:pointer;font-size:15px;font-weight:500;font-family:inherit;margin-bottom:8px;text-align:left;">From my people list</button>';
+    }
+
+    var container = $('oob-sheet-ok').parentElement;
+    var optDiv = document.createElement('div');
+    optDiv.id = 'add-players-options';
+    optDiv.innerHTML = opts;
+    container.parentElement.insertBefore(optDiv, container);
+    $('oob-sheet-cancel').onclick = function () {
+      overlay.style.display = 'none';
+      var od = document.getElementById('add-players-options');
+      if (od) od.remove();
+      $('oob-sheet-ok').style.display = '';
+    };
+    overlay.style.display = 'flex';
+  };
+
+  function closeSheet() {
+    $('oob-sheet-overlay').style.display = 'none';
+    var od = document.getElementById('add-players-options');
+    if (od) od.remove();
+    var od2 = document.getElementById('move-options');
+    if (od2) od2.remove();
+    $('oob-sheet-ok').style.display = '';
+  }
+
+  window.showPeoplePicker = function() { toast('People picker coming soon'); };
+  window.showUploadModal = function() { toast('Upload coming soon'); };
 
   window.showAddPlayer = function() {
     $('add-player-form').style.display = 'block';
