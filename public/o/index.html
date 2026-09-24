@@ -1260,34 +1260,46 @@ Bob Wilson"></textarea>
     updateProGating();
 
     // Apply branding to organiser top bars
+    // Rule: org with logo → show logo. No logo → show org name as text. OOB mark never shown.
     var org = state.organiser || {};
-    if (org.plan === 'pro' && org.primary_colour) {
-      document.querySelectorAll('.top-bar').forEach(function (el) {
+    document.querySelectorAll('.top-bar').forEach(function (el) {
+      // Colours
+      if (org.primary_colour) {
         el.style.background = org.primary_colour;
-        if (org.text_on_primary) {
-          el.style.color = org.text_on_primary;
-          el.querySelectorAll('.user-pill').forEach(function (p) {
-            p.style.color = org.text_on_primary;
-          });
-        }
-        // Replace logo with org logo if available
-        var logo = el.querySelector('.logo');
-        if (logo && org.logo_url) {
-          logo.src = org.logo_url;
-        } else if (logo) {
-          logo.src = '/img/icon-white.png';
-        }
-      });
-    } else {
-      // Reset to default branding
-      document.querySelectorAll('.top-bar').forEach(function (el) {
+        el.style.color = org.text_on_primary || '#FFFFFF';
+        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = org.text_on_primary || '#FFFFFF'; });
+      } else {
         el.style.background = '';
         el.style.color = '';
         el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = ''; });
-        var logo = el.querySelector('.logo');
-        if (logo) logo.src = '/img/icon-white.png';
-      });
-    }
+      }
+
+      // Logo: show org logo, or org name as text, never the OOB mark
+      var logo = el.querySelector('.logo');
+      if (logo) {
+        if (org.logo_url) {
+          logo.src = org.logo_url;
+          logo.style.display = '';
+        } else {
+          logo.style.display = 'none';
+        }
+      }
+      // Org name text fallback
+      var nameEl = el.querySelector('.org-name-text');
+      if (!nameEl) {
+        nameEl = document.createElement('span');
+        nameEl.className = 'org-name-text';
+        nameEl.style.cssText = 'font-family:Poppins,sans-serif;font-weight:700;font-size:14px;';
+        var logo2 = el.querySelector('.logo');
+        if (logo2) logo2.parentNode.insertBefore(nameEl, logo2.nextSibling);
+      }
+      if (org.logo_url) {
+        nameEl.style.display = 'none';
+      } else {
+        nameEl.textContent = org.display_name || org.name || '';
+        nameEl.style.display = '';
+      }
+    });
 
     await loadEvents();
   };

@@ -56,7 +56,8 @@ exports.handler = async function (event) {
       await sb.sbPatch('organisers?id=eq.' + oldId, {
         name: 'Fairway Events',
         display_name: 'Fairway Events',
-        primary_colour: '#1A5276',
+        logo_url: '/img/fairway-logo.svg',
+        primary_colour: '#1A7A3A',
         accent_colour: '#E67E22',
         text_on_primary: '#FFFFFF',
         plan: 'pro',

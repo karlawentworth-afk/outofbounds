@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <rect width="200" height="60" fill="none"/>
+  <g transform="translate(10,5)">
+    <!-- Flag pole -->
+    <rect x="8" y="5" width="2.5" height="45" rx="1" fill="#1A7A3A"/>
+    <!-- Flag -->
+    <path d="M10.5 5 L35 12 L10.5 19 Z" fill="#2E9E4E"/>
+    <!-- Ground -->
+    <ellipse cx="9" cy="50" rx="8" ry="3" fill="#1A7A3A" opacity="0.3"/>
+  </g>
+  <text x="52" y="38" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="22" fill="#1A5276">Fairway Events</text>
+</svg>
