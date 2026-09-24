@@ -460,7 +460,7 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
     <div class="dash-header">
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;" title="Settings">&#9881;</button>
+        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;" title="Settings">&#9881; Settings</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
       </div>
     </div>
@@ -1392,12 +1392,22 @@ Bob Wilson"></textarea>
 
     function renderCard(ev) {
       var badgeClass = 'badge-' + (ev.archived ? 'finished' : ev.status);
-      var label = ev.archived ? 'archived' : ev.status;
+      var label = ev.archived ? 'Archived' : ev.status === 'draft' ? 'Draft' : ev.status === 'live' ? 'Live' : 'Finished';
+      var action = '';
+      if (ev.status === 'draft') action = '<button class="btn btn-green btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Add players</button>';
+      else if (ev.status === 'live') action = '<button class="btn btn-green btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Open</button>';
+      else if (ev.status === 'finished' && !ev.archived) action = '<button class="btn btn-outline btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Share results</button>';
+
       return '<div class="event-card" onclick="openEvent(\'' + ev.id + '\')">' +
-        '<div class="ev-name">' + esc(ev.name) + '</div>' +
-        '<div class="ev-meta">' +
-          '<span class="badge ' + badgeClass + '">' + label + '</span>' +
-          (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div>' +
+            '<div class="ev-name">' + esc(ev.name) + '</div>' +
+            '<div class="ev-meta">' +
+              '<span class="badge ' + badgeClass + '">' + label + '</span>' +
+              (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+          action +
         '</div>' +
       '</div>';
     }
