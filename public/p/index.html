@@ -753,9 +753,10 @@ html, body {
         var html = '';
         players.forEach(function (p) {
           if (f && (p.display_name || '').toLowerCase().indexOf(f) === -1) return;
-          // Hide players who have already confirmed (claimed their name)
-          if (p.player_status === 'confirmed') return;
-          html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + esc(p.display_name) + '</div>';
+          var confirmed = p.player_status === 'confirmed';
+          var label = esc(p.display_name);
+          if (confirmed) label += ' <span style="color:var(--muted);font-size:12px;">(confirmed)</span>';
+          html += '<div class="find-item" data-token="' + esc(p.token) + '" data-hi="' + (p.handicap_index != null ? p.handicap_index : '') + '" data-status="' + (p.player_status || 'invited') + '">' + label + '</div>';
         });
         if (!html) html = '<div style="padding:24px;text-align:center;color:var(--muted)">No players found</div>';
         listEl.innerHTML = html;
