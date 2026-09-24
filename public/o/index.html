@@ -2892,10 +2892,17 @@ Bob Wilson"></textarea>
       unEl.style.display = 'none';
     }
 
+    var groupsEmpty = $('groups-empty-state');
     if (state.groups.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No groups yet. Use auto-fill or add manually.</p></div>';
+      el.innerHTML = '';
+      if (groupsEmpty) {
+        var pCount = state.players ? state.players.length : 0;
+        groupsEmpty.innerHTML = '<p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your ' + pCount + ' player' + (pCount !== 1 ? 's' : '') + ' into fours, then move anyone you like.</p>';
+        groupsEmpty.style.display = '';
+      }
       return;
     }
+    if (groupsEmpty) groupsEmpty.style.display = 'none';
 
     // Compute PH for display
     var tee = state.teeData;
