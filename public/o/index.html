@@ -169,22 +169,30 @@ a { color: inherit; text-decoration: none; }
 .dash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .dash-header h2 { font-size: 22px; }
 .event-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Event cards — mock style with colour bar */
 .event-card {
-  background: var(--white); border-radius: var(--radius); padding: 16px;
+  display: grid; grid-template-columns: 6px 1fr auto; gap: 0 16px; align-items: center;
+  background: var(--white); border-radius: var(--radius); overflow: hidden;
   border: 1px solid var(--line); cursor: pointer; transition: border-color .15s;
+  box-shadow: 0 1px 2px rgba(16,52,78,.04);
 }
 .event-card:hover { border-color: var(--muted); }
-.event-card .ev-name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
-.event-card .ev-meta { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
-.badge {
-  display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-}
-.badge-draft { background: #FFF3CD; color: #856404; }
-.badge-live { background: var(--green-light); color: var(--green); }
-.badge-finished { background: #E8EAF6; color: #3949AB; }
-.empty-state { text-align: center; padding: 48px 16px; color: var(--muted); }
-.empty-state p { font-size: 15px; margin-bottom: 16px; }
+.event-card .ev-bar { align-self: stretch; background: var(--line); }
+.event-card.ev-live .ev-bar { background: var(--green); }
+.event-card.ev-draft .ev-bar { background: var(--amber); }
+.event-card.ev-finished .ev-bar { background: #B8C2CC; }
+.event-card .ev-body { padding: 18px 0; }
+.event-card .ev-name { font-family: Poppins, sans-serif; font-weight: 700; font-size: 18px; margin-bottom: 4px; }
+.event-card .ev-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.event-card .ev-act { padding: 18px 18px 18px 0; }
+@media (max-width: 520px) { .event-card { grid-template-columns: 6px 1fr; } .event-card .ev-act { grid-column: 2; padding: 0 0 18px; } .event-card .ev-act .btn { width: 100%; } }
+.prog { height: 6px; border-radius: 999px; background: var(--line); margin-top: 10px; overflow: hidden; max-width: 260px; }
+.prog i { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+
+.empty-state { text-align: center; padding: 36px 20px; color: var(--muted); }
+.empty-state h3 { color: var(--ink); margin-bottom: 6px; }
+.empty-state p { font-size: 15px; max-width: 38ch; margin: 0 auto 18px; }
 
 /* Event detail — step strip */
 .step-strip {
@@ -1418,41 +1426,43 @@ Bob Wilson"></textarea>
     var archived = state.events.filter(function(e) { return e.archived; });
 
     function renderCard(ev) {
-      var badgeClass = 'badge-' + (ev.archived ? 'finished' : ev.status);
-      var label = ev.archived ? 'Archived' : ev.status === 'draft' ? 'Draft' : ev.status === 'live' ? 'Live' : 'Finished';
-      var action = '';
-      if (ev.status === 'draft') action = '<button class="btn btn-green btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Add players</button>';
-      else if (ev.status === 'live') action = '<button class="btn btn-green btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Open</button>';
-      else if (ev.status === 'finished' && !ev.archived) action = '<button class="btn btn-outline btn-sm" style="font-size:12px;padding:6px 14px;" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Share results</button>';
+      var status = ev.archived ? 'finished' : ev.status;
+      var chipClass = status === 'live' ? 'chip live' : status === 'draft' ? 'chip draft' : 'chip';
+      var chipLabel = ev.archived ? 'Archived' : status === 'draft' ? 'Draft' : status === 'live' ? 'Live' : 'Finished';
+      var cardClass = 'event-card ev-' + status;
 
-      return '<div class="event-card" onclick="openEvent(\'' + ev.id + '\')">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-          '<div>' +
-            '<div class="ev-name">' + esc(ev.name) + '</div>' +
-            '<div class="ev-meta">' +
-              '<span class="badge ' + badgeClass + '">' + label + '</span>' +
-              (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
-            '</div>' +
+      var action = '';
+      if (status === 'draft') action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Add players</button>';
+      else if (status === 'live') action = '<button class="btn btn-green btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Open</button>';
+      else if (status === 'finished' && !ev.archived) action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Share results</button>';
+
+      return '<div class="' + cardClass + '" onclick="openEvent(\'' + ev.id + '\')">' +
+        '<div class="ev-bar"></div>' +
+        '<div class="ev-body">' +
+          '<div class="ev-name">' + esc(ev.name) + '</div>' +
+          '<div class="ev-meta">' +
+            '<span class="' + chipClass + '">' + chipLabel + '</span>' +
+            (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
           '</div>' +
-          action +
         '</div>' +
+        (action ? '<div class="ev-act">' + action + '</div>' : '') +
       '</div>';
     }
 
     var html = '';
 
     if (live.length) {
-      html += '<h3 style="font-size:14px;color:var(--green);font-weight:700;margin-bottom:8px;">Live now</h3>';
+      html += '<div class="section-title live">Live now</div>';
       html += live.map(renderCard).join('');
     }
 
     if (drafts.length) {
-      html += '<h3 style="font-size:14px;color:var(--muted);font-weight:700;margin:16px 0 8px;">Drafts</h3>';
+      html += '<div class="section-title">Coming up</div>';
       html += drafts.map(renderCard).join('');
     }
 
     if (finished.length) {
-      html += '<h3 style="font-size:14px;color:var(--muted);font-weight:700;margin:16px 0 8px;">Finished</h3>';
+      html += '<div class="section-title">Finished</div>';
       html += finished.map(renderCard).join('');
     }
 
