@@ -970,6 +970,9 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
 
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
+        <div style="text-align:right;margin-bottom:8px;">
+          <a href="#" onclick="showEditEventFromLive();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;">Edit event details</a>
+        </div>
         <div id="live-paid-info" style="display:none;background:var(--green-light);border:1px solid var(--green);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--green);">
         </div>
         <div id="live-score-my-round" style="display:none;margin-bottom:16px;">
@@ -2166,8 +2169,15 @@ Bob Wilson"></textarea>
   };
 
   function updateTabsForStatus(status) {
-    // All tabs visible, but golive tab label changes
+    var stepStrip = $('ev-tabs');
     var goliveBtn = document.querySelector('.step-btn[data-tab="golive"]');
+
+    // Hide step strip for live/finished (they use the live/finished view directly)
+    if (status === 'live' || status === 'finished') {
+      if (stepStrip) stepStrip.style.display = 'none';
+    } else {
+      if (stepStrip) stepStrip.style.display = '';
+    }
     if (status === 'live') goliveBtn.textContent = 'Live';
     else if (status === 'finished') goliveBtn.textContent = 'Results';
     else goliveBtn.textContent = 'Go live';
@@ -3676,6 +3686,10 @@ Bob Wilson"></textarea>
       btn.disabled = false;
       btn.textContent = 'Email results to players';
     }
+  };
+
+  window.showEditEventFromLive = function() {
+    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
   };
 
   window.archiveEvent = async function() {
