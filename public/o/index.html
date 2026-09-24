@@ -330,13 +330,11 @@ a { color: inherit; text-decoration: none; }
 .group-card .gc-player .gcp-name { font-weight: 500; }
 .group-card .gc-player .gcp-ph { color: var(--muted); font-size: 13px; }
 
-/* Go Live */
-.go-live-box {
-  background: var(--white); border: 2px solid var(--green); border-radius: var(--radius);
-  padding: 24px; text-align: center;
-}
-.go-live-box .price { font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 700; color: var(--green); margin: 12px 0; }
-.go-live-box .breakdown { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+/* Go Live review */
+.review p { font-size: 17px; line-height: 1.6; }
+.price-row { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--line); margin-top: 16px; }
+.price-row .big { font-family: Poppins, sans-serif; font-weight: 800; font-size: 28px; }
+.note { background: var(--paper); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 14px; }
 
 /* Live event */
 .status-dot {
@@ -998,12 +996,18 @@ a { color: inherit; text-decoration: none; }
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
-        <div id="golive-review" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
-          <p id="golive-summary" style="font-size:15px;line-height:1.6;margin-bottom:16px;"></p>
-          <div class="breakdown" id="golive-breakdown" style="font-size:14px;color:var(--muted);margin-bottom:4px;"></div>
-          <div class="price" id="golive-price" style="font-family:'Poppins',sans-serif;font-size:24px;font-weight:700;color:var(--green);margin-bottom:16px;"></div>
-          <div class="disclaimer" style="margin-bottom:16px;">Handicaps can't be checked against the WHS. The organiser has the final say.</div>
-          <button class="btn btn-green" onclick="goLiveAndPay()" id="golive-btn" style="width:100%;">Go live</button>
+        <div class="card review">
+          <h2 style="margin-bottom:10px;">Ready to go live?</h2>
+          <p id="golive-summary"></p>
+          <div class="price-row">
+            <span id="golive-breakdown" class="quiet"></span>
+            <span id="golive-price" class="big"></span>
+          </div>
+          <div class="note">Handicaps can't be checked against the WHS. You have the final say on the day.</div>
+        </div>
+        <div class="step-next">
+          <button class="btn btn-green btn-block" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
+          <p class="quiet" style="text-align:center;margin-top:10px;">You can still edit players and groups after this.</p>
         </div>
       </div>
 
