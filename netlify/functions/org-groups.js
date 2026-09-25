@@ -116,18 +116,21 @@ exports.handler = async function (event) {
         var createdGroups = await sb.sbPost('groups', newGroups);
         if (!Array.isArray(createdGroups)) createdGroups = [createdGroups];
 
-        // Assign all players in one bulk upsert
-        var assignments = players.map(function (p, i) {
-          var groupIdx = Math.floor(i / groupSize);
-          if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
-          var row = { id: p.id, group_id: createdGroups[groupIdx].id };
-          if (ev.format === 'better_ball_pairs') {
-            row.pair_key = (i % groupSize) < 2 ? 'A' : 'B';
+        // Assign all players in parallel batches of 20
+        var batchSize = 20;
+        for (var bi = 0; bi < players.length; bi += batchSize) {
+          var batch = [];
+          for (var j = bi; j < Math.min(bi + batchSize, players.length); j++) {
+            var groupIdx = Math.floor(j / groupSize);
+            if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
+            var patchData = { group_id: createdGroups[groupIdx].id };
+            if (ev.format === 'better_ball_pairs') {
+              patchData.pair_key = (j % groupSize) < 2 ? 'A' : 'B';
+            }
+            batch.push(sb.sbPatch('players?id=eq.' + players[j].id, patchData));
           }
-          return row;
-        });
-
-        await sb.sbPost('players?on_conflict=id&columns=id,group_id,pair_key', assignments);
+          await Promise.all(batch);
+        }
 
         return sb.respond(200, { ok: true, groups_created: createdGroups.length });
       } catch (err) {
