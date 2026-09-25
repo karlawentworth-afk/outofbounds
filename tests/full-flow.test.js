@@ -1494,10 +1494,37 @@ async function stepAutofill72() {
 
   console.log('  Autofill 72 players: ' + elapsed + 'ms, ' + (fillRes.data ? fillRes.data.groups_created : '?') + ' groups');
 
-  // Cleanup: delete this test event
+  // Cleanup 72-player event
   await sbRest('DELETE', 'players?event_id=eq.' + testEventId);
   await sbRest('DELETE', 'groups?event_id=eq.' + testEventId);
   await sbRest('DELETE', 'events?id=eq.' + testEventId);
+
+  // --- 144 players ---
+  console.log('  Creating 144-player event...');
+  var ev144 = await apiFetch('org-events', {
+    body: { organiser_id: ORG_ID, name: 'Autofill 144 Test', format: 'better_ball_2from4', course_id: COURSE_ID, tee_id: TEE_ID, handicap_allowance: 0.85 }
+  });
+  var ev144Id = ev144.data.event.id;
+
+  for (var b2 = 0; b2 < 18; b2++) {
+    var p2 = [];
+    for (var pp = 0; pp < 8; pp++) p2.push({ first_name: 'P', last_name: '' + (b2 * 8 + pp + 1), handicap_index: 12 });
+    await apiFetch('org-players', { body: { event_id: ev144Id, organiser_id: ORG_ID, players: p2 } });
+  }
+
+  var t144 = Date.now();
+  var fill144 = await apiFetch('org-groups', { body: { action: 'auto_fill', event_id: ev144Id, organiser_id: ORG_ID } });
+  var e144 = Date.now() - t144;
+
+  step('Autofill 144: completed', fill144.status === 200, 'status=' + fill144.status + ' ' + JSON.stringify(fill144.data));
+  step('Autofill 144: under 9 seconds', e144 < 9000, 'elapsed=' + e144 + 'ms');
+  step('Autofill 144: 36 groups', fill144.data && fill144.data.groups_created === 36, 'groups=' + (fill144.data ? fill144.data.groups_created : '?'));
+  console.log('  Autofill 144 players: ' + e144 + 'ms, ' + (fill144.data ? fill144.data.groups_created : '?') + ' groups');
+
+  // Cleanup
+  await sbRest('DELETE', 'players?event_id=eq.' + ev144Id);
+  await sbRest('DELETE', 'groups?event_id=eq.' + ev144Id);
+  await sbRest('DELETE', 'events?id=eq.' + ev144Id);
 }
 
 // ── Missing-score sheet test ─────────────────────────────────────
