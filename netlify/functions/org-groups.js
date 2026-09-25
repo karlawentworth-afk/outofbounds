@@ -79,67 +79,36 @@ exports.handler = async function (event) {
         var ev = await verifyOwnership(body.event_id, body.organiser_id);
         if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
 
-        // Get all players without groups (or all players for reassignment)
+        // Get only unassigned players (autofill never reshuffles existing groups)
         var players = await sb.sbGet(
           'players?event_id=eq.' + body.event_id +
+          '&group_id=is.null' +
           '&select=id,display_name' +
           '&order=created_at.asc'
         );
 
         if (!players || players.length === 0) {
-          return sb.respond(400, { error: 'No players to group' });
+          return sb.respond(200, { ok: true, groups_created: 0, message: 'No unassigned players' });
         }
 
         // Determine group size based on format
-        var groupSize = 4; // default
-        if (ev.format === 'better_ball_pairs') groupSize = 4; // 2 pairs of 2
-        // For 2from4, 4 per group
+        var groupSize = 4;
+
+        // Find the highest existing group_number to continue from
+        var existingGroups = await sb.sbGet(
+          'groups?event_id=eq.' + body.event_id +
+          '&select=group_number&order=group_number.desc&limit=1'
+        );
+        var startNum = (existingGroups && existingGroups[0]) ? existingGroups[0].group_number + 1 : 1;
 
         var numGroups = Math.ceil(players.length / groupSize);
 
-        // Delete existing groups first
-        var existingGroups = await sb.sbGet(
-          'groups?event_id=eq.' + body.event_id + '&select=id'
-        );
-        if (existingGroups && existingGroups.length > 0) {
-          // Clear player group assignments first
-          for (var i = 0; i < players.length; i++) {
-            await sb.sbPatch('players?id=eq.' + players[i].id, { group_id: null, pair_key: null });
-          }
-          // Delete groups
-          var https = require('https');
-          var key = process.env.SUPABASE_SERVICE_KEY;
-          for (var i = 0; i < existingGroups.length; i++) {
-            await new Promise(function (resolve, reject) {
-              var opts = {
-                hostname: 'ahutmswadskdkqhnrhhh.supabase.co',
-                port: 443,
-                path: '/rest/v1/groups?id=eq.' + existingGroups[i].id,
-                method: 'DELETE',
-                headers: {
-                  'apikey': key,
-                  'Authorization': 'Bearer ' + key,
-                  'Content-Type': 'application/json'
-                }
-              };
-              var timer = setTimeout(function () { reject(new Error('Timeout')); }, 9000);
-              var req = https.request(opts, function (res) {
-                var chunks = [];
-                res.on('data', function (c) { chunks.push(c); });
-                res.on('end', function () { clearTimeout(timer); resolve(); });
-              });
-              req.on('error', function (err) { clearTimeout(timer); reject(err); });
-              req.end();
-            });
-          }
-        }
-
-        // Create new groups
+        // Create all new groups in one batch POST
         var newGroups = [];
         for (var g = 0; g < numGroups; g++) {
           newGroups.push({
             event_id: body.event_id,
-            group_number: g + 1,
+            group_number: startNum + g,
             starting_hole: 1
           });
         }
@@ -147,20 +116,23 @@ exports.handler = async function (event) {
         var createdGroups = await sb.sbPost('groups', newGroups);
         if (!Array.isArray(createdGroups)) createdGroups = [createdGroups];
 
-        // Assign players to groups
-        for (var i = 0; i < players.length; i++) {
-          var groupIdx = Math.floor(i / groupSize);
-          if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
+        // Assign all players in parallel batches of 10
+        // Each batch is a Promise.all of up to 10 PATCH calls
+        var batchSize = 10;
+        for (var bi = 0; bi < players.length; bi += batchSize) {
+          var batch = [];
+          for (var j = bi; j < Math.min(bi + batchSize, players.length); j++) {
+            var groupIdx = Math.floor(j / groupSize);
+            if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
 
-          var patchData = { group_id: createdGroups[groupIdx].id };
+            var patchData = { group_id: createdGroups[groupIdx].id };
+            if (ev.format === 'better_ball_pairs') {
+              patchData.pair_key = (j % groupSize) < 2 ? 'A' : 'B';
+            }
 
-          // Assign pair keys for BB pairs
-          if (ev.format === 'better_ball_pairs') {
-            var posInGroup = i % groupSize;
-            patchData.pair_key = posInGroup < 2 ? 'A' : 'B';
+            batch.push(sb.sbPatch('players?id=eq.' + players[j].id, patchData));
           }
-
-          await sb.sbPatch('players?id=eq.' + players[i].id, patchData);
+          await Promise.all(batch);
         }
 
         return sb.respond(200, { ok: true, groups_created: createdGroups.length });

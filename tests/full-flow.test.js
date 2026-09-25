@@ -1429,6 +1429,77 @@ async function stepConsoleErrors() {
   }
 }
 
+// ── Autofill 72 players test ─────────────────────────────────────
+async function stepAutofill72() {
+  console.log('\n--- Autofill 72 players ---');
+
+  // Create a separate event for this test
+  var evRes = await apiFetch('org-events', {
+    body: {
+      organiser_id: ORG_ID,
+      name: 'Autofill 72 Test',
+      format: 'better_ball_2from4',
+      course_id: COURSE_ID,
+      tee_id: TEE_ID,
+      handicap_allowance: 0.85
+    }
+  });
+
+  if (evRes.status !== 200 || !evRes.data || !evRes.data.event) {
+    step('Autofill 72: create event', false, 'status=' + evRes.status);
+    return;
+  }
+  var testEventId = evRes.data.event.id;
+
+  // Add 72 players in batches
+  var allPlayers = [];
+  for (var batch = 0; batch < 9; batch++) {
+    var players = [];
+    for (var p = 0; p < 8; p++) {
+      var num = batch * 8 + p + 1;
+      players.push({ first_name: 'Player', last_name: 'N' + num, handicap_index: 10 + Math.random() * 20 });
+    }
+    var addRes = await apiFetch('org-players', {
+      body: { event_id: testEventId, organiser_id: ORG_ID, players: players }
+    });
+    if (addRes.data && addRes.data.players) {
+      allPlayers = allPlayers.concat(addRes.data.players);
+    }
+  }
+
+  step('Autofill 72: created players', allPlayers.length === 72, 'count=' + allPlayers.length);
+
+  // Time the autofill
+  var t0 = Date.now();
+  var fillRes = await apiFetch('org-groups', {
+    body: { action: 'auto_fill', event_id: testEventId, organiser_id: ORG_ID }
+  });
+  var elapsed = Date.now() - t0;
+
+  step('Autofill 72: completed', fillRes.status === 200, 'status=' + fillRes.status + ' ' + JSON.stringify(fillRes.data));
+  step('Autofill 72: under 9 seconds', elapsed < 9000, 'elapsed=' + elapsed + 'ms');
+  step('Autofill 72: 18 groups', fillRes.data && fillRes.data.groups_created === 18,
+    'groups=' + (fillRes.data ? fillRes.data.groups_created : '?'));
+
+  // Verify all players assigned
+  var verifyRes = await apiFetch('org-groups', {
+    method: 'GET',
+    query: { event_id: testEventId, organiser_id: ORG_ID }
+  });
+  var unassigned = 0;
+  if (verifyRes.data && verifyRes.data.players) {
+    unassigned = verifyRes.data.players.filter(function (p) { return !p.group_id; }).length;
+  }
+  step('Autofill 72: all assigned', unassigned === 0, 'unassigned=' + unassigned);
+
+  console.log('  Autofill 72 players: ' + elapsed + 'ms, ' + (fillRes.data ? fillRes.data.groups_created : '?') + ' groups');
+
+  // Cleanup: delete this test event
+  await sbRest('DELETE', 'players?event_id=eq.' + testEventId);
+  await sbRest('DELETE', 'groups?event_id=eq.' + testEventId);
+  await sbRest('DELETE', 'events?id=eq.' + testEventId);
+}
+
 // ── Missing-score sheet test ─────────────────────────────────────
 // Uses the test org created in earlier steps, NOT the Fairway Events demo.
 async function stepMissingScoreSheet() {
@@ -1730,7 +1801,10 @@ async function main() {
     // VIEWPORT
     await stepN_viewportFit();
 
-    // MISSING SCORE SHEET (demo event)
+    // AUTOFILL 72 PLAYERS
+    await stepAutofill72();
+
+    // MISSING SCORE SHEET (test org)
     await stepMissingScoreSheet();
 
     // CONSOLE ERROR SCAN
