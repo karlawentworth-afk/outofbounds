@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/favicon.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Out of Bounds</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,7 +26,7 @@
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-  height: 100dvh; overflow: hidden;
+  height: 100dvh; overflow: hidden; touch-action: manipulation;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--off-white); color: var(--ink);
   -webkit-font-smoothing: antialiased;
