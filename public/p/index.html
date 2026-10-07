@@ -448,6 +448,20 @@ html, body {
   </div>
 </div>
 
+<!-- Help sheet -->
+<div id="help-sheet" class="sheet-overlay">
+  <div class="sheet-card" style="text-align:left;">
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:4px;font-family:Poppins,sans-serif;">Need help?</h3>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">Email us: <a href="mailto:hello@outofboundsevents.com" style="color:var(--green);font-weight:600;">hello@outofboundsevents.com</a></p>
+    <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">Tell us what confused you</label>
+    <textarea id="help-msg" rows="3" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit;outline:none;resize:vertical;" placeholder="e.g. I couldn't find my name"></textarea>
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <button class="btn-back" onclick="document.getElementById('help-sheet').classList.remove('show')">Cancel</button>
+      <button class="btn-confirm" id="help-send-btn" onclick="sendPlayerHelp()">Send</button>
+    </div>
+  </div>
+</div>
+
 <script src="/shared/engine.js"></script>
 <script src="/shared/api.js"></script>
 <script>
@@ -949,6 +963,7 @@ html, body {
 
     // "Not right?" link
     html += '<button class="w-notright" id="btn-notright">Not right?</button>';
+    html += '<button onclick="openPlayerHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:12px;">Help</button>';
 
     // HCP editor (hidden by default)
     html += '<div id="hcp-editor-area" style="display:none;"></div>';
@@ -1419,7 +1434,8 @@ html, body {
     var formatLabel = FORMAT_LABELS[format] || '';
     var html = '<div class="finish-title">Round complete!</div>' +
       '<div class="finish-pts">' + info.total + ' pts</div>' +
-      '<div class="finish-sub">Well played.' + (formatLabel ? ' ' + formatLabel + '.' : '') + '</div>';
+      '<div class="finish-sub">Well played.' + (formatLabel ? ' ' + formatLabel + '.' : '') + '</div>' +
+      '<button onclick="openPlayerHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;margin-top:24px;">Help</button>';
     document.getElementById('fin-body').innerHTML = html;
   }
 
@@ -1610,6 +1626,46 @@ html, body {
       console.warn('Leaderboard load failed:', err.message);
     }
   }
+
+  /* ── Help ── */
+  window.openPlayerHelp = function() {
+    document.getElementById('help-msg').value = '';
+    var btn = document.getElementById('help-send-btn');
+    btn.disabled = false;
+    btn.textContent = 'Send';
+    document.getElementById('help-sheet').classList.add('show');
+  };
+
+  window.sendPlayerHelp = async function() {
+    var msg = document.getElementById('help-msg').value.trim();
+    if (!msg) return;
+
+    var btn = document.getElementById('help-send-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      var from = ctx && ctx.player ? ctx.player.display_name : 'A player';
+      var context = 'Player view';
+      if (ctx && ctx.event) context += ' — ' + ctx.event.name;
+
+      await OOB.api('feedback-send', {
+        method: 'POST',
+        body: { message: msg, from: from, context: context }
+      });
+
+      document.getElementById('help-sheet').classList.remove('show');
+      // Brief toast if available
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 24px;border-radius:999px;font-size:14px;font-weight:500;z-index:300;';
+      toast.textContent = 'Feedback sent — thank you!';
+      document.body.appendChild(toast);
+      setTimeout(function () { toast.remove(); }, 3000);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Send';
+    }
+  };
 
   /* ── GO ── */
   init();

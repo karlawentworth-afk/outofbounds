@@ -30,8 +30,9 @@ exports.handler = async function (event) {
     // Run the seed script inline (same logic)
     // We re-implement the delete + create here to avoid shelling out
 
+    // Never touch tester/pilot organisers
     var DEMO_SLUG = 'demo';
-    var existingOrgs = await sb.sbGet('organisers?slug=eq.' + DEMO_SLUG + '&select=id');
+    var existingOrgs = await sb.sbGet('organisers?slug=eq.' + DEMO_SLUG + '&is_tester=eq.false&select=id');
 
     if (existingOrgs && existingOrgs.length) {
       var oldId = existingOrgs[0].id;

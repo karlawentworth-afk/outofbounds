@@ -278,6 +278,9 @@ exports.handler = async function (event) {
         var created = await sb.sbPost('events', row);
         var ev = Array.isArray(created) ? created[0] : created;
 
+        // Log activity (fire-and-forget)
+        sb.sbPost('activity_log', { organiser_id: body.organiser_id, action: 'event_created', detail: body.name }).catch(function () {});
+
         return sb.respond(200, { event: ev });
       } catch (err) {
         console.error('org-events create error:', err);

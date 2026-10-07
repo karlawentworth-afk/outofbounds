@@ -36,7 +36,7 @@ exports.handler = async function (event) {
     // GET: list all organisers
     if (event.httpMethod === 'GET') {
       var orgs = await sb.sbGet(
-        'organisers?select=id,name,slug,plan,plan_source,comp_until,contact_email,is_superadmin,created_at,logo_url,primary_colour,display_name&order=created_at.desc'
+        'organisers?select=id,name,slug,plan,plan_source,comp_until,contact_email,is_superadmin,created_at,logo_url,primary_colour,display_name,is_tester,last_sign_in&order=created_at.desc'
       );
 
       // Count events per organiser
@@ -64,6 +64,8 @@ exports.handler = async function (event) {
           logo_url: o.logo_url,
           primary_colour: o.primary_colour,
           display_name: o.display_name,
+          is_tester: o.is_tester || false,
+          last_sign_in: o.last_sign_in,
           events_total: c.total,
           events_live: c.live,
           events_finished: c.finished
@@ -135,6 +137,95 @@ exports.handler = async function (event) {
 
         await sb.sbPatch('organisers?id=eq.' + demoOrgs[0].id, rebrand);
         return sb.respond(200, { ok: true });
+      }
+
+      // Activity stats per organiser
+      if (action === 'activity') {
+        var orgs = await sb.sbGet(
+          'organisers?select=id,name,slug,is_tester,last_sign_in,created_at,contact_email,plan&order=created_at.desc'
+        );
+
+        // Gather counts from events, players, hole_scores
+        var events = await sb.sbGet('events?select=id,organiser_id,status,created_at');
+        var eventsByOrg = {};
+        (events || []).forEach(function (e) {
+          if (!eventsByOrg[e.organiser_id]) eventsByOrg[e.organiser_id] = [];
+          eventsByOrg[e.organiser_id].push(e);
+        });
+
+        // Player counts per organiser (via events)
+        var eventIds = (events || []).map(function (e) { return e.id; });
+        var playerCounts = {};
+        if (eventIds.length > 0) {
+          // Batch in chunks of 50
+          for (var ci = 0; ci < eventIds.length; ci += 50) {
+            var chunk = eventIds.slice(ci, ci + 50);
+            var players = await sb.sbGet(
+              'players?event_id=in.(' + chunk.join(',') + ')&select=id,event_id'
+            );
+            (players || []).forEach(function (p) {
+              // Look up organiser via event
+              var ev = (events || []).find(function (e) { return e.id === p.event_id; });
+              if (ev) {
+                playerCounts[ev.organiser_id] = (playerCounts[ev.organiser_id] || 0) + 1;
+              }
+            });
+          }
+        }
+
+        // Score counts per organiser
+        var scoreCounts = {};
+        if (eventIds.length > 0) {
+          for (var si = 0; si < eventIds.length; si += 50) {
+            var schunk = eventIds.slice(si, si + 50);
+            var scores = await sb.sbGet(
+              'hole_scores?event_id=in.(' + schunk.join(',') + ')&select=id,event_id'
+            );
+            (scores || []).forEach(function (s) {
+              var ev = (events || []).find(function (e) { return e.id === s.event_id; });
+              if (ev) {
+                scoreCounts[ev.organiser_id] = (scoreCounts[ev.organiser_id] || 0) + 1;
+              }
+            });
+          }
+        }
+
+        // Activity log entries (recent errors)
+        var activityLog = [];
+        try {
+          activityLog = await sb.sbGet(
+            'activity_log?order=created_at.desc&limit=100&select=organiser_id,action,detail,created_at'
+          ) || [];
+        } catch (e) {
+          // Table may not exist yet
+        }
+
+        var errorsByOrg = {};
+        activityLog.forEach(function (a) {
+          if (a.action === 'error') {
+            errorsByOrg[a.organiser_id] = (errorsByOrg[a.organiser_id] || 0) + 1;
+          }
+        });
+
+        var result = (orgs || []).map(function (o) {
+          var orgEvents = eventsByOrg[o.id] || [];
+          return {
+            id: o.id,
+            name: o.name,
+            slug: o.slug,
+            is_tester: o.is_tester || false,
+            last_sign_in: o.last_sign_in,
+            created_at: o.created_at,
+            contact_email: o.contact_email,
+            plan: o.plan,
+            events_created: orgEvents.length,
+            players_added: playerCounts[o.id] || 0,
+            scores_saved: scoreCounts[o.id] || 0,
+            errors_hit: errorsByOrg[o.id] || 0
+          };
+        });
+
+        return sb.respond(200, { activity: result });
       }
 
       return sb.respond(400, { error: 'Unknown action: ' + action });
