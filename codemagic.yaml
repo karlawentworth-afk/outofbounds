@@ -59,20 +59,59 @@ workflows:
           });
           "
 
-          # Convert to p12 and import
-          openssl x509 -inform DER -in /tmp/dist.cer -out /tmp/dist.pem 2>/dev/null
+          # Convert to p12 and import directly via security command
+          openssl x509 -inform DER -in /tmp/dist.cer -out /tmp/dist.pem
           openssl pkcs12 -export -out /tmp/dist.p12 \
             -inkey /tmp/dist.key -in /tmp/dist.pem \
-            -passout pass: 2>/dev/null
-          keychain add-certificates --certificate /tmp/dist.p12
+            -passout pass:codemagic
+          KEYCHAIN=$(ls ~/Library/codemagic-cli-tools/keychains/*.keychain-db | head -1)
+          security import /tmp/dist.p12 -k "$KEYCHAIN" -P codemagic -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN"
+          echo "Certificate imported to keychain"
 
-          # Now fetch provisioning profile
-          app-store-connect fetch-signing-files \
-            "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+          # Create provisioning profile via Apple API
+          node -e "
+          var jwt = require('jsonwebtoken');
+          var fs = require('fs');
+          var pk = process.env.APP_STORE_CONNECT_PRIVATE_KEY;
+          var now = Math.floor(Date.now()/1000);
+          var token = jwt.sign({iss:process.env.APP_STORE_CONNECT_ISSUER_ID,iat:now,exp:now+600,aud:'appstoreconnect-v1'},pk,{algorithm:'ES256',header:{alg:'ES256',kid:process.env.APP_STORE_CONNECT_KEY_IDENTIFIER,typ:'JWT'}});
 
-          keychain add-certificates
+          // Get the certificate ID and bundle ID
+          async function run() {
+            // List certs to find our distribution cert
+            var cr = await fetch('https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=IOS_DISTRIBUTION',{headers:{'Authorization':'Bearer '+token}});
+            var cd = await cr.json();
+            var certId = cd.data && cd.data[0] ? cd.data[0].id : null;
+            console.log('Cert ID:', certId);
+
+            // Get bundle ID
+            var br = await fetch('https://api.appstoreconnect.apple.com/v1/bundleIds?filter[identifier]=com.outofboundsevents.scoring',{headers:{'Authorization':'Bearer '+token}});
+            var bd = await br.json();
+            var bundleIdRes = bd.data && bd.data[0] ? bd.data[0].id : null;
+            console.log('Bundle ID resource:', bundleIdRes);
+
+            // Get all devices (needed for ad-hoc, not app-store, but include for completeness)
+            // Create App Store provisioning profile
+            var pr = await fetch('https://api.appstoreconnect.apple.com/v1/profiles',{
+              method:'POST',
+              headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+              body:JSON.stringify({data:{type:'profiles',attributes:{name:'OOB AppStore',profileType:'IOS_APP_STORE'},relationships:{bundleId:{data:{type:'bundleIds',id:bundleIdRes}},certificates:{data:[{type:'certificates',id:certId}]}}}})
+            });
+            var pd = await pr.json();
+            if(pd.data){
+              var profileContent = Buffer.from(pd.data.attributes.profileContent,'base64');
+              var profilePath = process.env.HOME + '/Library/MobileDevice/Provisioning Profiles/' + pd.data.attributes.uuid + '.mobileprovision';
+              require('child_process').execSync('mkdir -p \"' + require('path').dirname(profilePath) + '\"');
+              fs.writeFileSync(profilePath, profileContent);
+              console.log('PROFILE_CREATED:' + pd.data.id + ' uuid:' + pd.data.attributes.uuid);
+            }else{
+              console.log('PROFILE_ERROR:'+JSON.stringify(pd).substring(0,300));
+            }
+          }
+          run();
+          "
+
           xcode-project use-profiles
 
       - name: Build iOS and package IPA
