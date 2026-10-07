@@ -28,15 +28,52 @@ workflows:
 
       - name: Set up iOS code signing
         script: |
-          echo "Key ID set: ${APP_STORE_CONNECT_KEY_IDENTIFIER:+yes}"
-          echo "Issuer set: ${APP_STORE_CONNECT_ISSUER_ID:+yes}"
-          echo "Private key length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
           keychain initialize
+
+          # Generate RSA key, create CSR, submit to Apple, get cert
+          openssl req -new -newkey rsa:2048 -nodes \
+            -keyout /tmp/dist.key -out /tmp/dist.csr \
+            -subj "/CN=Out of Bounds/O=69UCJQNR64/C=GB" 2>/dev/null
+
+          # Create distribution certificate via Apple API
+          CSR_CONTENT=$(base64 < /tmp/dist.csr | tr -d '\n')
+          node -e "
+          var jwt = require('jsonwebtoken');
+          var fs = require('fs');
+          var pk = process.env.APP_STORE_CONNECT_PRIVATE_KEY;
+          var now = Math.floor(Date.now()/1000);
+          var token = jwt.sign({iss:process.env.APP_STORE_CONNECT_ISSUER_ID,iat:now,exp:now+600,aud:'appstoreconnect-v1'},pk,{algorithm:'ES256',header:{alg:'ES256',kid:process.env.APP_STORE_CONNECT_KEY_IDENTIFIER,typ:'JWT'}});
+          var csr = fs.readFileSync('/tmp/dist.csr','utf8');
+          var csrB64 = Buffer.from(csr).toString('base64');
+          fetch('https://api.appstoreconnect.apple.com/v1/certificates',{
+            method:'POST',
+            headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+            body:JSON.stringify({data:{type:'certificates',attributes:{certificateType:'IOS_DISTRIBUTION',csrContent:csrB64}}})
+          }).then(r=>r.json()).then(d=>{
+            if(d.data){
+              var certB64=d.data.attributes.certificateContent;
+              var certDer=Buffer.from(certB64,'base64');
+              fs.writeFileSync('/tmp/dist.cer',certDer);
+              console.log('CERT_CREATED:'+d.data.id);
+            }else{
+              console.log('CERT_ERROR:'+JSON.stringify(d).substring(0,300));
+            }
+          });
+          "
+
+          # Convert to p12 and import
+          openssl x509 -inform DER -in /tmp/dist.cer -out /tmp/dist.pem 2>/dev/null
+          openssl pkcs12 -export -out /tmp/dist.p12 \
+            -inkey /tmp/dist.key -in /tmp/dist.pem \
+            -passout pass: 2>/dev/null
+          keychain add-certificates --certificate /tmp/dist.p12
+
+          # Now fetch provisioning profile
           app-store-connect fetch-signing-files \
             "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --verbose
+            --create
+
           keychain add-certificates
           xcode-project use-profiles
 
