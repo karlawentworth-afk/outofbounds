@@ -49,7 +49,7 @@ workflows:
             | xcpretty
 
       - name: Package IPA
-        script: xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+        script: xcode-project build-ipa --archive ios/App/build/App.xcarchive
 
       - name: Build Android
         script: |
