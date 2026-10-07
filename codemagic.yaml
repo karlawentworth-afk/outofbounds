@@ -10,7 +10,7 @@ workflows:
         - pattern: 'v*'
 
     integrations:
-      app_store_connect: Out Of Bounds
+      app_store_connect: Codemagic Admin
 
     environment:
       ios_signing:
