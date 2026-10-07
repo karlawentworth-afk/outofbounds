@@ -33,7 +33,18 @@ workflows:
         script: npx cap sync
 
       - name: Set up code signing
-        script: xcode-project use-profiles
+        script: |
+          # Fetch signing files from App Store Connect
+          app-store-connect fetch-signing-files \
+            com.outofboundsevents.scoring \
+            --type IOS_APP_STORE \
+            --create
+          # Install fetched profiles and certificates
+          keychain initialize
+          app-store-connect certificates list --type IOS_DISTRIBUTION --save || \
+            app-store-connect certificates create --type IOS_DISTRIBUTION --save
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Build iOS
         script: |
