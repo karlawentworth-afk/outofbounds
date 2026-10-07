@@ -1103,6 +1103,7 @@ a { color: inherit; text-decoration: none; }
       <div id="golive-finished" style="display:none;">
         <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
         <div id="finished-leaderboard"></div>
+        <div id="results-email-note" style="font-size:13px;color:var(--muted);margin:12px 0;"></div>
         <div class="past-actions">
           <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results to players</button>
           <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
@@ -3401,6 +3402,18 @@ Bob Wilson"></textarea>
       $('golive-finished').style.display = 'block';
       loadFinishedLeaderboard();
       loadPrizes();
+      // Show email count note
+      api('results-email', {
+        method: 'POST',
+        body: { action: 'count', event_id: state.currentEvent, organiser_id: state.organiser.id }
+      }).then(function (r) {
+        var note = $('results-email-note');
+        if (r.with_email > 0) {
+          note.textContent = 'Results will be emailed to ' + r.with_email + ' of ' + r.total + ' players (the ones with an email).';
+        } else {
+          note.textContent = 'No players have an email address.';
+        }
+      }).catch(function () {});
       return;
     }
 
@@ -3738,10 +3751,29 @@ Bob Wilson"></textarea>
   // ── Finish event ──────────────────────────────────────────────
   window.finishEvent = async function(countedHoles) {
     countedHoles = parseInt(countedHoles) || 18;
+
+    // Check how many players have email addresses
+    var emailCount = null;
+    try {
+      emailCount = await api('results-email', {
+        method: 'POST',
+        body: { action: 'count', event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+    } catch (e) { /* proceed without count */ }
+
+    var emailNote = '';
+    if (emailCount) {
+      if (emailCount.with_email > 0) {
+        emailNote = '\n\nResults will be emailed to ' + emailCount.with_email + ' of ' + emailCount.total + ' players (the ones with an email).';
+      } else {
+        emailNote = '\n\nNo players have an email address — results won\u2019t be emailed.';
+      }
+    }
+
     var msg = countedHoles < 18
-      ? 'Finish and count holes 1 to ' + countedHoles + '? Results will be published.'
-      : 'Finish this event? Scores will be locked and results published.';
-    if (!(await oobConfirm(msg, 'Finish'))) return;
+      ? 'Finish and count holes 1 to ' + countedHoles + '? Results will be published.' + emailNote
+      : 'Finish this event? Scores will be locked and results published.' + emailNote;
+    if (!(await oobConfirm(msg, 'Finish and publish results'))) return;
     try {
       await api('org-events', {
         method: 'POST',
@@ -3754,7 +3786,29 @@ Bob Wilson"></textarea>
       });
       state.currentEventData.status = 'finished';
       updateGoLiveTab();
-      toast(countedHoles < 18 ? 'Finished through hole ' + countedHoles : 'Event finished');
+
+      // Auto-send results emails
+      if (emailCount && emailCount.with_email > 0) {
+        toast('Event finished — sending results to ' + emailCount.with_email + ' players…');
+        try {
+          var emailRes = await api('results-email', {
+            method: 'POST',
+            body: { event_id: state.currentEvent, organiser_id: state.organiser.id }
+          });
+          var btn = $('btn-results-email');
+          if (emailRes.failed > 0) {
+            toast('Sent to ' + emailRes.sent + ' players, ' + emailRes.failed + ' failed');
+            if (btn) { btn.textContent = 'Retry failed (' + emailRes.failed + ')'; btn.disabled = false; }
+          } else {
+            toast('Results emailed to ' + emailRes.sent + ' players');
+            if (btn) { btn.textContent = 'Sent to ' + emailRes.sent + ' players'; btn.disabled = true; }
+          }
+        } catch (emailErr) {
+          toast('Results published but emails failed: ' + emailErr.message);
+        }
+      } else {
+        toast('Event finished — results published');
+      }
     } catch (err) {
       toast('Error: ' + err.message);
     }
@@ -3848,13 +3902,23 @@ Bob Wilson"></textarea>
     if (!(await oobConfirm('Send results to all players with an email address?', 'Send'))) return;
     var btn = $('btn-results-email');
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = 'Sending…';
     try {
       var res = await api('results-email', {
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id }
       });
-      btn.textContent = 'Sent to ' + res.sent + ' players';
+      if (res.failed > 0) {
+        btn.textContent = 'Sent to ' + res.sent + ', ' + res.failed + ' failed';
+        btn.disabled = false;
+        toast(res.failed + ' email' + (res.failed === 1 ? '' : 's') + ' failed — try again');
+      } else if (res.sent === 0) {
+        btn.textContent = 'No players have an email';
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'Sent to ' + res.sent + ' of ' + res.with_email + ' players';
+        btn.disabled = true;
+      }
     } catch (err) {
       toast('Error: ' + err.message);
       btn.disabled = false;
