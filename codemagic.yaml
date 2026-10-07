@@ -52,12 +52,6 @@ workflows:
           cp /tmp/dist.mobileprovision "$PROFILE_DIR/$PROFILE_UUID.mobileprovision"
           echo "Profile installed: $PROFILE_UUID"
 
-          # Set Xcode project signing
-          cd ios/App
-          sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' App.xcodeproj/project.pbxproj
-          sed -i '' "s/DEVELOPMENT_TEAM = \"\"/DEVELOPMENT_TEAM = 69UCJQNR64/g" App.xcodeproj/project.pbxproj
-          sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\"/PROVISIONING_PROFILE_SPECIFIER = OOB AppStore Distribution/g" App.xcodeproj/project.pbxproj
-
       - name: Create export options
         script: |
           cat > /tmp/ExportOptions.plist << 'PLIST'
