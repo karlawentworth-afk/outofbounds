@@ -41,7 +41,7 @@ workflows:
       - name: Build iOS and package IPA
         script: |
           xcode-project build-ipa \
-            --workspace "ios/App/App.xcworkspace" \
+            --project "ios/App/App.xcodeproj" \
             --scheme "App"
 
       - name: Build Android
