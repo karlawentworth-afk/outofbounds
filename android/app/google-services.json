@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "924758912093",
+    "project_id": "oob-scoring",
+    "storage_bucket": "oob-scoring.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924758912093:android:62ed6ea9b68cf31d83b1b4",
+        "android_client_info": {
+          "package_name": "com.outofboundsevents.scoring"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAofkCqoGC99mstNJgUAftfM4y6ClVUk_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

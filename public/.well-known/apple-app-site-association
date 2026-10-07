@@ -3,12 +3,12 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAM_ID.com.outofboundsevents.scoring",
+        "appID": "69UCJQNR64.com.outofboundsevents.scoring",
         "paths": ["/o/*", "/p/*", "/r/*", "/auth/*"]
       }
     ]
   },
   "webcredentials": {
-    "apps": ["TEAM_ID.com.outofboundsevents.scoring"]
+    "apps": ["69UCJQNR64.com.outofboundsevents.scoring"]
   }
 }
