@@ -9,15 +9,9 @@ workflows:
       tag_patterns:
         - pattern: 'v*'
 
-    integrations:
-      app_store_connect: Out Of Bounds
-
     environment:
       groups:
         - appstore
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.outofboundsevents.scoring
       vars:
         BUNDLE_ID: com.outofboundsevents.scoring
         APP_BASE_URL: https://score.outofboundsevents.com
@@ -32,11 +26,78 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync
 
+      - name: Set up iOS code signing
+        script: |
+          # Decode and import certificate
+          echo "$DIST_CERTIFICATE_P12" | base64 --decode > /tmp/dist.p12
+          echo "$DIST_PROFILE" | base64 --decode > /tmp/dist.mobileprovision
+
+          # Create and configure keychain
+          KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "" "$KEYCHAIN_PATH"
+          security list-keychains -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          # Import certificate
+          security import /tmp/dist.p12 -k "$KEYCHAIN_PATH" -P "$DIST_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN_PATH"
+          echo "Certificate imported"
+
+          # Install provisioning profile
+          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILE_DIR"
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i /tmp/dist.mobileprovision))
+          cp /tmp/dist.mobileprovision "$PROFILE_DIR/$PROFILE_UUID.mobileprovision"
+          echo "Profile installed: $PROFILE_UUID"
+
+          # Set Xcode project signing
+          cd ios/App
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic/CODE_SIGN_STYLE = Manual/g' App.xcodeproj/project.pbxproj
+          sed -i '' "s/DEVELOPMENT_TEAM = \"\"/DEVELOPMENT_TEAM = 69UCJQNR64/g" App.xcodeproj/project.pbxproj
+          sed -i '' "s/PROVISIONING_PROFILE_SPECIFIER = \"\"/PROVISIONING_PROFILE_SPECIFIER = OOB AppStore Distribution/g" App.xcodeproj/project.pbxproj
+
+      - name: Create export options
+        script: |
+          cat > /tmp/ExportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>69UCJQNR64</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.outofboundsevents.scoring</key>
+              <string>OOB AppStore Distribution</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
       - name: Build iOS and package IPA
         script: |
-          xcode-project build-ipa \
-            --project "ios/App/App.xcodeproj" \
-            --scheme "App"
+          cd ios/App
+          xcodebuild -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -archivePath "$HOME/build/App.xcarchive" \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=69UCJQNR64 \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="OOB AppStore Distribution" \
+            | xcpretty
+
+          xcodebuild -exportArchive \
+            -archivePath "$HOME/build/App.xcarchive" \
+            -exportPath "$HOME/build/ipa" \
+            -exportOptionsPlist /tmp/ExportOptions.plist
 
       - name: Build Android
         script: |
@@ -44,7 +105,7 @@ workflows:
           ./gradlew assembleRelease
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - $HOME/build/ipa/*.ipa
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
 
