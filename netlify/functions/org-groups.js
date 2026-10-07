@@ -116,17 +116,20 @@ exports.handler = async function (event) {
         var createdGroups = await sb.sbPost('groups', newGroups);
         if (!Array.isArray(createdGroups)) createdGroups = [createdGroups];
 
-        // Assign all players in parallel batches of 20
-        var batchSize = 20;
+        // Assign all players in parallel batches of 10
+        // Each batch is a Promise.all of up to 10 PATCH calls
+        var batchSize = 10;
         for (var bi = 0; bi < players.length; bi += batchSize) {
           var batch = [];
           for (var j = bi; j < Math.min(bi + batchSize, players.length); j++) {
             var groupIdx = Math.floor(j / groupSize);
             if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
+
             var patchData = { group_id: createdGroups[groupIdx].id };
             if (ev.format === 'better_ball_pairs') {
               patchData.pair_key = (j % groupSize) < 2 ? 'A' : 'B';
             }
+
             batch.push(sb.sbPatch('players?id=eq.' + players[j].id, patchData));
           }
           await Promise.all(batch);
