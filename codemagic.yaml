@@ -32,6 +32,11 @@ workflows:
       - name: Set up iOS code signing
         script: |
           keychain initialize
+          # Create a new distribution certificate (generates key pair locally)
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --save
+          # Now fetch signing files (profile will be created by --create)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
