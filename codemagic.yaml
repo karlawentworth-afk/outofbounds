@@ -13,11 +13,12 @@ workflows:
       app_store_connect: Out Of Bounds
 
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.outofboundsevents.scoring
       vars:
         BUNDLE_ID: com.outofboundsevents.scoring
         APP_BASE_URL: https://score.outofboundsevents.com
-        XCODE_WORKSPACE: ios/App/App.xcworkspace
-        XCODE_SCHEME: App
 
     scripts:
       - name: Install dependencies
@@ -28,20 +29,6 @@ workflows:
 
       - name: Sync Capacitor
         script: npx cap sync
-
-      - name: Set up iOS code signing
-        script: |
-          keychain initialize
-          # Create a new distribution certificate (generates key pair locally)
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
-          # Now fetch signing files (profile will be created by --create)
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
 
       - name: Build iOS and package IPA
         script: |
@@ -56,7 +43,6 @@ workflows:
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - ios/App/build/App.xcarchive
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
 
