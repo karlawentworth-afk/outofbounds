@@ -38,7 +38,7 @@ exports.handler = async function (event) {
   try {
     await sendEmail(apiKey, {
       from: 'Out of Bounds <hello@outofboundsevents.com>',
-      to: ['hello@outofboundsevents.com'],
+      to: ['karla@ladieslovegolf.com'],
       subject: 'Feedback from ' + from,
       html: htmlBody
     });
