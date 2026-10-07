@@ -1,0 +1,63 @@
+workflows:
+  oob-native:
+    name: Out of Bounds — iOS & Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+
+    environment:
+      groups:
+        - app_store_connect
+        - firebase
+        - google_play
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.outofboundsevents.scoring
+      vars:
+        BUNDLE_ID: com.outofboundsevents.scoring
+        APP_BASE_URL: https://score.outofboundsevents.com
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Run engine tests
+        script: node tests/engine.test.js
+
+      - name: Sync Capacitor
+        script: npx cap sync
+
+      - name: Build iOS
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_ALLOWED="NO"
+
+      - name: Build Android
+        script: |
+          cd android
+          ./gradlew assembleRelease
+
+    artifacts:
+      - ios/App/build/App.xcarchive
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Testers
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal

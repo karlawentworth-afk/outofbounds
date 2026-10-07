@@ -1,0 +1,34 @@
+{
+  "appId": "com.outofboundsevents.scoring",
+  "appName": "Out of Bounds",
+  "webDir": "public",
+  "server": {
+    "url": "https://score.outofboundsevents.com",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#10344E",
+    "scheme": "Out of Bounds"
+  },
+  "android": {
+    "backgroundColor": "#10344E"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#10344E"
+    },
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#10344E",
+      "showSpinner": false,
+      "androidSplashResourceName": "splash",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

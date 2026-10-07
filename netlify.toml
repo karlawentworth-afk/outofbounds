@@ -37,6 +37,25 @@
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
+# Universal links / app links association files
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "no-cache"
+
+# Auth callback for native app universal links
+[[redirects]]
+  from = "/auth/callback"
+  to = "/auth/callback.html"
+  status = 200
+
 # Player view: path-based URLs serve the SPA (Netlify rewrites to index.html)
 [[redirects]]
   from = "/p/:org/:event/:token"
