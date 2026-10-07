@@ -87,7 +87,7 @@ exports.handler = async function (event) {
 
       var orgs = await sb.sbGet(
         'organisers?auth_user_id=eq.' + user.id +
-        '&select=id,name,slug,onboard_type,plan,logo_url,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end,is_superadmin,plan_source,comp_until' +
+        '&select=id,name,slug,onboard_type,plan,logo_url,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end,is_superadmin,plan_source,comp_until,is_tester' +
         '&limit=1'
       );
 
@@ -95,6 +95,10 @@ exports.handler = async function (event) {
       var testMode = stripeKey.indexOf('sk_test_') === 0;
 
       if (orgs && orgs.length > 0) {
+        // Update last_sign_in and log activity (fire-and-forget)
+        sb.sbPatch('organisers?id=eq.' + orgs[0].id, { last_sign_in: new Date().toISOString() }).catch(function () {});
+        sb.sbPost('activity_log', { organiser_id: orgs[0].id, action: 'sign_in' }).catch(function () {});
+
         return sb.respond(200, { organiser: orgs[0], user_id: user.id, email: user.email, test_mode: testMode });
       } else {
         return sb.respond(200, { organiser: null, user_id: user.id, email: user.email, test_mode: testMode });
@@ -138,13 +142,21 @@ exports.handler = async function (event) {
         .substring(0, 40);
       slug = slug + '-' + Date.now().toString(36);
 
+      // Pilot tester emails — auto-flag on signup
+      var PILOT_EMAILS = [
+        'ryangrumbridgegolf@hotmail.co.uk',
+        'chgolfcoaching@gmail.com'
+      ];
+      var isTester = user.email && PILOT_EMAILS.indexOf(user.email.toLowerCase()) !== -1;
+
       var row = {
         slug: slug,
         name: body.display_name.trim(),
         auth_user_id: user.id,
         onboard_type: body.onboard_type,
         contact_email: user.email || null,
-        plan: 'per_event'
+        plan: 'per_event',
+        is_tester: isTester
       };
 
       var created = await sb.sbPost('organisers', row);

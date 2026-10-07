@@ -396,6 +396,9 @@ exports.handler = async function (event) {
           }, body.organiser_id);
         }
 
+        // Log activity (fire-and-forget)
+        sb.sbPost('activity_log', { organiser_id: body.organiser_id, action: 'player_added', detail: createdArr.length + ' players' }).catch(function () {});
+
         // If live event on Play, flag top-up needed
         var needsTopUp = ev.status === 'live' && ev.paid;
         var planGateCheck = require('./shared/plan-gate');

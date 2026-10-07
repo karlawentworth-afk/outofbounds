@@ -465,6 +465,9 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
       </div>
     </div>
     <div id="event-list" class="event-list"></div>
+    <div style="text-align:center;padding:24px 0 8px;">
+      <button onclick="openHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;">Help</button>
+    </div>
   </div>
 </div>
 
@@ -531,9 +534,15 @@ h1, h2, h3 { font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacin
   </div>
   <div class="container">
     <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
-    <h2 style="font-size:20px;margin-bottom:24px;">Admin</h2>
+    <h2 style="font-size:20px;margin-bottom:16px;">Admin</h2>
+
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="btn btn-green btn-sm" id="admin-tab-orgs" onclick="showAdminTab('orgs')" style="font-size:13px;">Organisers</button>
+      <button class="btn btn-outline btn-sm" id="admin-tab-activity" onclick="showAdminTab('activity')" style="font-size:13px;">Activity</button>
+    </div>
 
     <div id="admin-org-list"></div>
+    <div id="admin-activity" style="display:none;"></div>
 
     <!-- Comp modal -->
     <div class="modal-overlay" id="comp-modal">
@@ -1087,6 +1096,20 @@ Bob Wilson"></textarea>
 
 <div class="toast" id="toast"></div>
 
+<!-- Help sheet -->
+<div id="help-sheet-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:flex-end;justify-content:center;">
+  <div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px;padding-bottom:max(28px,env(safe-area-inset-bottom));width:100%;max-width:500px;">
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:4px;font-family:Poppins,sans-serif;">Need help?</h3>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">Email us: <a href="mailto:hello@outofboundsevents.com" style="color:var(--green);font-weight:600;">hello@outofboundsevents.com</a></p>
+    <label style="font-size:14px;font-weight:600;display:block;margin-bottom:8px;">Tell us what confused you</label>
+    <textarea id="help-message" rows="3" style="width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:var(--radius);font-size:16px;font-family:inherit;outline:none;resize:vertical;" placeholder="e.g. I couldn't find where to add players"></textarea>
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <button onclick="closeHelp()" style="flex:1;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--off-white);color:var(--ink);border:2px solid var(--line);">Cancel</button>
+      <button id="help-send-btn" onclick="sendHelp()" style="flex:1;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;background:var(--green);color:#fff;">Send</button>
+    </div>
+  </div>
+</div>
+
 <!-- Install prompt — top bar, max 2 shows -->
 <div id="install-banner" style="display:none;background:var(--navy);color:#fff;padding:6px 16px;z-index:250;">
   <div style="max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -1621,6 +1644,7 @@ Bob Wilson"></textarea>
       var nameLabel = esc(o.name);
       if (o.slug === 'demo') nameLabel += ' <span style="color:var(--muted);font-weight:400;">(demo)</span>';
       if (o.id === myOrgId) nameLabel += ' <span style="color:var(--green);font-weight:400;">(you)</span>';
+      if (o.is_tester) nameLabel += ' <span style="background:#E8F5E9;color:var(--green);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">Pilot</span>';
 
       // Event count with correct grammar
       var evCount = o.events_total === 1 ? '1 event' : o.events_total + ' events';
@@ -1647,6 +1671,79 @@ Bob Wilson"></textarea>
     }).join('');
 
     $('admin-org-list').innerHTML = html || '<div class="empty-state"><p>No organisers.</p></div>';
+  }
+
+  window.showAdminTab = function(tab) {
+    var orgsTab = $('admin-tab-orgs');
+    var actTab = $('admin-tab-activity');
+    if (tab === 'activity') {
+      $('admin-org-list').style.display = 'none';
+      $('admin-activity').style.display = '';
+      orgsTab.className = 'btn btn-outline btn-sm';
+      actTab.className = 'btn btn-green btn-sm';
+      loadActivity();
+    } else {
+      $('admin-org-list').style.display = '';
+      $('admin-activity').style.display = 'none';
+      orgsTab.className = 'btn btn-green btn-sm';
+      actTab.className = 'btn btn-outline btn-sm';
+    }
+  };
+
+  async function loadActivity() {
+    $('admin-activity').innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">Loading…</div>';
+    try {
+      var res = await api('org-admin', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'activity' }
+      });
+      renderActivity(res.activity || []);
+    } catch (err) {
+      $('admin-activity').innerHTML = '<div style="text-align:center;padding:24px;color:var(--red);">Error: ' + esc(err.message) + '</div>';
+    }
+  }
+
+  function renderActivity(orgs) {
+    // Sort: testers first, then by last_sign_in desc
+    orgs.sort(function (a, b) {
+      if (a.is_tester && !b.is_tester) return -1;
+      if (!a.is_tester && b.is_tester) return 1;
+      var aTime = a.last_sign_in ? new Date(a.last_sign_in).getTime() : 0;
+      var bTime = b.last_sign_in ? new Date(b.last_sign_in).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    var html = orgs.map(function (o) {
+      var nameLabel = esc(o.name);
+      if (o.is_tester) nameLabel += ' <span style="background:#E8F5E9;color:var(--green);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">Pilot</span>';
+
+      var signIn = o.last_sign_in
+        ? new Date(o.last_sign_in).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : 'Never';
+
+      var stats = [
+        o.events_created + ' event' + (o.events_created === 1 ? '' : 's'),
+        o.players_added + ' player' + (o.players_added === 1 ? '' : 's'),
+        o.scores_saved + ' score' + (o.scores_saved === 1 ? '' : 's')
+      ].join(' · ');
+
+      var errorChip = o.errors_hit > 0
+        ? '<span style="background:#FFEBEE;color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">' + o.errors_hit + ' error' + (o.errors_hit === 1 ? '' : 's') + '</span>'
+        : '';
+
+      return '<div class="event-card" style="cursor:default;">' +
+        '<div>' +
+          '<div class="ev-name">' + nameLabel + errorChip + '</div>' +
+          '<div class="ev-meta" style="flex-wrap:wrap;">' +
+            '<span>Last sign-in: ' + signIn + '</span>' +
+            (o.contact_email ? '<span>' + esc(o.contact_email) + '</span>' : '') +
+          '</div>' +
+          '<div style="font-size:13px;color:var(--muted);margin-top:4px;">' + stats + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    $('admin-activity').innerHTML = html || '<div class="empty-state"><p>No activity yet.</p></div>';
   }
 
   window.viewAsOrg = async function(orgId) {
@@ -4215,6 +4312,44 @@ Bob Wilson"></textarea>
       $('oob-sheet-ok').onclick = function () { overlay.style.display = 'none'; $('oob-sheet-cancel').style.display = ''; resolve(); };
     });
   }
+
+  // ── Help sheet ────────────────────────────────────────────────
+  window.openHelp = function() {
+    $('help-message').value = '';
+    $('help-send-btn').disabled = false;
+    $('help-send-btn').textContent = 'Send';
+    $('help-sheet-overlay').style.display = 'flex';
+  };
+
+  window.closeHelp = function() {
+    $('help-sheet-overlay').style.display = 'none';
+  };
+
+  window.sendHelp = async function() {
+    var msg = $('help-message').value.trim();
+    if (!msg) { toast('Please type a message'); return; }
+
+    $('help-send-btn').disabled = true;
+    $('help-send-btn').textContent = 'Sending…';
+
+    try {
+      var from = state.organiser ? state.organiser.name : 'An organiser';
+      var context = 'Organiser view';
+      if (state.organiser) context += ' — ' + state.organiser.name + ' (' + state.organiser.slug + ')';
+
+      await api('feedback-send', {
+        method: 'POST',
+        body: { message: msg, from: from, context: context }
+      });
+
+      $('help-sheet-overlay').style.display = 'none';
+      toast('Feedback sent — thank you!');
+    } catch (err) {
+      $('help-send-btn').disabled = false;
+      $('help-send-btn').textContent = 'Send';
+      toast('Could not send: ' + err.message);
+    }
+  };
 
   // ── Install prompt ────────────────────────────────────────────
   var deferredPrompt = null;

@@ -147,6 +147,12 @@ exports.handler = async function (event) {
       rows
     );
 
+    // Log activity (fire-and-forget) — find organiser from event
+    var evForLog = await sb.sbGet('events?id=eq.' + eventId + '&select=organiser_id&limit=1').catch(function () { return []; });
+    if (evForLog && evForLog[0]) {
+      sb.sbPost('activity_log', { organiser_id: evForLog[0].organiser_id, action: 'score_saved', detail: scores.length + ' holes' }).catch(function () {});
+    }
+
     return sb.respond(200, {
       ok: true,
       saved: Array.isArray(saved) ? saved.length : scores.length
