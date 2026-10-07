@@ -83,6 +83,10 @@ workflows:
       - name: Build iOS and package IPA
         script: |
           cd ios/App
+
+          # List available signing identities for debugging
+          security find-identity -v -p codesigning
+
           xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Release \
@@ -91,9 +95,8 @@ workflows:
             archive \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=69UCJQNR64 \
-            CODE_SIGN_IDENTITY="iPhone Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="OOB AppStore Distribution" \
-            2>&1 | tail -50
+            "CODE_SIGN_IDENTITY=Apple Distribution" \
+            2>&1 | tail -80
 
           xcodebuild -exportArchive \
             -archivePath "$HOME/build/App.xcarchive" \
