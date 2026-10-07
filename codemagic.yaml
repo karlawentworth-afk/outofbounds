@@ -10,7 +10,7 @@ workflows:
         - pattern: 'v*'
 
     integrations:
-      app_store_connect: Codemagic OOB
+      app_store_connect: Out Of Bounds
 
     environment:
       ios_signing:
