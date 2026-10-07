@@ -97,15 +97,14 @@ workflows:
             -exportPath "$HOME/build/ipa" \
             -exportOptionsPlist /tmp/ExportOptions.plist
 
-      - name: Build Android
-        script: |
-          cd android
-          ./gradlew assembleRelease
+      # Android build disabled until Play Console is ready
+      # - name: Build Android
+      #   script: |
+      #     cd android
+      #     ./gradlew assembleRelease
 
     artifacts:
       - $HOME/build/ipa/*.ipa
-      - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
 
     publishing:
       app_store_connect:
