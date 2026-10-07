@@ -38,18 +38,11 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
-      - name: Build iOS
+      - name: Build iOS and package IPA
         script: |
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            archive \
-            | xcpretty
-
-      - name: Package IPA
-        script: xcode-project build-ipa --archive ios/App/build/App.xcarchive
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
 
       - name: Build Android
         script: |
