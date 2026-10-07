@@ -9,13 +9,9 @@ workflows:
       tag_patterns:
         - pattern: 'v*'
 
-    integrations:
-      app_store_connect: Out Of Bounds
-
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.outofboundsevents.scoring
+      groups:
+        - appstore
       vars:
         BUNDLE_ID: com.outofboundsevents.scoring
         APP_BASE_URL: https://score.outofboundsevents.com
@@ -29,6 +25,19 @@ workflows:
 
       - name: Sync Capacitor
         script: npx cap sync
+
+      - name: Set up iOS code signing
+        script: |
+          keychain initialize
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --save \
+            || true
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Build iOS and package IPA
         script: |
@@ -49,6 +58,16 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
         beta_groups:
           - Testers
+
+      email:
+        recipients:
+          - karla.wentworth@thatsclevermx.com
+        notify:
+          success: true
+          failure: true
