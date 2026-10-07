@@ -9,17 +9,18 @@ workflows:
       tag_patterns:
         - pattern: 'v*'
 
+    integrations:
+      app_store_connect: Codemagic OOB
+
     environment:
-      groups:
-        - app_store_connect
-        - firebase
-        - google_play
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.outofboundsevents.scoring
       vars:
         BUNDLE_ID: com.outofboundsevents.scoring
         APP_BASE_URL: https://score.outofboundsevents.com
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
 
     scripts:
       - name: Install dependencies
@@ -31,6 +32,9 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync
 
+      - name: Set up code signing
+        script: xcode-project use-profiles
+
       - name: Build iOS
         script: |
           cd ios/App
@@ -39,8 +43,10 @@ workflows:
             -configuration Release \
             -archivePath build/App.xcarchive \
             archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_ALLOWED="NO"
+            | xcpretty
+
+      - name: Package IPA
+        script: xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
 
       - name: Build Android
         script: |
@@ -48,6 +54,7 @@ workflows:
           ./gradlew assembleRelease
 
     artifacts:
+      - build/ios/ipa/*.ipa
       - ios/App/build/App.xcarchive
       - android/app/build/outputs/**/*.apk
       - android/app/build/outputs/**/*.aab
@@ -58,6 +65,3 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Testers
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
