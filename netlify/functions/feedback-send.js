@@ -1,5 +1,6 @@
 'use strict';
 
+// Send help/feedback email via Resend.
 var sb = require('./shared/supabase');
 var https = require('https');
 
