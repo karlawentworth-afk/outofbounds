@@ -13,9 +13,6 @@ workflows:
       app_store_connect: Codemagic Admin
 
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.outofboundsevents.scoring
       vars:
         BUNDLE_ID: com.outofboundsevents.scoring
         APP_BASE_URL: https://score.outofboundsevents.com
@@ -32,17 +29,12 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync
 
-      - name: Set up code signing
+      - name: Set up iOS code signing
         script: |
-          # Fetch signing files from App Store Connect
-          app-store-connect fetch-signing-files \
-            com.outofboundsevents.scoring \
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
-          # Install fetched profiles and certificates
-          keychain initialize
-          app-store-connect certificates list --type IOS_DISTRIBUTION --save || \
-            app-store-connect certificates create --type IOS_DISTRIBUTION --save
           keychain add-certificates
           xcode-project use-profiles
 
