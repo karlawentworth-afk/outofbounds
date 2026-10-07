@@ -28,14 +28,15 @@ workflows:
 
       - name: Set up iOS code signing
         script: |
+          echo "Key ID set: ${APP_STORE_CONNECT_KEY_IDENTIFIER:+yes}"
+          echo "Issuer set: ${APP_STORE_CONNECT_ISSUER_ID:+yes}"
+          echo "Private key length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
           keychain initialize
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save \
-            || true
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --verbose
           keychain add-certificates
           xcode-project use-profiles
 
