@@ -36,19 +36,17 @@ workflows:
             -subj "/CN=Out of Bounds/O=69UCJQNR64/C=GB" 2>/dev/null
 
           # Create distribution certificate via Apple API
-          CSR_CONTENT=$(base64 < /tmp/dist.csr | tr -d '\n')
           node -e "
           var jwt = require('jsonwebtoken');
           var fs = require('fs');
           var pk = process.env.APP_STORE_CONNECT_PRIVATE_KEY;
           var now = Math.floor(Date.now()/1000);
           var token = jwt.sign({iss:process.env.APP_STORE_CONNECT_ISSUER_ID,iat:now,exp:now+600,aud:'appstoreconnect-v1'},pk,{algorithm:'ES256',header:{alg:'ES256',kid:process.env.APP_STORE_CONNECT_KEY_IDENTIFIER,typ:'JWT'}});
-          var csr = fs.readFileSync('/tmp/dist.csr','utf8');
-          var csrB64 = Buffer.from(csr).toString('base64');
+          var csrContent = fs.readFileSync('/tmp/dist.csr','utf8');
           fetch('https://api.appstoreconnect.apple.com/v1/certificates',{
             method:'POST',
             headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-            body:JSON.stringify({data:{type:'certificates',attributes:{certificateType:'IOS_DISTRIBUTION',csrContent:csrB64}}})
+            body:JSON.stringify({data:{type:'certificates',attributes:{certificateType:'IOS_DISTRIBUTION',csrContent:csrContent}}})
           }).then(r=>r.json()).then(d=>{
             if(d.data){
               var certB64=d.data.attributes.certificateContent;
