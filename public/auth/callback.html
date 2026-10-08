@@ -25,19 +25,20 @@ p { font-size: 15px; color: rgba(255,255,255,0.7); }
   var refreshToken = params.get('refresh_token');
 
   if (accessToken) {
-    // Store tokens in cookies so the main app can read them
-    document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
-    if (refreshToken) {
-      document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
-    }
+    // Pass tokens via custom URL scheme so the app can set them in the WebView
+    var schemeUrl = 'com.outofboundsevents.scoring://auth/callback#access_token=' +
+      encodeURIComponent(accessToken) +
+      (refreshToken ? '&refresh_token=' + encodeURIComponent(refreshToken) : '');
+    window.location.replace(schemeUrl);
 
-    // Try to open the app via custom URL scheme (closes the browser overlay)
-    window.location.replace('com.outofboundsevents.scoring://auth/callback');
-
-    // Fallback: if custom scheme doesn't work (web browser), redirect to /o/
+    // Fallback for web browser (no app installed): set cookies and redirect
     setTimeout(function () {
+      document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
+      if (refreshToken) {
+        document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+      }
       window.location.replace('/o/');
-    }, 1000);
+    }, 1500);
   } else {
     // No token — check for errors
     var searchParams = new URLSearchParams(window.location.search);

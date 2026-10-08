@@ -159,19 +159,44 @@
   }, 500);
 
   // ── Handle auth callback from system browser ──
-  // When the custom URL scheme opens the app, close the browser and reload
+  // When the custom URL scheme opens the app, extract tokens and set session
   if (window.Capacitor.Plugins.App) {
     window.Capacitor.Plugins.App.addListener('appUrlOpen', function (data) {
-      // Custom scheme callback: com.outofboundsevents.scoring://auth/callback
       if (data.url && data.url.indexOf('auth/callback') !== -1) {
         // Close the system browser overlay
         if (window.Capacitor.Plugins.Browser) {
           window.Capacitor.Plugins.Browser.close().catch(function () {});
         }
-        // Reload the page to pick up the auth cookies
-        setTimeout(function () {
+
+        // Extract tokens from the URL hash
+        var hashPart = data.url.split('#')[1] || '';
+        var params = new URLSearchParams(hashPart);
+        var accessToken = params.get('access_token');
+        var refreshToken = params.get('refresh_token');
+
+        if (accessToken) {
+          // Set tokens as cookies in the WebView
+          document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
+          if (refreshToken) {
+            document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+          }
+
+          // Also set the Supabase session directly if the client is available
+          var SB_URL = 'https://ahutmswadskdkqhnrhhh.supabase.co';
+          var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXRtc3dhZHNrZGtxaG5yaGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjk2NTEsImV4cCI6MjEwNTY0NTY1MX0.sV9wHdMfiEwIdErw9ISwELf68e00_UEXv3SmWkSdoQc';
+          if (window.supabase && window.supabase.createClient) {
+            var sb = window.supabase.createClient(SB_URL, SB_ANON);
+            sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(function () {
+              window.location.reload();
+            }).catch(function () {
+              window.location.reload();
+            });
+          } else {
+            window.location.reload();
+          }
+        } else {
           window.location.reload();
-        }, 300);
+        }
       }
     });
   }
