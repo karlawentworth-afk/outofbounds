@@ -1,25 +1,40 @@
 /**
  * app-shell.js — Native app shell. Every native-only element
  * is created here and nowhere else. This file is a no-op on
- * the web: the very first line bails if Capacitor is absent.
+ * the web. Waits up to 2s for the Capacitor bridge to load
+ * (remote-loaded apps inject it after page scripts run).
  */
 (function () {
   'use strict';
 
-  // ── Gate: web gets nothing ──
-  // Capacitor bridge may not be ready yet on remote-loaded apps.
-  // Check immediately, and also listen for the bridge to load.
   window.OOB = window.OOB || {};
 
   function checkNative() {
     try { return window.Capacitor && window.Capacitor.isNativePlatform(); } catch (e) { return false; }
   }
 
-  // Also detect via user agent as fallback (Capacitor adds its own UA string)
-  var uaHint = navigator.userAgent.indexOf('Capacitor') !== -1;
-  var isNative = checkNative() || uaHint;
-  window.OOB.native = !!isNative;
-  if (!isNative) return;
+  // Check immediately
+  if (checkNative()) {
+    boot();
+    return;
+  }
+
+  // Bridge not ready yet — poll for up to 2 seconds
+  var attempts = 0;
+  var poll = setInterval(function () {
+    attempts++;
+    if (checkNative()) {
+      clearInterval(poll);
+      boot();
+    } else if (attempts >= 20) {
+      clearInterval(poll);
+      // Not native — do nothing
+      window.OOB.native = false;
+    }
+  }, 100);
+
+  function boot() {
+  window.OOB.native = true;
 
   // ── Mark the document ──
   document.documentElement.classList.add('native-app');
@@ -252,4 +267,5 @@
     });
   };
 
+  } // end boot()
 })();
