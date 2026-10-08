@@ -4,7 +4,16 @@
   "webDir": "public",
   "server": {
     "url": "https://score.outofboundsevents.com/o/",
-    "cleartext": false
+    "cleartext": false,
+    "allowNavigation": [
+      "accounts.google.com",
+      "*.google.com",
+      "appleid.apple.com",
+      "*.apple.com",
+      "ahutmswadskdkqhnrhhh.supabase.co",
+      "*.supabase.co",
+      "score.outofboundsevents.com"
+    ]
   },
   "ios": {
     "contentInset": "automatic",
