@@ -3069,6 +3069,8 @@ Bob Wilson"></textarea>
   }
 
   function renderGroupsList() {
+    if (!state.groups) state.groups = [];
+    if (!state.players) state.players = [];
     var el = $('groups-list');
     var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
     var isShotgun = startingMode === 'shotgun';
