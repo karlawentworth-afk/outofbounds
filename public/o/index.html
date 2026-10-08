@@ -2105,14 +2105,24 @@ Bob Wilson"></textarea>
         }
       });
 
+      // Update organiser state with new colours
+      state.organiser.primary_colour = $('brand-primary').value;
+      state.organiser.text_on_primary = res.text_on_primary || '#FFFFFF';
+      state.organiser.logo_url = $('brand-logo-url').value || null;
+      state.organiser.display_name = $('brand-display-name').value;
+      state.organiser.name = $('brand-display-name').value || state.organiser.name;
+
       if (res.warnings && res.warnings.length) {
         toast('Saved with warning: ' + res.warnings[0]);
       } else {
         toast('Branding saved');
       }
 
-      // Refresh to show new version
-      goToBranding();
+      $('brand-save-btn').disabled = false;
+      $('brand-save-btn').textContent = 'Save branding';
+
+      // Reload branding page to show version history
+      await goToBranding();
     } catch (err) {
       toast('Error: ' + err.message);
       $('brand-save-btn').disabled = false;
