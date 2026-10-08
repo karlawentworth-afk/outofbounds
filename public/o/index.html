@@ -4546,38 +4546,33 @@ Bob Wilson"></textarea>
     }
   }, 10000);
 
-  // ── Native auth callback listener (works even if app-shell detection fails) ──
-  try {
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-      window.Capacitor.Plugins.App.addListener('appUrlOpen', function (data) {
-        if (data.url && data.url.indexOf('auth/callback') !== -1) {
-          // Close browser overlay
-          try { window.Capacitor.Plugins.Browser.close(); } catch (e) {}
+  // ── Auth code exchange (for native app OAuth flow) ──
+  // The callback page stores tokens server-side and redirects here with ?auth_code=xxx
+  var urlParams = new URLSearchParams(window.location.search);
+  var authCode = urlParams.get('auth_code');
+  if (authCode) {
+    // Close browser overlay if in native app
+    try { if (window.Capacitor && window.Capacitor.Plugins.Browser) window.Capacitor.Plugins.Browser.close(); } catch (e) {}
 
-          // Extract tokens
-          var hashPart = data.url.split('#')[1] || '';
-          var params = new URLSearchParams(hashPart);
-          var at = params.get('access_token');
-          var rt = params.get('refresh_token');
-
-          if (at) {
-            // Set session via Supabase client
-            sb.auth.setSession({ access_token: at, refresh_token: rt || '' }).then(function () {
-              window.location.reload();
-            }).catch(function () {
-              // Fallback: set cookies directly
-              document.cookie = 'sb-access-token=' + at + '; path=/; max-age=7776000; SameSite=Lax';
-              if (rt) document.cookie = 'sb-refresh-token=' + rt + '; path=/; max-age=7776000; SameSite=Lax';
-              window.location.reload();
-            });
-          } else {
+    // Exchange the code for tokens
+    fetch('/.netlify/functions/auth-exchange?code=' + encodeURIComponent(authCode))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.access_token) {
+          sb.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token || ''
+          }).then(function () {
+            // Clean the URL and reload
+            window.history.replaceState({}, '', '/o/');
             window.location.reload();
-          }
+          });
         }
+      })
+      .catch(function () {
+        window.history.replaceState({}, '', '/o/');
       });
-      console.log('Native auth listener registered');
-    }
-  } catch (e) { /* not in native app */ }
+  }
 
   // ── Init ──────────────────────────────────────────────────────
   init();

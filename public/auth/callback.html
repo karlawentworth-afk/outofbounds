@@ -13,43 +13,53 @@ p { font-size: 15px; color: rgba(255,255,255,0.7); }
 </head>
 <body>
 <div class="wrap">
-  <h2>Signing you in…</h2>
-  <p>You'll be redirected in a moment.</p>
+  <h2 id="heading">Signing you in…</h2>
+  <p id="msg">You'll be redirected in a moment.</p>
 </div>
 <script>
 (function () {
-  // Extract tokens from URL hash (Supabase puts them there after OAuth)
   var hash = window.location.hash.substring(1);
   var params = new URLSearchParams(hash);
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
 
-  if (accessToken) {
-    // Pass tokens via custom URL scheme so the app can set them in the WebView
-    var schemeUrl = 'com.outofboundsevents.scoring://auth/callback#access_token=' +
-      encodeURIComponent(accessToken) +
-      (refreshToken ? '&refresh_token=' + encodeURIComponent(refreshToken) : '');
-    window.location.replace(schemeUrl);
-
-    // Fallback for web browser (no app installed): set cookies and redirect
-    setTimeout(function () {
-      document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
-      if (refreshToken) {
-        document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
-      }
-      window.location.replace('/o/');
-    }, 1500);
-  } else {
-    // No token — check for errors
-    var searchParams = new URLSearchParams(window.location.search);
-    var error = searchParams.get('error_description') || searchParams.get('error');
+  if (!accessToken) {
+    // Check query params (some flows put tokens there)
+    var qp = new URLSearchParams(window.location.search);
+    var error = qp.get('error_description') || qp.get('error');
     if (error) {
-      document.querySelector('h2').textContent = 'Sign-in failed';
-      document.querySelector('p').textContent = error;
+      document.getElementById('heading').textContent = 'Sign-in failed';
+      document.getElementById('msg').textContent = error;
     } else {
       window.location.replace('/o/');
     }
+    return;
   }
+
+  // Store tokens server-side with a one-time code
+  fetch('/.netlify/functions/auth-exchange', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken || '' })
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (data) {
+    if (data.code) {
+      // Redirect via universal link — the app intercepts this
+      window.location.replace('https://score.outofboundsevents.com/o/?auth_code=' + data.code);
+    } else {
+      // Fallback: set cookies and redirect
+      document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
+      if (refreshToken) document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+      window.location.replace('/o/');
+    }
+  })
+  .catch(function () {
+    // Fallback: set cookies and redirect (works on web)
+    document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
+    if (refreshToken) document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+    window.location.replace('/o/');
+  });
 })();
 </script>
 </body>
