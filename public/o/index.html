@@ -4584,6 +4584,17 @@ Bob Wilson"></textarea>
 
 })();
 </script>
+<script>
+// Debug: check if Capacitor is available (remove after fixing)
+setTimeout(function() {
+  var cap = !!window.Capacitor;
+  var native = cap && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  var ua = navigator.userAgent;
+  if (ua.indexOf('iPhone') !== -1 || ua.indexOf('iPad') !== -1) {
+    document.title = 'CAP:' + cap + ' NAT:' + native + ' UA:' + ua.substring(ua.length - 40);
+  }
+}, 2000);
+</script>
 <script src="/shared/app-shell.js"></script>
 </body>
 </html>
