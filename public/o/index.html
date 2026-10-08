@@ -444,7 +444,7 @@ a { color: inherit; text-decoration: none; }
 </div>
 
 <!-- Biometric lock -->
-<div id="bio-lock" class="bio-lock">
+<div id="bio-lock" class="bio-lock" style="display:none">
   <div class="bio-icon">&#128274;</div>
   <div class="bio-text">Unlock Out of Bounds</div>
   <button class="bio-btn" onclick="unlockBiometric()">Unlock</button>
@@ -453,7 +453,7 @@ a { color: inherit; text-decoration: none; }
 <!-- Sign-in -->
 <div id="screen-signin" class="screen">
   <!-- Native welcome (shown only in app) -->
-  <div class="native-welcome" id="native-welcome">
+  <div class="native-welcome" id="native-welcome" style="display:none">
     <img src="/img/icon-white.png" alt="" class="nw-mark">
     <div class="nw-title">Out of Bounds</div>
     <div class="nw-btns">
@@ -4648,7 +4648,7 @@ Bob Wilson"></textarea>
 </script>
 
 <!-- Bottom tab bar (native app only) -->
-<nav class="native-tab-bar" id="native-tab-bar">
+<nav class="native-tab-bar" id="native-tab-bar" style="display:none">
   <button class="tab-item active" id="tab-events" onclick="nativeTabEvents()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
     Events
