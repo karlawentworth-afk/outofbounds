@@ -7,9 +7,17 @@
   'use strict';
 
   // ── Gate: web gets nothing ──
-  var isNative = false;
-  try { isNative = window.Capacitor && window.Capacitor.isNativePlatform(); } catch (e) {}
+  // Capacitor bridge may not be ready yet on remote-loaded apps.
+  // Check immediately, and also listen for the bridge to load.
   window.OOB = window.OOB || {};
+
+  function checkNative() {
+    try { return window.Capacitor && window.Capacitor.isNativePlatform(); } catch (e) { return false; }
+  }
+
+  // Also detect via user agent as fallback (Capacitor adds its own UA string)
+  var uaHint = navigator.userAgent.indexOf('Capacitor') !== -1;
+  var isNative = checkNative() || uaHint;
   window.OOB.native = !!isNative;
   if (!isNative) return;
 
