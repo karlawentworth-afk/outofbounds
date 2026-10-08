@@ -16,6 +16,48 @@ async function verifyOwnership(eventId, organiserId) {
   return (rows && rows.length > 0) ? rows[0] : null;
 }
 
+/**
+ * Renumber groups 1..N by current order for an event.
+ * Skips if numbers are already sequential.
+ */
+async function renumberGroups(eventId) {
+  var groups = await sb.sbGet(
+    'groups?event_id=eq.' + eventId +
+    '&select=id,group_number' +
+    '&order=group_number.asc,id.asc'
+  );
+  if (!groups || !groups.length) return;
+
+  for (var i = 0; i < groups.length; i++) {
+    var expected = i + 1;
+    if (groups[i].group_number !== expected) {
+      await sb.sbPatch('groups?id=eq.' + groups[i].id, { group_number: expected });
+    }
+  }
+}
+
+/**
+ * Delete empty groups (no players assigned) for an event.
+ */
+async function deleteEmptyGroups(eventId) {
+  var groups = await sb.sbGet(
+    'groups?event_id=eq.' + eventId + '&select=id'
+  );
+  if (!groups || !groups.length) return 0;
+
+  var deleted = 0;
+  for (var i = 0; i < groups.length; i++) {
+    var members = await sb.sbGet(
+      'players?group_id=eq.' + groups[i].id + '&select=id&limit=1'
+    );
+    if (!members || members.length === 0) {
+      await sb.sbDelete('groups?id=eq.' + groups[i].id);
+      deleted++;
+    }
+  }
+  return deleted;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
     return sb.respond(204, '');
@@ -67,7 +109,7 @@ exports.handler = async function (event) {
     return sb.respond(400, { error: 'Invalid JSON' });
   }
 
-  // POST: auto_fill or save groups
+  // POST: auto_fill, assign, create_group
   if (event.httpMethod === 'POST') {
     var action = body.action;
 
@@ -79,7 +121,7 @@ exports.handler = async function (event) {
         var ev = await verifyOwnership(body.event_id, body.organiser_id);
         if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
 
-        // Get only unassigned players (autofill never reshuffles existing groups)
+        // Get unassigned players
         var players = await sb.sbGet(
           'players?event_id=eq.' + body.event_id +
           '&group_id=is.null' +
@@ -88,61 +130,113 @@ exports.handler = async function (event) {
         );
 
         if (!players || players.length === 0) {
-          return sb.respond(200, { ok: true, groups_created: 0, message: 'No unassigned players' });
+          return sb.respond(200, { ok: true, groups_created: 0, groups_filled: 0, unassigned: 0, message: 'Nothing to fill — all players are in groups' });
         }
 
-        // Determine group size based on format
         var groupSize = 4;
 
-        // Find the highest existing group_number to continue from
-        var existingGroups = await sb.sbGet(
+        // Find existing empty groups first
+        var allGroups = await sb.sbGet(
           'groups?event_id=eq.' + body.event_id +
-          '&select=group_number&order=group_number.desc&limit=1'
+          '&select=id,group_number' +
+          '&order=group_number.asc'
         );
-        var startNum = (existingGroups && existingGroups[0]) ? existingGroups[0].group_number + 1 : 1;
+        var allPlayers = await sb.sbGet(
+          'players?event_id=eq.' + body.event_id +
+          '&select=id,group_id'
+        );
 
-        var numGroups = Math.ceil(players.length / groupSize);
+        // Count members per group
+        var memberCount = {};
+        (allPlayers || []).forEach(function (p) {
+          if (p.group_id) memberCount[p.group_id] = (memberCount[p.group_id] || 0) + 1;
+        });
 
-        // Create all new groups in one batch POST
-        var newGroups = [];
-        for (var g = 0; g < numGroups; g++) {
-          newGroups.push({
-            event_id: body.event_id,
-            group_number: startNum + g,
-            starting_hole: 1
-          });
-        }
+        // Find groups with space (fewer than groupSize members)
+        var groupsWithSpace = (allGroups || []).filter(function (g) {
+          return (memberCount[g.id] || 0) < groupSize;
+        });
 
-        var createdGroups = await sb.sbPost('groups', newGroups);
-        if (!Array.isArray(createdGroups)) createdGroups = [createdGroups];
+        // Calculate how many additional groups we need
+        var slotsAvailable = 0;
+        groupsWithSpace.forEach(function (g) {
+          slotsAvailable += groupSize - (memberCount[g.id] || 0);
+        });
 
-        // Assign all players in parallel batches of 10
-        // Each batch is a Promise.all of up to 10 PATCH calls
-        var batchSize = 10;
-        for (var bi = 0; bi < players.length; bi += batchSize) {
-          var batch = [];
-          for (var j = bi; j < Math.min(bi + batchSize, players.length); j++) {
-            var groupIdx = Math.floor(j / groupSize);
-            if (groupIdx >= createdGroups.length) groupIdx = createdGroups.length - 1;
+        var slotsNeeded = Math.max(0, players.length - slotsAvailable);
+        var newGroupsNeeded = Math.ceil(slotsNeeded / groupSize);
 
-            var patchData = { group_id: createdGroups[groupIdx].id };
-            if (ev.format === 'better_ball_pairs') {
-              patchData.pair_key = (j % groupSize) < 2 ? 'A' : 'B';
-            }
+        // Find highest group number for new groups
+        var maxNum = 0;
+        (allGroups || []).forEach(function (g) {
+          if (g.group_number > maxNum) maxNum = g.group_number;
+        });
 
-            batch.push(sb.sbPatch('players?id=eq.' + players[j].id, patchData));
+        // Create new groups if needed
+        var createdGroups = [];
+        if (newGroupsNeeded > 0) {
+          var newGroups = [];
+          for (var g = 0; g < newGroupsNeeded; g++) {
+            newGroups.push({
+              event_id: body.event_id,
+              group_number: maxNum + 1 + g,
+              starting_hole: 1
+            });
           }
-          await Promise.all(batch);
+          createdGroups = await sb.sbPost('groups', newGroups);
+          if (!Array.isArray(createdGroups)) createdGroups = [createdGroups];
         }
 
-        return sb.respond(200, { ok: true, groups_created: createdGroups.length });
+        // Build ordered list of groups to fill: existing with space first, then new
+        var fillOrder = groupsWithSpace.concat(createdGroups);
+
+        // Assign players to groups
+        var playerIdx = 0;
+        var groupsFilled = 0;
+        var batchSize = 10;
+
+        for (var gi = 0; gi < fillOrder.length && playerIdx < players.length; gi++) {
+          var group = fillOrder[gi];
+          var currentMembers = memberCount[group.id] || 0;
+          var slotsInGroup = groupSize - currentMembers;
+          var filled = false;
+
+          for (var si = 0; si < slotsInGroup && playerIdx < players.length; si++) {
+            var patchData = { group_id: group.id };
+            if (ev.format === 'better_ball_pairs') {
+              patchData.pair_key = ((currentMembers + si) % groupSize) < 2 ? 'A' : 'B';
+            }
+            await sb.sbPatch('players?id=eq.' + players[playerIdx].id, patchData);
+            playerIdx++;
+            filled = true;
+          }
+          if (filled) groupsFilled++;
+        }
+
+        // Clean up: delete any empty groups that were created but not filled
+        await deleteEmptyGroups(body.event_id);
+
+        // Renumber groups sequentially
+        await renumberGroups(body.event_id);
+
+        var unassigned = players.length - playerIdx;
+        var message = 'Filled ' + groupsFilled + ' group' + (groupsFilled === 1 ? '' : 's');
+        if (unassigned > 0) message += ', ' + unassigned + ' unassigned';
+        else message += ', all players assigned';
+
+        return sb.respond(200, {
+          ok: true,
+          groups_created: createdGroups.length,
+          groups_filled: groupsFilled,
+          unassigned: unassigned,
+          message: message
+        });
       } catch (err) {
         console.error('org-groups auto_fill error:', err);
         return sb.respond(500, { error: err.message });
       }
 
     } else if (action === 'assign') {
-      // Assign a player to a group (or null to unassign)
       if (!body.event_id || !body.organiser_id || !body.player_id) {
         return sb.respond(400, { error: 'Missing required fields' });
       }
@@ -192,6 +286,30 @@ exports.handler = async function (event) {
         console.error('org-groups create error:', err);
         return sb.respond(500, { error: err.message });
       }
+
+    } else if (action === 'delete_group') {
+      if (!body.event_id || !body.organiser_id || !body.group_id) {
+        return sb.respond(400, { error: 'Missing required fields' });
+      }
+      try {
+        var ev = await verifyOwnership(body.event_id, body.organiser_id);
+        if (!ev) return sb.respond(403, { error: 'Event not found or not yours' });
+
+        // Unassign all players in this group
+        await sb.sbPatch('players?group_id=eq.' + body.group_id, { group_id: null, pair_key: null });
+
+        // Delete the group
+        await sb.sbDelete('groups?id=eq.' + body.group_id);
+
+        // Renumber remaining groups
+        await renumberGroups(body.event_id);
+
+        return sb.respond(200, { ok: true });
+      } catch (err) {
+        console.error('org-groups delete error:', err);
+        return sb.respond(500, { error: err.message });
+      }
+
     } else {
       return sb.respond(400, { error: 'Unknown action' });
     }
@@ -213,7 +331,6 @@ exports.handler = async function (event) {
 
       var updated = await sb.sbPatch('groups?id=eq.' + body.id, update);
 
-      // Audit tee_time and starting_hole changes
       if (body.tee_time !== undefined) {
         await audit.log(body.event_id, 'tee_time_changed', { group_id: body.id, tee_time: body.tee_time }, body.organiser_id);
       }

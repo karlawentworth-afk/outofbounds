@@ -3158,7 +3158,7 @@ Bob Wilson"></textarea>
     if (state.players.length === 0) { toast('Add players first'); return; }
 
     try {
-      await api('org-groups', {
+      var res = await api('org-groups', {
         method: 'POST',
         body: {
           action: 'auto_fill',
@@ -3168,7 +3168,7 @@ Bob Wilson"></textarea>
       });
       await loadGroups();
       renderGroupsList();
-      toast('Groups created');
+      toast(res.message || 'Groups filled');
     } catch (err) {
       toast('Error: ' + err.message);
     }
