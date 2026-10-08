@@ -1309,7 +1309,10 @@ Bob Wilson"></textarea>
   window.signInGoogle = async function() {
     var { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/o/' }
+      options: {
+        redirectTo: window.location.origin + '/o/',
+        skipBrowserRedirect: false
+      }
     });
     if (error) toast('Google sign-in failed: ' + error.message);
   };
@@ -1317,7 +1320,10 @@ Bob Wilson"></textarea>
   window.signInApple = async function() {
     var { error } = await sb.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: window.location.origin + '/o/' }
+      options: {
+        redirectTo: window.location.origin + '/o/',
+        skipBrowserRedirect: false
+      }
     });
     if (error) toast('Apple sign-in failed: ' + error.message);
   };
