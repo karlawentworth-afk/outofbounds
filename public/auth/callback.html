@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Signing in — Out of Bounds</title>
 <style>
-body { font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #F7F5F0; color: #1B2430; text-align: center; }
+body { font-family: Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #10344E; color: #fff; text-align: center; }
 .wrap { max-width: 360px; padding: 32px 24px; }
 h2 { font-size: 20px; margin-bottom: 12px; }
-p { font-size: 15px; color: #5B6672; }
+p { font-size: 15px; color: rgba(255,255,255,0.7); }
 </style>
 </head>
 <body>
@@ -17,29 +17,35 @@ p { font-size: 15px; color: #5B6672; }
   <p>You'll be redirected in a moment.</p>
 </div>
 <script>
-// Auth callback: extract tokens from URL hash and redirect to organiser view
 (function () {
+  // Extract tokens from URL hash (Supabase puts them there after OAuth)
   var hash = window.location.hash.substring(1);
   var params = new URLSearchParams(hash);
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
 
   if (accessToken) {
-    // Store tokens for the session
-    document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=3600; SameSite=Lax';
+    // Store tokens in cookies so the main app can read them
+    document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
     if (refreshToken) {
-      document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=604800; SameSite=Lax';
+      document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
     }
-    window.location.replace('/o/');
+
+    // Try to open the app via custom URL scheme (closes the browser overlay)
+    window.location.replace('com.outofboundsevents.scoring://auth/callback');
+
+    // Fallback: if custom scheme doesn't work (web browser), redirect to /o/
+    setTimeout(function () {
+      window.location.replace('/o/');
+    }, 1000);
   } else {
-    // No token — might be an error or a magic link
+    // No token — check for errors
     var searchParams = new URLSearchParams(window.location.search);
     var error = searchParams.get('error_description') || searchParams.get('error');
     if (error) {
       document.querySelector('h2').textContent = 'Sign-in failed';
       document.querySelector('p').textContent = error;
     } else {
-      // Redirect to organiser sign-in
       window.location.replace('/o/');
     }
   }

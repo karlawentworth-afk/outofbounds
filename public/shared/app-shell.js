@@ -158,6 +158,24 @@
     }).catch(function () {});
   }, 500);
 
+  // ── Handle auth callback from system browser ──
+  // When the custom URL scheme opens the app, close the browser and reload
+  if (window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('appUrlOpen', function (data) {
+      // Custom scheme callback: com.outofboundsevents.scoring://auth/callback
+      if (data.url && data.url.indexOf('auth/callback') !== -1) {
+        // Close the system browser overlay
+        if (window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.close().catch(function () {});
+        }
+        // Reload the page to pick up the auth cookies
+        setTimeout(function () {
+          window.location.reload();
+        }, 300);
+      }
+    });
+  }
+
   // ── Block navigation outside allowed paths ──
   document.addEventListener('click', function (e) {
     var a = e.target.closest('a[href]');

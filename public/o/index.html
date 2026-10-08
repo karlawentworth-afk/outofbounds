@@ -1307,13 +1307,24 @@ Bob Wilson"></textarea>
   }
 
   window.signInGoogle = function() {
-    var redirect = encodeURIComponent(window.location.origin + '/o/');
-    window.location.href = SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + redirect;
+    var redirect = encodeURIComponent(window.location.origin + '/auth/callback');
+    var url = SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + redirect;
+    // In native app, use system browser; on web, redirect in place
+    if (window.OOB && window.OOB.native && window.Capacitor && window.Capacitor.Plugins.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: url });
+    } else {
+      window.location.href = url;
+    }
   };
 
   window.signInApple = function() {
-    var redirect = encodeURIComponent(window.location.origin + '/o/');
-    window.location.href = SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + redirect;
+    var redirect = encodeURIComponent(window.location.origin + '/auth/callback');
+    var url = SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + redirect;
+    if (window.OOB && window.OOB.native && window.Capacitor && window.Capacitor.Plugins.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: url });
+    } else {
+      window.location.href = url;
+    }
   };
 
   window.showEmailSignIn = function() {

@@ -74,5 +74,16 @@
 	<string>Out of Bounds saves QR posters to your photo library.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.outofboundsevents.scoring</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.outofboundsevents.scoring</string>
+		</dict>
+	</array>
 </dict>
 </plist>
