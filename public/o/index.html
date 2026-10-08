@@ -2845,14 +2845,14 @@ Bob Wilson"></textarea>
     overlay.style.display = 'flex';
   };
 
-  function closeSheet() {
+  window.closeSheet = function() {
     $('oob-sheet-overlay').style.display = 'none';
     var od = document.getElementById('add-players-options');
     if (od) od.remove();
     var od2 = document.getElementById('move-options');
     if (od2) od2.remove();
     $('oob-sheet-ok').style.display = '';
-  }
+  };
 
   window.showPeoplePicker = function() { toast('People picker coming soon'); };
   window.showUploadModal = function() { toast('Upload coming soon'); };
