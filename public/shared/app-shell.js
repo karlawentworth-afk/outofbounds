@@ -25,8 +25,8 @@
     '.native-app #btn-upgrade { display: none !important; }',
     '.native-app #billing-manage { display: none !important; }',
 
-    /* Safe area on top bar */
-    '.native-app .top-bar { padding-top: env(safe-area-inset-top, 0px); }',
+    /* Safe area on top bar — add inset to existing padding */
+    '.native-app .top-bar { padding-top: calc(14px + env(safe-area-inset-top, 0px)); min-height: calc(56px + env(safe-area-inset-top, 0px)); }',
 
     /* Pad content for bottom tab bar */
     '.native-app .container { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }',
