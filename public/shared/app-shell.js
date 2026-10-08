@@ -65,10 +65,10 @@
     signin.insertBefore(wel, signin.firstChild);
   }
 
-  // ── Bottom tab bar ──
+  // ── Bottom tab bar (hidden until signed in) ──
   var tabBar = document.createElement('nav');
   tabBar.id = 'native-tab-bar';
-  tabBar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:#fff;border-top:1px solid #E3E7EB;z-index:100;display:flex;align-items:center;justify-content:space-around;';
+  tabBar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:calc(56px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:#fff;border-top:1px solid #E3E7EB;z-index:100;display:none;align-items:center;justify-content:space-around;';
   tabBar.innerHTML =
     '<button class="ntab active" data-tab="events" style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:#2F7A45;cursor:pointer;border:none;background:none;font-family:inherit;padding:8px 16px;">' +
       '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Events</button>' +
@@ -77,6 +77,29 @@
     '<button class="ntab" data-tab="settings" style="display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:#5B6672;cursor:pointer;border:none;background:none;font-family:inherit;padding:8px 16px;">' +
       '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>';
   document.body.appendChild(tabBar);
+
+  // Show/hide tab bar based on which screen is active
+  function updateTabBarVisibility() {
+    var signinVisible = document.getElementById('screen-signin');
+    var onboardVisible = document.getElementById('screen-onboard');
+    var loadingVisible = document.getElementById('screen-loading');
+    var isSignedIn = (signinVisible && !signinVisible.classList.contains('active')) &&
+                     (onboardVisible && !onboardVisible.classList.contains('active')) &&
+                     (loadingVisible && !loadingVisible.classList.contains('active'));
+    tabBar.style.display = isSignedIn ? 'flex' : 'none';
+  }
+
+  // Watch for screen changes via MutationObserver
+  var observer = new MutationObserver(updateTabBarVisibility);
+  document.querySelectorAll('.screen').forEach(function (s) {
+    observer.observe(s, { attributes: true, attributeFilter: ['class'] });
+  });
+  // Also check periodically for the first few seconds
+  var checkCount = 0;
+  var checkInterval = setInterval(function () {
+    updateTabBarVisibility();
+    if (++checkCount > 20) clearInterval(checkInterval);
+  }, 500);
 
   tabBar.addEventListener('click', function (e) {
     var btn = e.target.closest('.ntab');
