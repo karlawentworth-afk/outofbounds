@@ -108,7 +108,10 @@
     btn.style.color = '#2F7A45';
     var tab = btn.dataset.tab;
     if (tab === 'events' && window.goToDashboard) window.goToDashboard();
-    if (tab === 'people' && window.goToPeople) window.goToPeople();
+    if (tab === 'people') {
+      if (window.goToPeople) window.goToPeople();
+      else if (window.toast) window.toast('People directory coming soon');
+    }
     if (tab === 'settings' && window.goToSettings) window.goToSettings();
   });
 
