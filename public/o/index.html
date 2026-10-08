@@ -1306,26 +1306,14 @@ Bob Wilson"></textarea>
     }
   }
 
-  window.signInGoogle = async function() {
-    var { error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/o/',
-        skipBrowserRedirect: false
-      }
-    });
-    if (error) toast('Google sign-in failed: ' + error.message);
+  window.signInGoogle = function() {
+    var redirect = encodeURIComponent(window.location.origin + '/o/');
+    window.location.href = SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + redirect;
   };
 
-  window.signInApple = async function() {
-    var { error } = await sb.auth.signInWithOAuth({
-      provider: 'apple',
-      options: {
-        redirectTo: window.location.origin + '/o/',
-        skipBrowserRedirect: false
-      }
-    });
-    if (error) toast('Apple sign-in failed: ' + error.message);
+  window.signInApple = function() {
+    var redirect = encodeURIComponent(window.location.origin + '/o/');
+    window.location.href = SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + redirect;
   };
 
   window.showEmailSignIn = function() {
