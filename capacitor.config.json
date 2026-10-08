@@ -3,7 +3,7 @@
   "appName": "Out of Bounds",
   "webDir": "public",
   "server": {
-    "url": "https://score.outofboundsevents.com",
+    "url": "https://score.outofboundsevents.com/o/",
     "cleartext": false
   },
   "ios": {
