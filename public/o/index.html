@@ -15,7 +15,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/api.js"></script>
-<script src="/shared/native.js"></script>
 <script src="/shared/contrast.js"></script>
 <script src="/shared/qrcode.min.js"></script>
 <script src="/shared/engine.js"></script>
@@ -443,35 +442,8 @@ a { color: inherit; text-decoration: none; }
   <div class="loading-screen"><div class="spinner"></div></div>
 </div>
 
-<!-- Biometric lock -->
-<div id="bio-lock" class="bio-lock" style="display:none">
-  <div class="bio-icon">&#128274;</div>
-  <div class="bio-text">Unlock Out of Bounds</div>
-  <button class="bio-btn" onclick="unlockBiometric()">Unlock</button>
-</div>
-
 <!-- Sign-in -->
 <div id="screen-signin" class="screen">
-  <!-- Native welcome (shown only in app) -->
-  <div class="native-welcome" id="native-welcome" style="display:none">
-    <img src="/img/icon-white.png" alt="" class="nw-mark">
-    <div class="nw-title">Out of Bounds</div>
-    <div class="nw-btns">
-      <button class="nw-btn apple" onclick="nativeSignInApple()">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-        Continue with Apple
-      </button>
-      <button class="nw-btn google" onclick="nativeSignInGoogle()">
-        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Continue with Google
-      </button>
-      <button class="nw-btn email" onclick="nativeSignInEmail()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
-        Continue with email
-      </button>
-    </div>
-  </div>
-  <!-- Web sign-in (hidden in app) -->
   <img src="/img/logo-color.png" alt="Out of Bounds" class="logo-big">
   <h2>Log in or create your account</h2>
   <p class="sub">Set up and run your golf event</p>
@@ -2210,12 +2182,23 @@ Bob Wilson"></textarea>
     var org = state.organiser || {};
     var isPro = org.plan === 'pro';
 
+    function settingsRow(title, desc, onclick, opts) {
+      opts = opts || {};
+      return '<div class="event-card" onclick="' + onclick + '" style="cursor:pointer;' + (opts.dim ? 'opacity:.5;' : '') + '">' +
+        '<div class="ev-bar"></div>' +
+        '<div class="ev-body">' +
+          '<div class="ev-name">' + title + '</div>' +
+          '<div class="ev-meta"><span>' + desc + '</span></div>' +
+        '</div>' +
+      '</div>';
+    }
+
     var html = '';
-    html += '<div class="event-card" onclick="goToBilling()" style="cursor:pointer;"><div class="ev-name">Billing</div><div class="ev-meta"><span>' + (isPro ? 'Pro' : 'Play') + '</span></div></div>';
-    html += '<div class="event-card" onclick="' + (isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature\')') + '" style="cursor:pointer;' + (isPro ? '' : 'opacity:.5;') + '"><div class="ev-name">Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>') + '</div><div class="ev-meta"><span>Logo, colours, display name</span></div></div>';
-    html += '<div class="event-card" onclick="' + (isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')') + '" style="cursor:pointer;' + (isPro ? '' : 'opacity:.5;') + '"><div class="ev-name">Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>') + '</div><div class="ev-meta"><span>Organisers and helpers</span></div></div>';
+    html += settingsRow('Billing', isPro ? 'Pro' : 'Play', 'goToBilling()');
+    html += settingsRow('Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Logo, colours, display name', isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature\')', { dim: !isPro });
+    html += settingsRow('Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Organisers and helpers', isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')', { dim: !isPro });
     if (org.is_superadmin) {
-      html += '<div class="event-card" onclick="goToAdmin()" style="cursor:pointer;"><div class="ev-name">Admin</div><div class="ev-meta"><span>All organisers, comp, demo</span></div></div>';
+      html += settingsRow('Admin', 'All organisers, comp, demo', 'goToAdmin()');
     }
     $('settings-list').innerHTML = html;
   };
@@ -4546,142 +4529,11 @@ Bob Wilson"></textarea>
     }
   }, 10000);
 
-  // ── Native app mode ────────────────────────────────────────────
-  if (window.OOB && window.OOB.native) {
-
-    // Native sign-in: open OAuth in system browser sheet
-    window.nativeSignInGoogle = function() {
-      var redirectUrl = 'https://score.outofboundsevents.com/auth/callback';
-      var url = SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectUrl);
-      if (window.Capacitor && window.Capacitor.Plugins.Browser) {
-        window.Capacitor.Plugins.Browser.open({ url: url, presentationStyle: 'popover' });
-      } else {
-        window.location.href = url;
-      }
-    };
-
-    window.nativeSignInApple = function() {
-      var redirectUrl = 'https://score.outofboundsevents.com/auth/callback';
-      var url = SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + encodeURIComponent(redirectUrl);
-      if (window.Capacitor && window.Capacitor.Plugins.Browser) {
-        window.Capacitor.Plugins.Browser.open({ url: url, presentationStyle: 'popover' });
-      } else {
-        window.location.href = url;
-      }
-    };
-
-    window.nativeSignInEmail = function() {
-      // Show email input within the native welcome
-      var wel = $('native-welcome');
-      var existing = wel.querySelector('.nw-email-form');
-      if (existing) { existing.style.display = ''; return; }
-
-      var form = document.createElement('div');
-      form.className = 'nw-email-form';
-      form.style.cssText = 'width:min(320px,100%);margin-top:16px;';
-      form.innerHTML = '<input type="email" id="nw-email" placeholder="you@example.com" autocomplete="email" style="width:100%;padding:14px 16px;border:2px solid rgba(255,255,255,0.3);border-radius:12px;font-size:16px;font-family:inherit;outline:none;background:rgba(255,255,255,0.1);color:#fff;margin-bottom:12px;">' +
-        '<button class="nw-btn email" onclick="nativeSendMagicLink()" style="width:100%;">Send magic link</button>' +
-        '<div id="nw-email-sent" style="display:none;color:rgba(255,255,255,0.8);font-size:14px;margin-top:12px;">Check your inbox for the sign-in link.</div>';
-      wel.appendChild(form);
-      form.querySelector('input').focus();
-    };
-
-    window.nativeSendMagicLink = function() {
-      var email = document.getElementById('nw-email').value.trim();
-      if (!email) return;
-      sb.auth.signInWithOtp({
-        email: email,
-        options: { emailRedirectTo: 'https://score.outofboundsevents.com/auth/callback' }
-      }).then(function(res) {
-        if (res.error) { toast('Error: ' + res.error.message); return; }
-        document.getElementById('nw-email-sent').style.display = '';
-      });
-    };
-
-    // Biometric lock on cold open
-    window.unlockBiometric = async function() {
-      try {
-        if (window.Capacitor && window.Capacitor.Plugins.NativeBiometric) {
-          await window.Capacitor.Plugins.NativeBiometric.verifyIdentity({
-            reason: 'Unlock Out of Bounds',
-            title: 'Out of Bounds'
-          });
-        }
-        $('bio-lock').classList.remove('show');
-      } catch (e) {
-        // Biometric failed — stay locked, user can try again
-      }
-    };
-
-    // Check biometric on load (only if signed in)
-    var bioEnabled = localStorage.getItem('oob-biometric') !== 'off';
-    window.checkBiometric = async function() {
-      if (!bioEnabled) return;
-      if (!window.Capacitor || !window.Capacitor.Plugins.NativeBiometric) return;
-
-      try {
-        var result = await window.Capacitor.Plugins.NativeBiometric.isAvailable();
-        if (result.isAvailable) {
-          $('bio-lock').classList.add('show');
-          unlockBiometric();
-        }
-      } catch (e) {
-        // No biometric available — skip
-      }
-    };
-
-    // Override goToDashboard to hide billing link in settings
-    var _origGoToSettings = window.goToSettings;
-    var _settingsPatched = false;
-    var origInit = init;
-  }
-
   // ── Init ──────────────────────────────────────────────────────
   init();
 
-  // After init, check biometric if native and signed in
-  if (window.OOB && window.OOB.native && state.organiser) {
-    checkBiometric();
-  }
-
 })();
 </script>
-
-<!-- Bottom tab bar (native app only) -->
-<nav class="native-tab-bar" id="native-tab-bar" style="display:none">
-  <button class="tab-item active" id="tab-events" onclick="nativeTabEvents()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-    Events
-  </button>
-  <button class="tab-item" id="tab-people" onclick="nativeTabPeople()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    People
-  </button>
-  <button class="tab-item" id="tab-settings" onclick="nativeTabSettings()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    Settings
-  </button>
-</nav>
-
-<script>
-// Tab bar navigation (native only)
-function nativeTabEvents() {
-  document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-events').classList.add('active');
-  if (window.goToDashboard) window.goToDashboard();
-}
-function nativeTabPeople() {
-  document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-people').classList.add('active');
-  if (window.goToPeople) window.goToPeople();
-  else if (window.goToSettings) { window.goToSettings(); } // fallback if people screen doesn't exist yet
-}
-function nativeTabSettings() {
-  document.querySelectorAll('.tab-item').forEach(function(t) { t.classList.remove('active'); });
-  document.getElementById('tab-settings').classList.add('active');
-  if (window.goToSettings) window.goToSettings();
-}
-</script>
-
+<script src="/shared/app-shell.js"></script>
 </body>
 </html>

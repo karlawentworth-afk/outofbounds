@@ -92,6 +92,20 @@ A curl to the HTML or a function endpoint is not verification —
 the page must render and the feature must work. If you cannot
 verify in a browser, say "deployed but not browser-tested".
 
+## Native app / web boundary
+
+Every native-only element (biometric lock, tab bar, native
+welcome, billing hides) lives in one file: `/shared/app-shell.js`.
+It injects DOM and CSS only when `Capacitor.isNativePlatform()`
+is true. No native HTML in any `.html` file. No native CSS
+outside `app-shell.js`.
+
+Web and app are tested separately: Playwright at 1280px and 390px
+with no native flag, and one run with the native flag set.
+Screenshots of each go in `docs/screens/web` and
+`docs/screens/app`. Nothing native leaks to web, nothing
+web-only leaks to native.
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in
