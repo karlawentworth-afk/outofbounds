@@ -62,3 +62,4 @@ exports.handler = async function (event) {
 
   return sb.respond(405, { error: 'Method not allowed' });
 };
+
