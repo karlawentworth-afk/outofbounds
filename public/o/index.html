@@ -1306,25 +1306,20 @@ Bob Wilson"></textarea>
     }
   }
 
-  window.signInGoogle = function() {
-    var redirect = encodeURIComponent(window.location.origin + '/auth/callback');
-    var url = SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + redirect;
-    // In native app, use system browser; on web, redirect in place
-    if (window.OOB && window.OOB.native && window.Capacitor && window.Capacitor.Plugins.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: url });
-    } else {
-      window.location.href = url;
-    }
+  window.signInGoogle = async function() {
+    var { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/o/' }
+    });
+    if (error) toast('Google sign-in failed: ' + error.message);
   };
 
-  window.signInApple = function() {
-    var redirect = encodeURIComponent(window.location.origin + '/auth/callback');
-    var url = SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + redirect;
-    if (window.OOB && window.OOB.native && window.Capacitor && window.Capacitor.Plugins.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: url });
-    } else {
-      window.location.href = url;
-    }
+  window.signInApple = async function() {
+    var { error } = await sb.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin + '/o/' }
+    });
+    if (error) toast('Apple sign-in failed: ' + error.message);
   };
 
   window.showEmailSignIn = function() {
