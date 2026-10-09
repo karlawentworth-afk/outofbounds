@@ -63,12 +63,8 @@ p { font-size: 15px; color: rgba(255,255,255,0.7); }
       document.getElementById('msg').textContent = 'Close this window and try again.';
     });
   } else {
-    // Web flow: set cookies and redirect
-    document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
-    if (refreshToken) {
-      document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
-    }
-    window.location.replace('/o/');
+    // Web flow: redirect to /o/ with tokens in hash so Supabase client picks them up
+    window.location.replace('/o/' + window.location.hash);
   }
 })();
 </script>
