@@ -234,12 +234,46 @@
   var SB_URL = 'https://ahutmswadskdkqhnrhhh.supabase.co';
   var redirectUrl = 'https://score.outofboundsevents.com/auth/callback';
 
-  window.nativeSignInApple = function () {
-    window.Capacitor.Plugins.Browser.open({ url: SB_URL + '/auth/v1/authorize?provider=apple&redirect_to=' + encodeURIComponent(redirectUrl), presentationStyle: 'popover' });
-  };
-  window.nativeSignInGoogle = function () {
-    window.Capacitor.Plugins.Browser.open({ url: SB_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(redirectUrl), presentationStyle: 'popover' });
-  };
+  // Generate a session key, pass it through OAuth, poll for tokens
+  function startOAuth(provider) {
+    var sessionKey = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem('oob-auth-session', sessionKey);
+
+    var cbUrl = 'https://score.outofboundsevents.com/auth/callback?session=' + sessionKey;
+    var url = SB_URL + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(cbUrl);
+    window.Capacitor.Plugins.Browser.open({ url: url });
+
+    // Poll for tokens every second
+    var pollCount = 0;
+    var pollTimer = setInterval(function () {
+      pollCount++;
+      if (pollCount > 120) { clearInterval(pollTimer); return; } // 2 min timeout
+
+      fetch('/.netlify/functions/auth-exchange?code=' + encodeURIComponent(sessionKey))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.access_token) {
+            clearInterval(pollTimer);
+            // Close the browser overlay
+            try { window.Capacitor.Plugins.Browser.close(); } catch (e) {}
+
+            // Set the Supabase session
+            var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXRtc3dhZHNrZGtxaG5yaGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjk2NTEsImV4cCI6MjEwNTY0NTY1MX0.sV9wHdMfiEwIdErw9ISwELf68e00_UEXv3SmWkSdoQc';
+            var sbClient = window.supabase.createClient(SB_URL, SB_ANON);
+            sbClient.auth.setSession({
+              access_token: data.access_token,
+              refresh_token: data.refresh_token || ''
+            }).then(function () {
+              window.location.reload();
+            });
+          }
+        })
+        .catch(function () {}); // not ready yet, keep polling
+    }, 1000);
+  }
+
+  window.nativeSignInApple = function () { startOAuth('apple'); };
+  window.nativeSignInGoogle = function () { startOAuth('google'); };
   window.nativeSignInEmail = function () {
     var wel = document.getElementById('native-welcome');
     if (wel.querySelector('.nw-email-form')) return;

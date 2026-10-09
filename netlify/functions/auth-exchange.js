@@ -17,9 +17,10 @@ exports.handler = async function (event) {
     try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
 
     if (!body.access_token) return sb.respond(400, { error: 'Missing access_token' });
+    if (!body.code) return sb.respond(400, { error: 'Missing code' });
 
-    var code = crypto.randomBytes(16).toString('hex');
-    var expires = new Date(Date.now() + 60000).toISOString(); // 60 seconds
+    var code = body.code;
+    var expires = new Date(Date.now() + 120000).toISOString(); // 2 minutes
 
     await sb.sbPost('auth_codes', {
       code: code,
@@ -28,7 +29,7 @@ exports.handler = async function (event) {
       expires_at: expires
     });
 
-    return sb.respond(200, { code: code });
+    return sb.respond(200, { ok: true });
   }
 
   // Retrieve tokens

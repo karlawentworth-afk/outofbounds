@@ -9,12 +9,14 @@ body { font-family: Inter, system-ui, sans-serif; display: flex; align-items: ce
 .wrap { max-width: 360px; padding: 32px 24px; }
 h2 { font-size: 20px; margin-bottom: 12px; }
 p { font-size: 15px; color: rgba(255,255,255,0.7); }
+.done-btn { display: inline-block; margin-top: 20px; padding: 14px 32px; background: #2F7A45; color: #fff; border-radius: 999px; font-weight: 600; font-size: 16px; text-decoration: none; font-family: inherit; border: none; cursor: pointer; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h2 id="heading">Signing you in…</h2>
-  <p id="msg">You'll be redirected in a moment.</p>
+  <p id="msg">You can close this window and return to the app.</p>
+  <button class="done-btn" id="done-btn" style="display:none" onclick="window.close()">Return to Out of Bounds</button>
 </div>
 <script>
 (function () {
@@ -23,43 +25,51 @@ p { font-size: 15px; color: rgba(255,255,255,0.7); }
   var accessToken = params.get('access_token');
   var refreshToken = params.get('refresh_token');
 
+  // Get session key from query string
+  var qp = new URLSearchParams(window.location.search);
+  var session = qp.get('session');
+
   if (!accessToken) {
-    // Check query params (some flows put tokens there)
-    var qp = new URLSearchParams(window.location.search);
     var error = qp.get('error_description') || qp.get('error');
     if (error) {
       document.getElementById('heading').textContent = 'Sign-in failed';
       document.getElementById('msg').textContent = error;
     } else {
+      // No tokens, no error — redirect to /o/ (web flow)
       window.location.replace('/o/');
     }
     return;
   }
 
-  // Store tokens server-side with a one-time code
-  fetch('/.netlify/functions/auth-exchange', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken || '' })
-  })
-  .then(function (r) { return r.json(); })
-  .then(function (data) {
-    if (data.code) {
-      // Redirect via universal link — the app intercepts this
-      window.location.replace('https://score.outofboundsevents.com/o/?auth_code=' + data.code);
-    } else {
-      // Fallback: set cookies and redirect
-      document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
-      if (refreshToken) document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
-      window.location.replace('/o/');
-    }
-  })
-  .catch(function () {
-    // Fallback: set cookies and redirect (works on web)
+  if (session) {
+    // Native app flow: store tokens server-side with the session key
+    // The main app is polling for this
+    fetch('/.netlify/functions/auth-exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: session,
+        access_token: accessToken,
+        refresh_token: refreshToken || ''
+      })
+    }).then(function () {
+      document.getElementById('heading').textContent = 'Signed in!';
+      document.getElementById('msg').textContent = 'You can close this window now.';
+      document.getElementById('done-btn').style.display = '';
+      // Try to auto-close after a moment
+      setTimeout(function () { window.close(); }, 1500);
+    }).catch(function () {
+      document.getElementById('heading').textContent = 'Something went wrong';
+      document.getElementById('msg').textContent = 'Close this window and try again.';
+    });
+  } else {
+    // Web flow: set cookies and redirect
     document.cookie = 'sb-access-token=' + accessToken + '; path=/; max-age=7776000; SameSite=Lax';
-    if (refreshToken) document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+    if (refreshToken) {
+      document.cookie = 'sb-refresh-token=' + refreshToken + '; path=/; max-age=7776000; SameSite=Lax';
+    }
     window.location.replace('/o/');
-  });
+  }
 })();
 </script>
 </body>
