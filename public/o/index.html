@@ -503,11 +503,12 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Onboarding -->
 <div id="screen-onboard" class="screen">
-  <div class="container">
-    <div style="text-align:center;margin-bottom:32px;">
-      <img src="/img/logo-color.png" alt="Out of Bounds" style="height:40px;margin:0 auto 16px;display:block;">
+  <div class="container" style="max-width:440px;">
+    <div style="text-align:center;margin-bottom:40px;padding-top:20px;">
+      <img src="/img/logo-color.png" alt="Out of Bounds" style="height:48px;margin:0 auto 20px;display:block;">
     </div>
-    <h2 class="ob-title">Welcome to Out of Bounds</h2>
+    <h2 style="font-size:24px;text-align:center;margin-bottom:8px;">Welcome to Out of Bounds</h2>
+    <p style="text-align:center;color:var(--muted);font-size:15px;margin-bottom:32px;">Tell us a bit about you so we can get you set up.</p>
     <div class="field-group">
       <label class="field-label">What should we call you?</label>
       <input type="text" class="field-input" id="ob-name" placeholder="e.g. Dave Thompson">
@@ -549,7 +550,7 @@ a { color: inherit; text-decoration: none; }
   </div>
   <div class="container">
     <div class="dash-header">
-      <h2>Your events</h2>
+      <h2 id="dash-greeting">Your events</h2>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline btn-sm" onclick="goToPeople()" style="padding:10px 12px;font-size:13px;">People</button>
         <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;">Settings</button>
@@ -1466,11 +1467,18 @@ Bob Wilson"></textarea>
   // ── Dashboard ─────────────────────────────────────────────────
   window.goToDashboard = async function() {
     // Update user pills with organiser name
-    var name = state.organiser ? state.organiser.name : 'Sign out';
+    var name = state.organiser ? (state.organiser.display_name || state.organiser.name) : 'Sign out';
+    var firstName = name.split(' ')[0];
     var pill1 = $('user-pill');
     var pill2 = $('user-pill-ev');
     if (pill1) pill1.textContent = name + ' \u00B7 Sign out';
     if (pill2) pill2.textContent = name + ' \u00B7 Sign out';
+
+    // Greeting
+    var hour = new Date().getHours();
+    var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    var greetEl = $('dash-greeting');
+    if (greetEl) greetEl.textContent = greeting + ', ' + firstName;
 
     showScreen('screen-dashboard');
     window.location.hash = 'dashboard';
@@ -1538,7 +1546,11 @@ Bob Wilson"></textarea>
     var showArchived = state.showArchived || false;
 
     if (state.events.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No events yet.</p><button class="btn btn-green btn-sm" onclick="newEvent()">Create your first event</button></div>';
+      el.innerHTML = '<div class="empty-state">' +
+        '<h3>Ready to score?</h3>' +
+        '<p>Create your first event, add your players, and go live. Takes about five minutes.</p>' +
+        '<button class="btn btn-green" onclick="newEvent()" style="margin-top:4px;">Create your first event</button>' +
+      '</div>';
       return;
     }
 
@@ -4387,7 +4399,7 @@ Bob Wilson"></textarea>
     var url = $('invite-url').textContent;
     if (url) {
       localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
-      window.open(url, '_blank');
+      window.location.href = url;
     }
   };
 
