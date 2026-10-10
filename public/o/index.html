@@ -419,13 +419,13 @@ a { color: inherit; text-decoration: none; }
 .lb-table .lb-cb { font-size: 11px; color: var(--muted); }
 
 /* QR code */
-.qr-wrap { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
-.qr-wrap canvas { border: 8px solid var(--white); box-shadow: 0 2px 8px rgba(0,0,0,.1); border-radius: 8px; }
+.qr-wrap { display: flex; flex-direction: column; align-items: center; margin: 20px 0; min-height: 20px; }
+.qr-wrap canvas { border: 8px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,.1); border-radius: 8px; display: block; }
 .qr-wrap .qr-label { font-size: 13px; color: var(--muted); margin-top: 8px; }
 
 /* Invite link section */
 .invite-section { background: var(--white); border-radius: var(--radius); padding: 20px; margin-bottom: 12px; border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(16,52,78,.04); }
-.invite-section .invite-url {
+.invite-section .invite-url, .invite-url {
   font-family: ui-monospace, Menlo, monospace; font-size: 13px; padding: 10px 12px;
   background: var(--paper); border-radius: 10px; word-break: break-all; margin: 8px 0 12px;
 }
