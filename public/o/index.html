@@ -34,7 +34,8 @@
   --off-white: var(--paper); --green-dark: var(--green-2);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; touch-action: manipulation; }
+html { height: 100%; touch-action: manipulation; overflow-x: hidden; }
+body { overflow-x: hidden; }
 body {
   font-family: Inter, system-ui, sans-serif;
   background: var(--paper); color: var(--ink);

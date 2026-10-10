@@ -51,9 +51,12 @@
     /* Safe area on top bar — add inset to existing padding */
     '.native-app .top-bar { padding-top: calc(16px + env(safe-area-inset-top, 0px)); min-height: calc(60px + env(safe-area-inset-top, 0px)); }',
     '.native-app .step-strip { margin-top: 0; }',
-    /* Prevent iOS overscroll bounce */
+    /* Prevent iOS overscroll and horizontal scroll */
     '.native-app html { height: 100%; overflow: hidden; }',
-    '.native-app body { height: 100%; overflow: hidden; }',
+    '.native-app body { height: 100%; overflow: hidden; overflow-x: hidden; }',
+    '.native-app .screen.active { overflow-x: hidden; }',
+    /* Hide dashboard People/Settings buttons — bottom tab bar handles these */
+    '.native-app .dash-header .btn-outline { display: none !important; }',
     '.native-app .screen.active { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }',
     '.native-app .top-bar { position: fixed; top: 0; left: 0; right: 0; }',
     '.native-app .screen.active { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }',
