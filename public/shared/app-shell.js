@@ -49,7 +49,12 @@
     '.native-app #billing-manage { display: none !important; }',
 
     /* Safe area on top bar — add inset to existing padding */
-    '.native-app .top-bar { padding-top: calc(14px + env(safe-area-inset-top, 0px)); min-height: calc(56px + env(safe-area-inset-top, 0px)); }',
+    '.native-app .top-bar { padding-top: calc(16px + env(safe-area-inset-top, 0px)); min-height: calc(60px + env(safe-area-inset-top, 0px)); }',
+    '.native-app .step-strip { margin-top: 0; }',
+    /* Player view: pad for safe areas */
+    '.native-app .player-rows { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
+    '.native-app .save-bar { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
+    '.native-app .keypad { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
 
     /* Pad content for bottom tab bar */
     '.native-app .container { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }',
