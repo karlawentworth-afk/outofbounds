@@ -3786,12 +3786,39 @@ Bob Wilson"></textarea>
       var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
       $('invite-url').textContent = inviteUrl;
 
-      // Generate QR code
+      // Generate QR code — render inline as img
+      var qrEl = $('invite-qr-wrap');
+      qrEl.innerHTML = '';
       try {
-        renderQR(inviteUrl, $('invite-qr-wrap'));
+        var qr = qrcode(0, 'L');
+        qr.addData(inviteUrl);
+        qr.make();
+        var modules = qr.getModuleCount();
+        var cellSize = Math.max(4, Math.floor(256 / (modules + 8)));
+        var quietZone = cellSize * 4;
+        var canvasSize = cellSize * modules + quietZone * 2;
+        var c = document.createElement('canvas');
+        c.width = canvasSize; c.height = canvasSize;
+        var cx = c.getContext('2d');
+        cx.fillStyle = '#fff'; cx.fillRect(0, 0, canvasSize, canvasSize);
+        cx.fillStyle = '#000';
+        for (var r = 0; r < modules; r++) {
+          for (var col = 0; col < modules; col++) {
+            if (qr.isDark(r, col)) cx.fillRect(quietZone + col * cellSize, quietZone + r * cellSize, cellSize, cellSize);
+          }
+        }
+        var img = document.createElement('img');
+        img.src = c.toDataURL();
+        img.width = 220; img.height = 220;
+        img.style.cssText = 'border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:block;margin:0 auto;';
+        img.alt = 'QR code — scan to score';
+        qrEl.appendChild(img);
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;text-align:center;';
+        lbl.textContent = 'Scan to find your name';
+        qrEl.appendChild(lbl);
       } catch (e) {
-        console.error('QR render failed:', e);
-        $('invite-qr-wrap').innerHTML = '<p style="color:var(--muted);font-size:13px;">Could not generate QR code.</p>';
+        qrEl.innerHTML = '<p style="color:var(--red);font-size:13px;">QR failed: ' + e.message + '</p>';
       }
     }
 
