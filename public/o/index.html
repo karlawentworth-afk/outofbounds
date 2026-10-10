@@ -129,7 +129,12 @@ a { color: inherit; text-decoration: none; }
 .magic-link-sent { color: var(--green); font-weight: 600; font-size: 15px; margin-top: 16px; }
 
 /* Onboarding */
+#screen-onboard { background: linear-gradient(170deg, rgba(16,52,78,.55), rgba(16,52,78,.4)), url('/img/photos/course-buggy.jpg') center/cover no-repeat; }
 #screen-onboard .container { max-width: 440px; }
+#screen-onboard h2, #screen-onboard p { color: #fff; }
+#screen-onboard .field-label { color: rgba(255,255,255,.85); }
+#screen-onboard .radio-opt { background: rgba(255,255,255,.95); }
+#screen-onboard .field-input { background: rgba(255,255,255,.95); }
 .ob-title { font-size: 22px; margin-bottom: 24px; text-align: center; }
 .field-group { margin-bottom: 24px; }
 .field-label { font-size: 14px; font-weight: 600; margin-bottom: 8px; display: block; }
@@ -550,8 +555,11 @@ a { color: inherit; text-decoration: none; }
     <button class="user-pill" id="user-pill" onclick="signOut()">Sign out</button>
   </div>
   <div class="container">
-    <div class="dash-header">
-      <h2 id="dash-greeting">Your events</h2>
+    <div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.6),rgba(16,52,78,.45)),url(/img/photos/course-wide.jpg) center/cover;color:#fff;padding:28px 24px;margin-bottom:20px;">
+      <h2 id="dash-greeting" style="color:#fff;font-size:24px;margin-bottom:4px;">Your events</h2>
+      <p style="color:rgba(255,255,255,.7);font-size:14px;margin:0;">Set up, score, and share.</p>
+    </div>
+    <div class="dash-header" style="margin-bottom:16px;">
       <div style="display:flex;gap:8px;">
         <button class="btn btn-outline btn-sm" onclick="goToPeople()" style="padding:10px 12px;font-size:13px;">People</button>
         <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;">Settings</button>
@@ -576,9 +584,9 @@ a { color: inherit; text-decoration: none; }
     <div class="head"><div class="row"><h2>People</h2><button class="btn btn-green btn-sm" onclick="showAddPerson()">+ Add</button></div><p class="sub">Your players across all events</p></div>
     <input type="search" id="people-search" class="field-input" placeholder="Search by name or email" oninput="searchPeople()" style="margin-bottom:16px;">
     <div id="people-list"></div>
-    <div id="people-empty" class="empty-state" style="display:none;">
-      <h3>No people yet</h3>
-      <p>People are added automatically when you add players to events. You can also add them here.</p>
+    <div id="people-empty" style="display:none;border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.7),rgba(16,52,78,.5)),url(/img/photos/ball-close.jpg) center/cover;color:#fff;text-align:center;padding:48px 28px;">
+      <h3 style="color:#fff;font-size:20px;margin-bottom:8px;">No people yet</h3>
+      <p style="color:rgba(255,255,255,.7);font-size:14px;max-width:34ch;margin:0 auto;">People are added automatically when you add players to events. You can also add them here.</p>
     </div>
   </div>
 </div>
@@ -1083,14 +1091,14 @@ a { color: inherit; text-decoration: none; }
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
-        <div class="card review">
-          <h2 style="margin-bottom:10px;">Ready to go live?</h2>
-          <p id="golive-summary"></p>
-          <div class="price-row">
-            <span id="golive-breakdown" class="quiet"></span>
-            <span id="golive-price" class="big"></span>
+        <div class="card review" style="background:linear-gradient(170deg,rgba(16,52,78,.65),rgba(16,52,78,.5)),url(/img/photos/golfer-swing.jpg) center/cover;color:#fff;border:none;">
+          <h2 style="margin-bottom:10px;color:#fff;">Ready to go live?</h2>
+          <p id="golive-summary" style="color:rgba(255,255,255,.85);"></p>
+          <div class="price-row" style="border-color:rgba(255,255,255,.2);">
+            <span id="golive-breakdown" style="color:rgba(255,255,255,.7);"></span>
+            <span id="golive-price" class="big" style="color:#fff;"></span>
           </div>
-          <div class="note">Handicaps can't be checked against the WHS. You have the final say on the day.</div>
+          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.7);margin-top:14px;">Handicaps can't be checked against the WHS. You have the final say on the day.</div>
         </div>
         <div class="step-next">
           <button class="btn btn-green btn-block" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
