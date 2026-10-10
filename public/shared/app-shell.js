@@ -52,7 +52,11 @@
     '.native-app .top-bar { padding-top: calc(16px + env(safe-area-inset-top, 0px)); min-height: calc(60px + env(safe-area-inset-top, 0px)); }',
     '.native-app .step-strip { margin-top: 0; }',
     /* Prevent iOS overscroll bounce */
-    '.native-app html, .native-app body { overscroll-behavior: none; }',
+    '.native-app html { height: 100%; overflow: hidden; }',
+    '.native-app body { height: 100%; overflow: hidden; }',
+    '.native-app .screen.active { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }',
+    '.native-app .top-bar { position: fixed; top: 0; left: 0; right: 0; }',
+    '.native-app .screen.active { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }',
     /* Player view: pad for safe areas */
     '.native-app .hole-bar { padding-left: max(12px, env(safe-area-inset-left, 12px)); padding-right: max(12px, env(safe-area-inset-right, 12px)); }',
     '.native-app .player-rows { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
