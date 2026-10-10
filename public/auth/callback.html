@@ -54,13 +54,16 @@ p { font-size: 15px; color: rgba(255,255,255,0.7); }
       })
     }).then(function () {
       document.getElementById('heading').textContent = 'Signed in!';
-      document.getElementById('msg').textContent = 'You can close this window now.';
-      document.getElementById('done-btn').style.display = '';
-      // Try to auto-close after a moment
-      setTimeout(function () { window.close(); }, 1500);
+      document.getElementById('msg').textContent = 'Returning to the app…';
+      // Try multiple close methods
+      window.close();
+      setTimeout(function () { window.close(); }, 500);
+      setTimeout(function () { window.close(); }, 1000);
+      // Final fallback: redirect to /o/ after 2 seconds
+      setTimeout(function () { window.location.replace('/o/'); }, 2000);
     }).catch(function () {
-      document.getElementById('heading').textContent = 'Something went wrong';
-      document.getElementById('msg').textContent = 'Close this window and try again.';
+      // Even on error, redirect back
+      setTimeout(function () { window.location.replace('/o/'); }, 1000);
     });
   } else {
     // Web flow: redirect to /o/ with tokens in hash so Supabase client picks them up
