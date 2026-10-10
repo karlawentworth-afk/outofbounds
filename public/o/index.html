@@ -1530,7 +1530,10 @@ Bob Wilson"></textarea>
         if (br.logo_url !== undefined) state.organiser.logo_url = br.logo_url;
         if (br.display_name) state.organiser.display_name = br.display_name;
         if (br.accent_colour) state.organiser.accent_colour = br.accent_colour;
-      } catch (e) { /* branding not available */ }
+        toast('Brand: ' + (br.primary_colour || 'none') + ' logo: ' + (br.logo_url ? 'yes' : 'no'));
+      } catch (e) {
+        toast('Branding load error: ' + e.message);
+      }
     }
     applyBranding();
 
