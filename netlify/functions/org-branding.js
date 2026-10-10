@@ -43,12 +43,6 @@ exports.handler = async function (event) {
     if (!orgId) return sb.respond(400, { error: 'Missing organiser_id' });
 
     try {
-      await planGate.assertPro(orgId);
-    } catch (e) {
-      return sb.respond(e.status || 403, { error: e.error || 'Pro feature' });
-    }
-
-    try {
       var orgs = await sb.sbGet(
         'organisers?id=eq.' + orgId +
         '&select=logo_url,logo_dark_url,primary_colour,secondary_colour,accent_colour,text_on_primary,display_name' +

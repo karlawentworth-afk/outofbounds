@@ -1469,6 +1469,10 @@ Bob Wilson"></textarea>
   // ── Dashboard ─────────────────────────────────────────────────
   function applyBranding() {
     var org = state.organiser || {};
+    // Set the CSS variable so all top-bars pick it up
+    if (org.primary_colour) {
+      document.documentElement.style.setProperty('--brand', org.primary_colour);
+    }
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
         el.style.background = org.primary_colour;
@@ -1516,16 +1520,17 @@ Bob Wilson"></textarea>
     window.location.hash = 'dashboard';
     updateProGating();
 
-    // Load fresh branding from server (auth response may not include it)
-    if (state.organiser && state.organiser.plan === 'pro') {
+    // Load fresh branding from server
+    if (state.organiser) {
       try {
         var brandRes = await api('org-branding', { query: { organiser_id: state.organiser.id } });
         var br = brandRes.branding || {};
         if (br.primary_colour) state.organiser.primary_colour = br.primary_colour;
         if (br.text_on_primary) state.organiser.text_on_primary = br.text_on_primary;
-        if (br.logo_url) state.organiser.logo_url = br.logo_url;
+        if (br.logo_url !== undefined) state.organiser.logo_url = br.logo_url;
         if (br.display_name) state.organiser.display_name = br.display_name;
-      } catch (e) { /* not Pro or branding not set */ }
+        if (br.accent_colour) state.organiser.accent_colour = br.accent_colour;
+      } catch (e) { /* branding not available */ }
     }
     applyBranding();
 
