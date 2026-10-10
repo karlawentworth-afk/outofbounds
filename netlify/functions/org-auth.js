@@ -87,7 +87,7 @@ exports.handler = async function (event) {
 
       var orgs = await sb.sbGet(
         'organisers?auth_user_id=eq.' + user.id +
-        '&select=id,name,slug,onboard_type,plan,logo_url,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end,is_superadmin,plan_source,comp_until,is_tester' +
+        '&select=id,name,slug,onboard_type,plan,logo_url,primary_colour,text_on_primary,accent_colour,display_name,contact_email,stripe_customer_id,stripe_subscription_id,subscription_status,current_period_end,cancel_at_period_end,is_superadmin,plan_source,comp_until,is_tester' +
         '&limit=1'
       );
 
