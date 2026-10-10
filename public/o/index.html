@@ -3735,6 +3735,7 @@ Bob Wilson"></textarea>
 
   // ── Live view ─────────────────────────────────────────────────
   async function renderLiveView() {
+    try {
     await loadPlayers();
     await loadGroups();
 
@@ -3833,6 +3834,13 @@ Bob Wilson"></textarea>
 
     // Render leaderboard
     await renderLiveLeaderboard();
+    } catch (err) {
+      // Show error visually so we can debug
+      var errDiv = document.createElement('div');
+      errDiv.style.cssText = 'background:var(--red);color:#fff;padding:12px;border-radius:8px;margin:12px 0;font-size:13px;';
+      errDiv.textContent = 'Live view error: ' + err.message + ' at ' + (err.stack || '').split('\n')[1];
+      $('golive-live').prepend(errDiv);
+    }
   }
 
   function renderLiveGroups() {
