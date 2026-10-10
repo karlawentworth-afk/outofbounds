@@ -1469,9 +1469,13 @@ Bob Wilson"></textarea>
   // ── Dashboard ─────────────────────────────────────────────────
   function applyBranding() {
     var org = state.organiser || {};
-    // Set the CSS variable so all top-bars pick it up
     if (org.primary_colour) {
-      document.documentElement.style.setProperty('--brand', org.primary_colour);
+      var s = document.documentElement.style;
+      s.setProperty('--brand', org.primary_colour);
+      s.setProperty('--green', org.primary_colour);
+      s.setProperty('--green-2', org.primary_colour);
+      if (org.text_on_primary) s.setProperty('--text-on-brand', org.text_on_primary);
+      if (org.accent_colour) s.setProperty('--accent', org.accent_colour);
     }
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
@@ -1530,10 +1534,7 @@ Bob Wilson"></textarea>
         if (br.logo_url !== undefined) state.organiser.logo_url = br.logo_url;
         if (br.display_name) state.organiser.display_name = br.display_name;
         if (br.accent_colour) state.organiser.accent_colour = br.accent_colour;
-        toast('Brand: ' + (br.primary_colour || 'none') + ' logo: ' + (br.logo_url ? 'yes' : 'no'));
-      } catch (e) {
-        toast('Branding load error: ' + e.message);
-      }
+      } catch (e) { /* branding not set */ }
     }
     applyBranding();
 
