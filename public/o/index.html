@@ -4397,7 +4397,14 @@ Bob Wilson"></textarea>
       }
     }
 
-    container.appendChild(canvas);
+    // Convert to image so it survives DOM manipulation
+    var img = document.createElement('img');
+    img.src = canvas.toDataURL('image/png');
+    img.style.width = '256px';
+    img.style.height = '256px';
+    img.style.borderRadius = '8px';
+    img.alt = 'QR code';
+    container.appendChild(img);
 
     var label = document.createElement('div');
     label.className = 'qr-label';
