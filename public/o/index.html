@@ -1150,28 +1150,32 @@ a { color: inherit; text-decoration: none; }
           </p>
         </div>
 
-        <div style="margin-top:24px;border-top:1px solid var(--line);padding-top:20px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Finish</h3>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <button class="btn btn-green" onclick="finishEvent(18)">Finish &mdash; count all 18 holes</button>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn btn-outline" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="flex:1;">Finish &mdash; count holes 1 to</button>
-              <input type="number" id="finish-hole-n" value="14" min="1" max="17" style="width:56px;padding:10px;border:2px solid var(--line);border-radius:8px;font-size:16px;text-align:center;font-family:inherit;">
+        <!-- Finish -->
+        <div class="card" style="margin-top:16px;">
+          <h3 style="font-size:16px;margin-bottom:12px;">Finish the event</h3>
+          <button class="btn btn-green btn-block" onclick="finishEvent(18)" style="margin-bottom:8px;">Finish and publish results</button>
+          <button onclick="showFinishOptions()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;display:block;text-align:center;width:100%;">Something went wrong?</button>
+          <div id="finish-options" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+              <button class="btn btn-outline btn-sm" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="flex:1;">Count holes 1 to</button>
+              <input type="number" id="finish-hole-n" value="14" min="1" max="17" style="width:56px;padding:8px;border:1.5px solid var(--line);border-radius:8px;font-size:16px;text-align:center;font-family:inherit;">
             </div>
-            <button class="btn btn-outline" onclick="abandonEvent()" style="color:var(--red);border-color:var(--red);">Abandon &mdash; no results</button>
+            <button class="btn btn-outline btn-sm btn-block" onclick="abandonEvent()" style="color:var(--red);border-color:var(--red);">Abandon — no results</button>
           </div>
         </div>
       </div>
 
       <!-- Finished state -->
       <div id="golive-finished" style="display:none;">
-        <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
-        <div id="finished-leaderboard"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
+          <div id="finished-leaderboard"></div>
+        </div>
         <div id="results-email-note" style="font-size:13px;color:var(--muted);margin:12px 0;"></div>
-        <div class="past-actions">
-          <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results to players</button>
-          <button class="btn btn-green btn-sm" onclick="cloneEvent()">Run it again</button>
-          <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.5;">Export CSV<span class="pro-label" id="csv-pro-tag">Pro</span></button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results</button>
+          <button class="btn btn-outline btn-sm" onclick="cloneEvent()">Run it again</button>
+          <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.45;">Export CSV <span class="chip">Pro</span></button>
           <button class="btn btn-outline btn-sm" id="btn-archive" onclick="archiveEvent()">Archive</button>
         </div>
       </div>
@@ -4024,6 +4028,11 @@ Bob Wilson"></textarea>
   };
 
   // ── Finish event ──────────────────────────────────────────────
+  window.showFinishOptions = function() {
+    var el = $('finish-options');
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+  };
+
   window.finishEvent = async function(countedHoles) {
     countedHoles = parseInt(countedHoles) || 18;
 
