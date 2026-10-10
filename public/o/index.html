@@ -533,13 +533,32 @@ a { color: inherit; text-decoration: none; }
     <div class="dash-header">
       <h2>Your events</h2>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;" title="Settings"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
+        <button class="btn btn-outline btn-sm" onclick="goToPeople()" style="padding:10px 12px;font-size:13px;">People</button>
+        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;">Settings</button>
         <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
       </div>
     </div>
     <div id="event-list" class="event-list"></div>
     <div style="text-align:center;padding:24px 0 8px;">
       <button onclick="openHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;">Help</button>
+    </div>
+  </div>
+</div>
+
+<!-- People -->
+<div id="screen-people" class="screen">
+  <div class="top-bar">
+    <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
+    <button class="user-pill" id="user-pill-people" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="container">
+    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
+    <div class="head"><div class="row"><h2>People</h2><button class="btn btn-green btn-sm" onclick="showAddPerson()">+ Add</button></div><p class="sub">Your players across all events</p></div>
+    <input type="search" id="people-search" class="field-input" placeholder="Search by name or email" oninput="searchPeople()" style="margin-bottom:16px;">
+    <div id="people-list"></div>
+    <div id="people-empty" class="empty-state" style="display:none;">
+      <h3>No people yet</h3>
+      <p>People are added automatically when you add players to events. You can also add them here.</p>
     </div>
   </div>
 </div>
@@ -2194,6 +2213,100 @@ Bob Wilson"></textarea>
     } catch (err) {
       toast('Error: ' + err.message);
     }
+  };
+
+  // ── People ──────────────────────────────────────────────────
+  state.people = [];
+
+  window.goToPeople = async function() {
+    if (!state.organiser) return;
+    $('user-pill-people').textContent = state.organiser.name + ' \u00B7 Sign out';
+    showScreen('screen-people');
+    window.location.hash = 'people';
+    $('people-search').value = '';
+    await loadPeople();
+  };
+
+  async function loadPeople(search) {
+    try {
+      var query = { organiser_id: state.organiser.id };
+      if (search) query.search = search;
+      var res = await api('org-people', { query: query });
+      state.people = res.people || [];
+      renderPeopleList();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  }
+
+  function renderPeopleList() {
+    var list = state.people;
+    if (!list.length) {
+      $('people-list').innerHTML = '';
+      $('people-empty').style.display = '';
+      return;
+    }
+    $('people-empty').style.display = 'none';
+
+    var html = list.map(function (p) {
+      var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+      var hcp = p.handicap_index != null ? p.handicap_index.toFixed(1) : '';
+      var lastPlayed = p.last_event_at ? new Date(p.last_event_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+      var events = p.events_count || 0;
+
+      return '<div class="event-card" style="cursor:default;">' +
+        '<div class="ev-bar"></div>' +
+        '<div class="ev-body">' +
+          '<div class="ev-name" style="font-size:15px;">' + esc(name) + '</div>' +
+          '<div class="ev-meta">' +
+            (p.email ? '<span>' + esc(p.email) + '</span>' : '') +
+            (hcp ? '<span>HCP ' + hcp + '</span>' : '') +
+            (events ? '<span>' + events + ' event' + (events !== 1 ? 's' : '') + '</span>' : '') +
+            (lastPlayed ? '<span>Last: ' + lastPlayed + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="ev-act">' +
+          '<button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="editPerson(\'' + p.id + '\')">Edit</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    $('people-list').innerHTML = html;
+  }
+
+  var searchTimer = null;
+  window.searchPeople = function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      loadPeople($('people-search').value.trim());
+    }, 300);
+  };
+
+  window.showAddPerson = async function() {
+    var name = await oobPrompt('Add a person', 'Add', '');
+    if (!name) return;
+    var parts = name.trim().split(/\s+/);
+    var first = parts[0] || '';
+    var last = parts.slice(1).join(' ') || '';
+    if (!first) return;
+
+    try {
+      await api('org-people', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'save', first_name: first, last_name: last || first }
+      });
+      toast(first + ' added');
+      await loadPeople();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
+
+  window.editPerson = async function(id) {
+    var person = state.people.find(function (p) { return p.id === id; });
+    if (!person) return;
+    var name = ((person.first_name || '') + ' ' + (person.last_name || '')).trim();
+    toast(name + ' — editing coming soon');
   };
 
   // ── Settings ──────────────────────────────────────────────────

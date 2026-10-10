@@ -51,6 +51,8 @@
     /* Safe area on top bar — add inset to existing padding */
     '.native-app .top-bar { padding-top: calc(16px + env(safe-area-inset-top, 0px)); min-height: calc(60px + env(safe-area-inset-top, 0px)); }',
     '.native-app .step-strip { margin-top: 0; }',
+    /* Prevent iOS overscroll bounce */
+    '.native-app html, .native-app body { overscroll-behavior: none; }',
     /* Player view: pad for safe areas */
     '.native-app .hole-bar { padding-left: max(12px, env(safe-area-inset-left, 12px)); padding-right: max(12px, env(safe-area-inset-right, 12px)); }',
     '.native-app .player-rows { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
@@ -138,10 +140,7 @@
     btn.style.color = '#2F7A45';
     var tab = btn.dataset.tab;
     if (tab === 'events' && window.goToDashboard) window.goToDashboard();
-    if (tab === 'people') {
-      if (window.goToPeople) window.goToPeople();
-      else if (window.toast) window.toast('People directory coming soon');
-    }
+    if (tab === 'people' && window.goToPeople) window.goToPeople();
     if (tab === 'settings' && window.goToSettings) window.goToSettings();
   });
 
