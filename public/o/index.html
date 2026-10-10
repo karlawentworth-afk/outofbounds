@@ -3776,19 +3776,30 @@ Bob Wilson"></textarea>
 
     // Build invite link
     var baseUrl = window.location.origin;
-    // The find-your-name link goes to the event's player lookup
-    // Path-based URL so it survives WhatsApp/social sharing (hash gets stripped)
     var orgSlug = state.organiser ? state.organiser.slug : '';
     var evSlug = state.currentEventData ? state.currentEventData.slug : '';
-    var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
-    $('invite-url').textContent = inviteUrl;
 
-    // Generate QR code
-    renderQR(inviteUrl, $('invite-qr-wrap'));
+    if (!orgSlug || !evSlug) {
+      $('invite-url').textContent = 'Event link not available — check event details are saved.';
+      $('invite-qr-wrap').innerHTML = '<p style="color:var(--muted);font-size:13px;">Save your event details to generate the QR code.</p>';
+    } else {
+      var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
+      $('invite-url').textContent = inviteUrl;
+
+      // Generate QR code
+      try {
+        renderQR(inviteUrl, $('invite-qr-wrap'));
+      } catch (e) {
+        console.error('QR render failed:', e);
+        $('invite-qr-wrap').innerHTML = '<p style="color:var(--muted);font-size:13px;">Could not generate QR code.</p>';
+      }
+    }
 
     // Board URL
-    var boardUrl = baseUrl + '/board/#/' + orgSlug + '/' + evSlug;
-    $('board-url').textContent = boardUrl;
+    if (orgSlug && evSlug) {
+      var boardUrl = baseUrl + '/board/#/' + orgSlug + '/' + evSlug;
+      $('board-url').textContent = boardUrl;
+    }
 
     // Render group cards with status
     renderLiveGroups();
