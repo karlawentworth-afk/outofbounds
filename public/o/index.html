@@ -624,13 +624,13 @@ a { color: inherit; text-decoration: none; }
     <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
     <button class="user-pill" id="user-pill-admin" onclick="signOut()">Sign out</button>
   </div>
-  <div class="container">
+  <div class="container" style="width:min(960px, calc(100% - 32px));">
     <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
-    <h2 style="font-size:20px;margin-bottom:16px;">Admin</h2>
+    <div class="head"><h2>Admin</h2></div>
 
-    <div style="display:flex;gap:8px;margin-bottom:20px;">
-      <button class="btn btn-green btn-sm" id="admin-tab-orgs" onclick="showAdminTab('orgs')" style="font-size:13px;">Organisers</button>
-      <button class="btn btn-outline btn-sm" id="admin-tab-activity" onclick="showAdminTab('activity')" style="font-size:13px;">Activity</button>
+    <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:0;">
+      <button id="admin-tab-orgs" onclick="showAdminTab('orgs')" style="padding:10px 20px;font-size:14px;font-weight:600;font-family:inherit;border:none;background:none;cursor:pointer;border-bottom:3px solid var(--green);color:var(--ink);">Organisers</button>
+      <button id="admin-tab-activity" onclick="showAdminTab('activity')" style="padding:10px 20px;font-size:14px;font-weight:600;font-family:inherit;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--muted);">Activity</button>
     </div>
 
     <div id="admin-org-list"></div>
@@ -1729,50 +1729,71 @@ Bob Wilson"></textarea>
   function renderAdminList(orgs) {
     var myOrgId = state.organiser ? state.organiser.id : '';
     var html = orgs.map(function (o) {
-      // Plan label: plain English, no DB values
       var planLabel = 'Play';
+      var planClass = 'draft';
       if (o.plan === 'pro' && o.plan_source === 'comp') {
         planLabel = 'Free Pro';
+        planClass = 'live';
         if (o.comp_until) {
           var d = new Date(o.comp_until);
           if (d.getFullYear() < 2090) planLabel = 'Free Pro until ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
         }
       } else if (o.plan === 'pro') {
         planLabel = 'Pro';
+        planClass = 'live';
       }
 
-      // Labels
-      var nameLabel = esc(o.name);
-      if (o.slug === 'demo') nameLabel += ' <span style="color:var(--muted);font-weight:400;">(demo)</span>';
-      if (o.id === myOrgId) nameLabel += ' <span style="color:var(--green);font-weight:400;">(you)</span>';
-      if (o.is_tester) nameLabel += ' <span style="background:#E8F5E9;color:var(--green);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">Pilot</span>';
+      var badges = '';
+      if (o.slug === 'demo') badges += '<span class="chip">Demo</span> ';
+      if (o.id === myOrgId) badges += '<span class="chip live">You</span> ';
+      if (o.is_tester) badges += '<span class="chip live">Pilot</span> ';
 
-      // Event count with correct grammar
       var evCount = o.events_total === 1 ? '1 event' : o.events_total + ' events';
+      var created = o.created_at ? new Date(o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
-      // Actions — wrapped so they don't overflow
-      var actions = '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="viewAsOrg(\'' + o.id + '\')">Open as</button>';
-      actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Give free Pro</button>';
+      var actions = '<button class="btn btn-outline btn-sm" onclick="viewAsOrg(\'' + o.id + '\')">Open as</button>';
+      actions += '<button class="btn btn-outline btn-sm" onclick="openCompModal(\'' + o.id + '\',\'' + esc(o.name) + '\',\'' + (o.plan_source || 'stripe') + '\')">Free Pro</button>';
       if (o.slug === 'demo') {
-        actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="openRebrandModal()">Rebrand</button>';
-        actions += ' <button class="btn btn-outline btn-sm" style="font-size:11px;padding:6px 10px;" onclick="resetDemo()">Reset</button>';
+        actions += '<button class="btn btn-outline btn-sm" onclick="openRebrandModal()">Rebrand</button>';
+        actions += '<button class="btn btn-outline btn-sm" onclick="resetDemo()">Reset</button>';
+      }
+      if (o.id !== myOrgId && o.slug !== 'demo') {
+        actions += '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" onclick="deleteOrganiser(\'' + o.id + '\',\'' + esc(o.name) + '\')">Delete</button>';
       }
 
-      return '<div class="event-card" style="cursor:default;">' +
+      return '<div class="card" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;">' +
         '<div>' +
-          '<div class="ev-name">' + nameLabel + '</div>' +
-          '<div class="ev-meta" style="flex-wrap:wrap;">' +
-            '<span class="badge badge-' + (o.plan === 'pro' ? 'live' : 'draft') + '">' + planLabel + '</span>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">' +
+            '<strong style="font-size:16px;">' + esc(o.name) + '</strong>' +
+            badges +
+          '</div>' +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:10px;">' +
+            '<span class="chip ' + planClass + '">' + planLabel + '</span>' +
             '<span>' + evCount + '</span>' +
             (o.contact_email ? '<span>' + esc(o.contact_email) + '</span>' : '') +
+            (created ? '<span>Joined ' + created + '</span>' : '') +
           '</div>' +
-          '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">' + actions + '</div>' +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + actions + '</div>' +
         '</div>' +
       '</div>';
     }).join('');
 
-    $('admin-org-list').innerHTML = html || '<div class="empty-state"><p>No organisers.</p></div>';
+    $('admin-org-list').innerHTML = html || '<div class="empty-state"><h3>No organisers</h3></div>';
   }
+
+  window.deleteOrganiser = async function(orgId, orgName) {
+    if (!(await oobConfirm('Delete ' + orgName + ' and all their events, players and scores? This cannot be undone.', 'Delete'))) return;
+    try {
+      await api('org-admin', {
+        method: 'POST',
+        body: { organiser_id: state.organiser.id, action: 'delete_org', target_id: orgId }
+      });
+      toast(orgName + ' deleted');
+      goToAdmin();
+    } catch (err) {
+      toast('Error: ' + err.message);
+    }
+  };
 
   window.showAdminTab = function(tab) {
     var orgsTab = $('admin-tab-orgs');
@@ -1780,14 +1801,18 @@ Bob Wilson"></textarea>
     if (tab === 'activity') {
       $('admin-org-list').style.display = 'none';
       $('admin-activity').style.display = '';
-      orgsTab.className = 'btn btn-outline btn-sm';
-      actTab.className = 'btn btn-green btn-sm';
+      orgsTab.style.borderBottomColor = 'transparent';
+      orgsTab.style.color = 'var(--muted)';
+      actTab.style.borderBottomColor = 'var(--green)';
+      actTab.style.color = 'var(--ink)';
       loadActivity();
     } else {
       $('admin-org-list').style.display = '';
       $('admin-activity').style.display = 'none';
-      orgsTab.className = 'btn btn-green btn-sm';
-      actTab.className = 'btn btn-outline btn-sm';
+      orgsTab.style.borderBottomColor = 'var(--green)';
+      orgsTab.style.color = 'var(--ink)';
+      actTab.style.borderBottomColor = 'transparent';
+      actTab.style.color = 'var(--muted)';
     }
   };
 

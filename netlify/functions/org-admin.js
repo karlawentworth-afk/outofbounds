@@ -139,6 +139,37 @@ exports.handler = async function (event) {
         return sb.respond(200, { ok: true });
       }
 
+      // Delete an organiser and all their data
+      if (action === 'delete_org') {
+        if (!body.target_id) return sb.respond(400, { error: 'Missing target_id' });
+
+        // Don't allow deleting yourself or the demo
+        var target = await sb.sbGet('organisers?id=eq.' + body.target_id + '&select=id,slug&limit=1');
+        if (!target || !target.length) return sb.respond(404, { error: 'Organiser not found' });
+        if (target[0].id === adminId) return sb.respond(400, { error: 'Cannot delete yourself' });
+        if (target[0].slug === 'demo') return sb.respond(400, { error: 'Cannot delete the demo' });
+
+        var tid = body.target_id;
+
+        // Delete in FK order
+        var events = await sb.sbGet('events?organiser_id=eq.' + tid + '&select=id');
+        for (var i = 0; i < (events || []).length; i++) {
+          var eid = events[i].id;
+          await sb.sbDelete('hole_scores?event_id=eq.' + eid);
+          await sb.sbDelete('score_edits?event_id=eq.' + eid);
+          await sb.sbDelete('send_log?event_id=eq.' + eid);
+          await sb.sbDelete('players?event_id=eq.' + eid);
+          await sb.sbDelete('groups?event_id=eq.' + eid);
+        }
+        await sb.sbDelete('events?organiser_id=eq.' + tid);
+        await sb.sbDelete('people?organiser_id=eq.' + tid);
+        await sb.sbDelete('activity_log?organiser_id=eq.' + tid);
+        await sb.sbDelete('device_tokens?organiser_id=eq.' + tid);
+        await sb.sbDelete('organisers?id=eq.' + tid);
+
+        return sb.respond(200, { ok: true });
+      }
+
       // Activity stats per organiser
       if (action === 'activity') {
         var orgs = await sb.sbGet(
