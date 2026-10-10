@@ -1024,11 +1024,12 @@ a { color: inherit; text-decoration: none; }
       </div>
 
       <div class="player-count" id="player-count"></div>
-      <div class="player-item" style="border-bottom:2px solid var(--line);font-size:12px;color:var(--muted);font-weight:600;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Tap a name to edit their details.</p>
+      <div class="player-item" style="border-bottom:2px solid var(--line);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
         <span class="pi-name">Name</span>
         <span class="pi-idx">Index</span>
         <span class="pi-ph">Plays off</span>
-        <span style="width:32px;"></span>
+        <span style="width:36px;"></span>
       </div>
       <div id="player-list"></div>
     </div>
@@ -1059,11 +1060,12 @@ a { color: inherit; text-decoration: none; }
       <div id="groups-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
         <p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your players into fours, then move anyone you like.</p>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill unassigned</button>
         <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ New group</button>
         <button class="btn btn-outline btn-sm" onclick="startAgainGroups()" style="color:var(--red);border-color:var(--red);">Start again</button>
       </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Tap a player to move them between groups.</p>
       <div id="groups-list"></div>
     </div>
 
@@ -3037,12 +3039,12 @@ Bob Wilson"></textarea>
       var statusDot = '';
       if (state.currentEventData && state.currentEventData.status === 'live') {
         statusDot = p.player_status === 'confirmed'
-          ? '<span style="color:var(--green);font-size:10px;margin-right:6px;" title="Confirmed">&#9679;</span>'
-          : '<span style="color:var(--amber);font-size:10px;margin-right:6px;" title="Invited">&#9675;</span>';
+          ? '<span style="color:var(--green);font-size:8px;margin-right:10px;flex-shrink:0;" title="Confirmed">&#9679;</span>'
+          : '<span style="color:var(--amber);font-size:8px;margin-right:10px;flex-shrink:0;" title="Invited">&#9675;</span>';
       }
       return '<div class="player-item">' +
         statusDot +
-        '<span class="pi-name" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + esc(p.display_name) + '</span>' +
+        '<span class="pi-name" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Tap to edit">' + esc(p.display_name) + '</span>' +
         '<span class="pi-idx" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + idxStr + '</span>' +
         '<span class="pi-ph">' + phStr + '</span>' +
         '<button class="pi-del" onclick="deletePlayer(\'' + p.id + '\')" title="Remove">&times;</button>' +
@@ -3350,7 +3352,7 @@ Bob Wilson"></textarea>
         if (p.handicap_index != null && tee) {
           ph = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
         }
-        return '<div class="gc-player" style="cursor:pointer;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">' +
+        return '<div class="gc-player" style="cursor:pointer;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')" title="Tap to move">' +
           '<span class="gcp-name">' + esc(p.display_name) + '</span>' +
           '<span class="gcp-ph">' + ph + '</span>' +
         '</div>';
