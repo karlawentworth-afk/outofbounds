@@ -296,19 +296,21 @@ a { color: inherit; text-decoration: none; }
 .player-count { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
 .player-count .warn { color: #7A5A00; font-weight: 600; }
 .player-item {
-  display: grid; grid-template-columns: 1fr 70px 80px 32px; gap: 10px;
-  align-items: center; padding: 12px 0;
-  border-bottom: 1px solid var(--line); font-size: 16px;
+  display: grid; grid-template-columns: 1fr 60px 60px 36px; gap: 8px;
+  align-items: center; padding: 14px 16px; margin-bottom: 2px;
+  background: var(--white); border-radius: 10px; font-size: 15px;
+  transition: background var(--transition);
 }
-.player-item .pi-name { font-weight: 500; }
-.player-item .pi-idx { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-.player-item .pi-ph { font-family: Poppins, sans-serif; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.player-item:hover { background: var(--paper); }
+.player-item .pi-name { font-weight: 600; font-size: 14px; }
+.player-item .pi-idx { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.player-item .pi-ph { font-family: Poppins, sans-serif; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
 .player-item .pi-del {
-  width: 32px; height: 32px; border-radius: 50%; border: none; background: none;
-  color: #B8C2CC; cursor: pointer; font-size: 18px; display: flex;
-  align-items: center; justify-content: center; text-align: right;
+  width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
+  color: var(--line); cursor: pointer; font-size: 18px; display: flex;
+  align-items: center; justify-content: center; transition: all var(--transition);
 }
-.player-item .pi-del:hover { color: var(--red); }
+.player-item .pi-del:hover { color: var(--red); background: var(--red-soft); }
 
 /* Paste modal */
 .modal-overlay {
@@ -337,20 +339,27 @@ a { color: inherit; text-decoration: none; }
 /* Groups */
 .group-card {
   background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px 16px; margin-bottom: 12px;
+  padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition);
 }
+.group-card:hover { box-shadow: var(--shadow-md); }
 .group-card .gc-header {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
 }
-.group-card .gc-num { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15px; }
+.group-card .gc-num {
+  font-family: Poppins, sans-serif; font-weight: 700; font-size: 14px;
+  background: var(--navy); color: #fff; padding: 4px 12px; border-radius: 999px; white-space: nowrap;
+}
 .group-card .gc-time input { width: 100px; }
-.group-card .gc-members { display: flex; flex-direction: column; gap: 6px; }
+.group-card .gc-members { display: flex; flex-direction: column; gap: 2px; }
 .group-card .gc-player {
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 14px; padding: 4px 0;
+  font-size: 14px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: background var(--transition);
 }
-.group-card .gc-player .gcp-name { font-weight: 500; }
-.group-card .gc-player .gcp-ph { color: var(--muted); font-size: 13px; }
+.group-card .gc-player:hover { background: var(--paper); }
+.group-card .gc-player .gcp-name { font-weight: 600; font-size: 14px; }
+.group-card .gc-player .gcp-ph { color: var(--muted); font-size: 13px; font-weight: 500; }
 
 /* Go Live review */
 .review p { font-size: 17px; line-height: 1.6; }
@@ -595,21 +604,22 @@ a { color: inherit; text-decoration: none; }
     <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
     <h2 style="font-size:20px;margin-bottom:24px;">Billing</h2>
 
-    <div id="billing-current" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:20px;">
-      <div style="font-size:18px;font-weight:700;" id="billing-plan-label"></div>
-      <div style="color:var(--muted);font-size:14px;margin-top:4px;" id="billing-status"></div>
+    <div class="card" id="billing-current" style="margin-bottom:20px;">
+      <div style="font-family:Poppins,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em;" id="billing-plan-label"></div>
+      <div style="color:var(--muted);font-size:14px;margin-top:6px;" id="billing-status"></div>
     </div>
 
     <!-- Upgrade panel (Play users) -->
-    <div id="billing-upgrade" style="background:var(--white);border:2px solid var(--green);border-radius:var(--radius);padding:24px;margin-bottom:20px;text-align:center;">
-      <h3 style="font-size:18px;margin-bottom:8px;">Upgrade to Pro</h3>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Big screen board, branding, people directory, CSV export, helpers and more.</p>
+    <div id="billing-upgrade" class="card" style="margin-bottom:20px;text-align:center;background:linear-gradient(135deg, #f0faf3 0%, #e8f5e9 100%);border:1.5px solid var(--green);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--green);margin-bottom:8px;">Upgrade</div>
+      <h3 style="font-size:22px;margin-bottom:8px;font-family:Poppins,sans-serif;">Go Pro</h3>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:24px;max-width:36ch;margin-left:auto;margin-right:auto;line-height:1.6;">Big screen leaderboard, your branding on every screen, people directory, CSV export, team members.</p>
       <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">
-        <button class="btn btn-green btn-sm" id="toggle-month" onclick="setBillingInterval('month')" style="min-width:140px;">Monthly &#163;39.99</button>
-        <button class="btn btn-outline btn-sm" id="toggle-year" onclick="setBillingInterval('year')" style="min-width:140px;">Annual &#163;399</button>
+        <button class="btn btn-green btn-sm" id="toggle-month" onclick="setBillingInterval('month')" style="min-width:150px;">Monthly &#163;39.99</button>
+        <button class="btn btn-outline btn-sm" id="toggle-year" onclick="setBillingInterval('year')" style="min-width:150px;">Annual &#163;399</button>
       </div>
       <p id="billing-save-hint" style="font-size:13px;color:var(--green);font-weight:600;margin-bottom:16px;display:none;">Save &#163;80.88 a year</p>
-      <button class="btn btn-green" id="btn-upgrade" onclick="upgradeToPro()">Upgrade to Pro</button>
+      <button class="btn btn-green btn-block" id="btn-upgrade" onclick="upgradeToPro()" style="font-size:17px;padding:16px 24px;">Upgrade to Pro</button>
     </div>
 
     <!-- Manage panel (Pro users) -->
@@ -2210,16 +2220,26 @@ Bob Wilson"></textarea>
       var res = await api('org-team', { query: { organiser_id: state.organiser.id } });
       var members = res.members || [];
       var html = members.map(function (m) {
-        var badge = m.role === 'organiser' ? '<span class="badge badge-live" style="font-size:10px;">Organiser</span>' : '<span class="badge badge-draft" style="font-size:10px;">Helper</span>';
-        var status = m.accepted_at ? 'Accepted' : 'Invited';
-        return '<div class="event-card" style="cursor:default;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<div><div style="font-weight:600;">' + esc(m.display_name || m.email) + '</div>' +
-            '<div class="ev-meta">' + badge + ' <span>' + status + '</span></div></div>' +
-            '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);font-size:12px;" onclick="revokeTeamMember(\'' + m.id + '\')">Remove</button>' +
-          '</div></div>';
+        var initials = ((m.display_name || m.email || '?')[0] || '?').toUpperCase();
+        var chipClass = m.role === 'organiser' ? 'live' : '';
+        var roleLabel = m.role === 'organiser' ? 'Organiser' : 'Helper';
+        var statusLabel = m.accepted_at ? 'Accepted' : 'Invited';
+        var statusChip = m.accepted_at
+          ? '<span class="chip live">' + statusLabel + '</span>'
+          : '<span class="chip draft">' + statusLabel + '</span>';
+        return '<div class="card" style="display:flex;align-items:center;gap:14px;">' +
+          '<div style="width:44px;height:44px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-family:Poppins,sans-serif;font-weight:700;font-size:16px;flex-shrink:0;">' + initials + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:600;font-size:15px;">' + esc(m.display_name || m.email) + '</div>' +
+            '<div style="display:flex;gap:6px;align-items:center;margin-top:4px;">' +
+              '<span class="chip ' + chipClass + '">' + roleLabel + '</span>' +
+              statusChip +
+            '</div>' +
+          '</div>' +
+          '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" onclick="revokeTeamMember(\'' + m.id + '\')">Remove</button>' +
+        '</div>';
       }).join('');
-      $('team-list').innerHTML = html || '<p style="color:var(--muted);font-size:14px;">No team members yet.</p>';
+      $('team-list').innerHTML = html || '<div class="empty-state"><h3>No team members</h3><p>Invite organisers and helpers to manage events with you.</p></div>';
     } catch (err) {
       toast('Error: ' + err.message);
     }
