@@ -99,13 +99,13 @@ a { color: inherit; text-decoration: none; }
 #screen-signin.active {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   min-height: 100vh; padding: 40px 16px; text-align: center;
-  background: radial-gradient(ellipse at 50% 0%, rgba(47,122,69,.07) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 100%, rgba(16,52,78,.05) 0%, transparent 50%),
-              var(--paper);
+  background: linear-gradient(170deg, rgba(16,52,78,.88) 0%, rgba(16,52,78,.75) 100%),
+              url('/img/photos/aerial-course.jpg') center/cover no-repeat;
+  color: #fff;
 }
 #screen-signin .logo-big { height: 72px; margin-bottom: 48px; filter: drop-shadow(0 2px 8px rgba(16,52,78,.10)); }
-#screen-signin h2 { font-size: 28px; margin-bottom: 10px; letter-spacing: -.02em; }
-#screen-signin .sub { color: var(--muted); font-size: 16px; margin-bottom: 40px; line-height: 1.5; }
+#screen-signin h2 { font-size: 28px; margin-bottom: 10px; letter-spacing: -.02em; color: #fff; }
+#screen-signin .sub { color: rgba(255,255,255,.7); font-size: 16px; margin-bottom: 40px; line-height: 1.5; }
 .auth-btns { display: flex; flex-direction: column; gap: 12px; width: min(340px, 100%); }
 .auth-btn {
   display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -476,7 +476,7 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Sign-in -->
 <div id="screen-signin" class="screen">
-  <img src="/img/logo-color.png" alt="Out of Bounds" class="logo-big">
+  <img src="/img/icon-white.png" alt="Out of Bounds" class="logo-big">
   <h2>Log in or create your account</h2>
   <p class="sub">Set up and run your golf event</p>
   <div class="auth-btns" id="auth-buttons">
@@ -498,7 +498,7 @@ a { color: inherit; text-decoration: none; }
     <button class="btn btn-green" onclick="sendMagicLink()">Send magic link</button>
     <div class="magic-link-sent" id="magic-sent" style="display:none;">Check your inbox for the sign-in link.</div>
   </div>
-  <p style="color:var(--muted);font-size:13px;margin-top:20px;max-width:300px;">No passwords. We'll never email you unless it's about your event.</p>
+  <p style="color:rgba(255,255,255,.5);font-size:13px;margin-top:20px;max-width:300px;">No passwords. We'll never email you unless it's about your event.</p>
 </div>
 
 <!-- Onboarding -->
@@ -1558,10 +1558,10 @@ Bob Wilson"></textarea>
     var showArchived = state.showArchived || false;
 
     if (state.events.length === 0) {
-      el.innerHTML = '<div class="empty-state">' +
-        '<h3>Ready to score?</h3>' +
-        '<p>Create your first event, add your players, and go live. Takes about five minutes.</p>' +
-        '<button class="btn btn-green" onclick="newEvent()" style="margin-top:4px;">Create your first event</button>' +
+      el.innerHTML = '<div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.85),rgba(16,52,78,.7)),url(/img/photos/bunker-shot.jpg) center/cover;color:#fff;text-align:center;padding:48px 28px;">' +
+        '<h3 style="font-size:22px;color:#fff;margin-bottom:10px;">Ready to score?</h3>' +
+        '<p style="font-size:15px;color:rgba(255,255,255,.7);max-width:34ch;margin:0 auto 24px;line-height:1.6;">Create your first event, add your players, and go live. Takes about five minutes.</p>' +
+        '<button class="btn btn-green" onclick="newEvent()" style="box-shadow:0 4px 14px rgba(0,0,0,.3);">Create your first event</button>' +
       '</div>';
       return;
     }
