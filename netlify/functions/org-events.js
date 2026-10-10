@@ -203,10 +203,22 @@ exports.handler = async function (event) {
         }
         var orig = origEvents[0];
 
+        // Smart naming: replace year with next year, or append next year
+        var cloneName = orig.name;
+        var currentYear = new Date().getFullYear();
+        var nextYear = currentYear + 1;
+        var yearMatch = cloneName.match(/\b(20\d{2})\b/);
+        if (yearMatch) {
+          var oldYear = parseInt(yearMatch[1]);
+          cloneName = cloneName.replace(yearMatch[1], String(oldYear + 1));
+        } else {
+          cloneName = cloneName + ' ' + nextYear;
+        }
+
         var newEvent = {
           organiser_id: orig.organiser_id,
-          slug: makeSlug(orig.name),
-          name: orig.name + ' (copy)',
+          slug: makeSlug(cloneName),
+          name: cloneName,
           event_date: null,
           course_id: orig.course_id,
           tee_id: orig.tee_id,
