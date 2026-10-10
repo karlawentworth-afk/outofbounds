@@ -3755,7 +3755,7 @@ Bob Wilson"></textarea>
     }
 
     // "Score my round" — find the organiser's player by email or name match
-    var orgEmail = (state.organiser ? state.organiser.contact_email : '').toLowerCase();
+    var orgEmail = (state.organiser && state.organiser.contact_email ? state.organiser.contact_email : '').toLowerCase();
     var orgName = (state.organiser ? state.organiser.name : '').toLowerCase();
     var myPlayer = state.players.find(function (p) {
       if (orgEmail && p.email && p.email.toLowerCase() === orgEmail) return true;
