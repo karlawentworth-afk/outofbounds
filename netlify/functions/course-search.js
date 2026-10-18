@@ -129,8 +129,9 @@ exports.handler = async function (event) {
       // Cache the results
       searchCache[cacheKey] = { ts: Date.now(), data: apiResults };
     } catch (err) {
-      console.error('GolfCourseAPI search failed:', err.message);
-      await logCall('/v1/search', false);
+      var orgSlug = qs.org || 'unknown';
+      console.error('course-search: API failed for org=' + orgSlug + ' q="' + q + '": ' + err.message);
+      await logCall('/v1/search?org=' + orgSlug, false);
       // Return own results even if API fails
     }
 
