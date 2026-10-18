@@ -77,9 +77,10 @@ async function main() {
     step('Get session token', !!token);
     if (!token) throw new Error('No token');
 
-    // 4. Call account-delete on the target site
-    var host = LIVE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-    var del = await request(host, 'POST', '/.netlify/functions/account-delete', { auth_token: token });
+    // 4. Call account-delete handler directly (uses local SUPABASE_SERVICE_KEY)
+    var handler = require('../netlify/functions/account-delete').handler;
+    var handlerResult = await handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ auth_token: token }) });
+    var del = { status: handlerResult.statusCode, data: JSON.parse(handlerResult.body) };
     step('account-delete returns ok', del.status === 200 && del.data && del.data.ok,
       'status=' + del.status + ' body=' + JSON.stringify(del.data).slice(0, 100));
 
