@@ -101,6 +101,7 @@ workflows:
         script: |
           cd android
           echo "$ANDROID_KEYSTORE" | base64 --decode > /tmp/upload.jks
+          chmod +x gradlew
           ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=/tmp/upload.jks \
             -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
