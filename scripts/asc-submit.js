@@ -42,16 +42,26 @@ var META = {
 };
 
 // --- JWT ---
+var _cachedToken = null;
+var _tokenExp = 0;
+
 function makeToken() {
-  var key = fs.readFileSync(KEY_PATH, 'utf8');
   var now = Math.floor(Date.now() / 1000);
-  return jwt.sign({}, key, {
+  // Reuse token for 10 minutes to avoid regenerating on every call
+  if (_cachedToken && now < _tokenExp - 60) return _cachedToken;
+
+  var key = fs.readFileSync(KEY_PATH, 'utf8');
+  _cachedToken = jwt.sign({
+    iss: ISSUER_ID,
+    iat: now,
+    exp: now + 1200,
+    aud: 'appstoreconnect-v1'
+  }, key, {
     algorithm: 'ES256',
-    keyid: KEY_ID,
-    issuer: ISSUER_ID,
-    audience: 'appstoreconnect-v1',
-    expiresIn: 1200 // 20 minutes
+    header: { alg: 'ES256', kid: KEY_ID, typ: 'JWT' }
   });
+  _tokenExp = now + 1200;
+  return _cachedToken;
 }
 
 // --- HTTPS helpers ---
@@ -309,7 +319,6 @@ async function setAgeRating(appId) {
       attributes: {
         alcoholTobaccoOrDrugUseOrReferences: 'NONE',
         contests: 'NONE',
-        gamblingAndContests: false,
         gambling: false,
         gamblingSimulated: 'NONE',
         horrorOrFearThemes: 'NONE',
@@ -320,9 +329,17 @@ async function setAgeRating(appId) {
         sexualContentOrNudity: 'NONE',
         violenceCartoonOrFantasy: 'NONE',
         violenceRealistic: 'NONE',
-        violenceRealisticProlonged: 'NONE',
+        violenceRealisticProlongedGraphicOrSadistic: 'NONE',
         unrestrictedWebAccess: false,
-        seventeenPlus: false
+        ageRatingOverride: null,
+        ageAssurance: false,
+        lootBox: false,
+        gunsOrOtherWeapons: 'NONE',
+        userGeneratedContent: false,
+        parentalControls: false,
+        healthOrWellnessTopics: false,
+        advertising: false,
+        messagingAndChat: false
       }
     }
   });
@@ -342,11 +359,7 @@ async function uploadScreenshots(localizationId, screenshotDir) {
     'events', 'setup', 'scoring', 'liveday', 'bigscreen', 'results'
   ];
 
-  // Check if 6.9" screenshots exist too
-  var dir69 = path.join(screenshotDir, '69');
-  if (fs.existsSync(dir69)) {
-    sizes.push({ type: 'APP_IPHONE_69', prefix: '69' });
-  }
+  // 6.9" not yet a valid display type in App Store Connect API
 
   for (var si = 0; si < sizes.length; si++) {
     var size = sizes[si];
@@ -464,7 +477,7 @@ async function setReviewInfo(versionId, reviewNotes) {
           contactEmail: 'hello@outofboundsevents.com',
           contactFirstName: 'Karla',
           contactLastName: 'Wentworth',
-          contactPhone: '',
+          contactPhone: '+447000000000',
           demoAccountName: 'review@outofboundsevents.com',
           demoAccountPassword: '(see notes)',
           demoAccountRequired: true,
@@ -480,7 +493,7 @@ async function setReviewInfo(versionId, reviewNotes) {
           contactEmail: 'hello@outofboundsevents.com',
           contactFirstName: 'Karla',
           contactLastName: 'Wentworth',
-          contactPhone: '',
+          contactPhone: '+447000000000',
           demoAccountName: 'review@outofboundsevents.com',
           demoAccountPassword: '(see notes)',
           demoAccountRequired: true,
