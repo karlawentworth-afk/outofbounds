@@ -501,7 +501,10 @@ a { color: inherit; text-decoration: none; }
   </div>
   <div class="magic-link-form" id="magic-link-form" style="display:none;">
     <input type="email" id="magic-email" placeholder="you@example.com" autocomplete="email">
-    <button class="btn btn-green" onclick="sendMagicLink()">Send magic link</button>
+    <div id="reviewer-code-row" style="display:none;margin-top:8px;">
+      <input type="text" id="reviewer-code" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.3);border-radius:var(--radius);font-size:16px;font-family:inherit;background:rgba(255,255,255,.12);color:#fff;">
+    </div>
+    <button class="btn btn-green" id="magic-btn" onclick="sendMagicLink()">Send magic link</button>
     <div class="magic-link-sent" id="magic-sent" style="display:none;">Check your inbox for the sign-in link.</div>
   </div>
   <p style="color:rgba(255,255,255,.5);font-size:13px;margin-top:20px;max-width:300px;">No passwords. We'll never email you unless it's about your event.</p>
@@ -1415,9 +1418,44 @@ Bob Wilson"></textarea>
     $('magic-email').focus();
   };
 
+  // Show/hide reviewer code field based on email
+  $('magic-email').addEventListener('input', function() {
+    var isReviewer = this.value.trim().toLowerCase() === 'review@outofboundsevents.com';
+    $('reviewer-code-row').style.display = isReviewer ? 'block' : 'none';
+    $('magic-btn').textContent = isReviewer ? 'Sign in' : 'Send magic link';
+    if (isReviewer) $('reviewer-code').focus();
+  });
+
   window.sendMagicLink = async function() {
     var email = $('magic-email').value.trim();
     if (!email) { toast('Enter your email'); return; }
+
+    // Reviewer sign-in: code-based, no magic link
+    if (email.toLowerCase() === 'review@outofboundsevents.com') {
+      var code = $('reviewer-code').value.trim();
+      if (!code || code.length !== 6) { toast('Enter the 6-digit code'); return; }
+      $('magic-btn').disabled = true;
+      $('magic-btn').textContent = 'Signing in\u2026';
+      try {
+        var res = await fetch('/.netlify/functions/reviewer-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, code: code })
+        });
+        var data = await res.json();
+        if (data.error) throw new Error(data.error);
+        await sb.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token
+        });
+      } catch (err) {
+        toast(err.message || 'Invalid code');
+        $('magic-btn').disabled = false;
+        $('magic-btn').textContent = 'Sign in';
+      }
+      return;
+    }
+
     var { error } = await sb.auth.signInWithOtp({
       email: email,
       options: { emailRedirectTo: window.location.origin + '/o/' }
