@@ -18,7 +18,7 @@ async function verifyOwnership(eventId, organiserId) {
 
 /**
  * Renumber groups 1..N by current order for an event.
- * Skips if numbers are already sequential.
+ * Uses parallel PATCHes — only touches groups whose number is wrong.
  */
 async function renumberGroups(eventId) {
   var groups = await sb.sbGet(
@@ -28,16 +28,19 @@ async function renumberGroups(eventId) {
   );
   if (!groups || !groups.length) return;
 
+  var patches = [];
   for (var i = 0; i < groups.length; i++) {
     var expected = i + 1;
     if (groups[i].group_number !== expected) {
-      await sb.sbPatch('groups?id=eq.' + groups[i].id, { group_number: expected });
+      patches.push(sb.sbPatch('groups?id=eq.' + groups[i].id, { group_number: expected }));
     }
   }
+  if (patches.length > 0) await Promise.all(patches);
 }
 
 /**
  * Delete empty groups (no players assigned) for an event.
+ * One read to find occupied groups, one delete for the rest.
  */
 async function deleteEmptyGroups(eventId) {
   var groups = await sb.sbGet(
@@ -45,17 +48,17 @@ async function deleteEmptyGroups(eventId) {
   );
   if (!groups || !groups.length) return 0;
 
-  var deleted = 0;
-  for (var i = 0; i < groups.length; i++) {
-    var members = await sb.sbGet(
-      'players?group_id=eq.' + groups[i].id + '&select=id&limit=1'
-    );
-    if (!members || members.length === 0) {
-      await sb.sbDelete('groups?id=eq.' + groups[i].id);
-      deleted++;
-    }
-  }
-  return deleted;
+  var players = await sb.sbGet(
+    'players?event_id=eq.' + eventId + '&group_id=not.is.null&select=group_id'
+  );
+  var occupied = {};
+  (players || []).forEach(function (p) { occupied[p.group_id] = true; });
+
+  var emptyIds = groups.filter(function (g) { return !occupied[g.id]; }).map(function (g) { return g.id; });
+  if (emptyIds.length === 0) return 0;
+
+  await sb.sbDelete('groups?id=in.(' + emptyIds.join(',') + ')');
+  return emptyIds.length;
 }
 
 exports.handler = async function (event) {
@@ -189,11 +192,12 @@ exports.handler = async function (event) {
 
         // Build ordered list of groups to fill: existing with space first, then new
         var fillOrder = groupsWithSpace.concat(createdGroups);
+        var freshGroups = newGroupsNeeded > 0;
 
-        // Assign players to groups
+        // Compute all assignments in memory
+        var assignments = [];
         var playerIdx = 0;
         var groupsFilled = 0;
-        var batchSize = 10;
 
         for (var gi = 0; gi < fillOrder.length && playerIdx < players.length; gi++) {
           var group = fillOrder[gi];
@@ -202,22 +206,34 @@ exports.handler = async function (event) {
           var filled = false;
 
           for (var si = 0; si < slotsInGroup && playerIdx < players.length; si++) {
-            var patchData = { group_id: group.id };
+            var assign = { id: players[playerIdx].id, group_id: group.id };
             if (ev.format === 'better_ball_pairs') {
-              patchData.pair_key = ((currentMembers + si) % groupSize) < 2 ? 'A' : 'B';
+              assign.pair_key = ((currentMembers + si) % groupSize) < 2 ? 'A' : 'B';
             }
-            await sb.sbPatch('players?id=eq.' + players[playerIdx].id, patchData);
+            assignments.push(assign);
             playerIdx++;
             filled = true;
           }
           if (filled) groupsFilled++;
         }
 
-        // Clean up: delete any empty groups that were created but not filled
+        // Write all assignments in parallel batches of 20
+        for (var bi = 0; bi < assignments.length; bi += 20) {
+          var batch = assignments.slice(bi, bi + 20).map(function (a) {
+            var patch = { group_id: a.group_id };
+            if (a.pair_key) patch.pair_key = a.pair_key;
+            return sb.sbPatch('players?id=eq.' + a.id, patch);
+          });
+          await Promise.all(batch);
+        }
+
+        // Clean up empty groups (one query, one delete)
         await deleteEmptyGroups(body.event_id);
 
-        // Renumber groups sequentially
-        await renumberGroups(body.event_id);
+        // Skip renumber when all groups were created fresh (already sequential)
+        if (!freshGroups) {
+          await renumberGroups(body.event_id);
+        }
 
         var unassigned = players.length - playerIdx;
         var message = 'Filled ' + groupsFilled + ' group' + (groupsFilled === 1 ? '' : 's');
