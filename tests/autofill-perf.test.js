@@ -150,6 +150,56 @@ async function main() {
       step('Scored player keeps score after re-autofill', scores.d && scores.d.length > 0 && scores.d[0].gross_score === 5);
     }
 
+    // ── Pairs format: 72 players, better_ball_pairs ──
+    console.log('\n--- 72 players (pairs format) ---');
+    var pairsEventId = null;
+    var pairsEv = await apiFetch('org-events', {
+      organiser_id: ORG_ID, name: 'AF Pairs ' + Date.now(),
+      format: 'better_ball_pairs',
+      course_id: 'c0000000-0000-0000-0000-000000000001',
+      tee_id: 'd0000000-0000-0000-0000-000000000001',
+      handicap_allowance: 0.85
+    });
+    pairsEventId = pairsEv.d.event ? pairsEv.d.event.id : null;
+    step('Create pairs event', !!pairsEventId);
+    if (pairsEventId) {
+      await addPlayers(pairsEventId, 72);
+
+      var pr = await apiFetch('org-groups', { action: 'auto_fill', event_id: pairsEventId, organiser_id: ORG_ID });
+      step('Pairs autofill', pr.s === 200 && pr.d.ok, pr.ms + 'ms');
+      console.log('  Pairs: ' + pr.ms + 'ms');
+
+      // Check every group has exactly 2 A and 2 B
+      var pairsPlayers = await sbGet('players?event_id=eq.' + pairsEventId + '&group_id=not.is.null&select=id,group_id,pair_key');
+      var pairsByGroup = {};
+      (pairsPlayers.d || []).forEach(function (p) {
+        if (!pairsByGroup[p.group_id]) pairsByGroup[p.group_id] = { A: 0, B: 0 };
+        if (p.pair_key === 'A') pairsByGroup[p.group_id].A++;
+        else if (p.pair_key === 'B') pairsByGroup[p.group_id].B++;
+      });
+      var pairsCorrect = true;
+      var badGroups = [];
+      Object.keys(pairsByGroup).forEach(function (gid) {
+        var g = pairsByGroup[gid];
+        if (g.A !== 2 || g.B !== 2) {
+          pairsCorrect = false;
+          badGroups.push('A=' + g.A + ' B=' + g.B);
+        }
+      });
+      step('Every group has exactly 2 pairs (2A + 2B)', pairsCorrect,
+        Object.keys(pairsByGroup).length + ' groups' + (badGroups.length ? ', bad: ' + badGroups.join('; ') : ''));
+
+      // No group has 3 from one pair
+      var threeFromOnePair = false;
+      Object.keys(pairsByGroup).forEach(function (gid) {
+        var g = pairsByGroup[gid];
+        if (g.A >= 3 || g.B >= 3) threeFromOnePair = true;
+      });
+      step('No group has 3 from one pair key', !threeFromOnePair);
+
+      await cleanup(pairsEventId);
+    }
+
     // ── 144 players ──
     console.log('\n--- 144 players ---');
     eventId144 = await createEvent();
