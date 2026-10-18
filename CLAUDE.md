@@ -96,6 +96,9 @@ A curl to the HTML or a function endpoint is not verification —
 the page must render and the feature must work. If you cannot
 verify in a browser, say "deployed but not browser-tested".
 
+A report never says N/N unless the suite ran against the named URL
+in that session and the output is pasted.
+
 ## Native app / web boundary
 
 Every native-only element (biometric lock, tab bar, native
