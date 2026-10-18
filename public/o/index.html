@@ -1478,6 +1478,35 @@ Bob Wilson"></textarea>
     $('magic-sent').style.display = 'none';
   };
 
+  // ── Delete account ─────────────────────────────────────────────
+  window.deleteAccount = async function() {
+    var confirmed = await oobPrompt('This will permanently delete your account, all your events, scores, and data. This cannot be undone.\n\nType DELETE to confirm.', 'Delete my account');
+    if (confirmed !== 'DELETE') {
+      if (confirmed !== null) toast('Type DELETE to confirm');
+      return;
+    }
+    try {
+      var res = await fetch('/.netlify/functions/account-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auth_token: state.authToken })
+      });
+      var data = await res.json();
+      if (data.error) throw new Error(data.error);
+      await sb.auth.signOut();
+      state.authUser = null;
+      state.authToken = null;
+      state.organiser = null;
+      showScreen('screen-signin');
+      $('auth-buttons').style.display = 'flex';
+      $('magic-link-form').style.display = 'none';
+      $('magic-sent').style.display = 'none';
+      toast('Account deleted');
+    } catch (err) {
+      toast(err.message || 'Could not delete account. Email hello@outofboundsevents.com.');
+    }
+  };
+
   // ── Onboarding ────────────────────────────────────────────────
   // Radio button handling
   document.querySelectorAll('.radio-opt').forEach(function(opt) {
@@ -2503,6 +2532,14 @@ Bob Wilson"></textarea>
     if (org.is_superadmin) {
       html += settingsRow(icons.admin, 'Admin', 'All organisers, activity, demo', 'goToAdmin()');
     }
+    html += '<div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--line);">';
+    html += settingsRow(
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C43B3B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+      'Delete my account',
+      'Permanently delete your account and all data',
+      'deleteAccount()'
+    );
+    html += '</div>';
     $('settings-list').innerHTML = html;
   };
 

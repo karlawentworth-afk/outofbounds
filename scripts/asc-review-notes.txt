@@ -8,3 +8,5 @@ To sign in for review:
 This signs you in to a demo organiser account (Fairway Events) with sample events and data.
 
 Payments for event passes and subscriptions happen on the website (outofboundsevents.com), not inside the app. The app contains no in-app purchases, payment forms, or links to external payment pages.
+
+Account deletion: Settings > Delete my account, or outofboundsevents.com/delete-account.
