@@ -53,10 +53,16 @@ Never ask the user to paste API keys. Load env vars from Netlify CLI
 with the appropriate context (`--context production` or
 `--context branch-deploy`). If a local `.env` is needed, confirm it
 is in `.gitignore` and delete it when done. If a test needs a secret,
-get it yourself: `netlify env:get SUPABASE_SERVICE_KEY --context production`
-via the CLI you are already logged into, or read it from the gitignored
-.env, or run the test as a Netlify function that already has the env.
-Asking Karla is never the answer.
+get it yourself: read it from the gitignored `.env` or
+`.claude/settings.local.json`, or run the test as a Netlify function
+that already has the env. Asking Karla is never the answer.
+
+Never run `netlify env:clone`. Never bulk-edit env vars. Change one
+variable at a time, state its name before running the command. After
+any deploy that touches env vars or functions, smoke-test with a
+real authenticated call (e.g. reviewer-login or org-auth) and
+confirm 200 before reporting success. A 401 on that call means the
+deploy broke auth.
 
 ## Branching and extraction
 
