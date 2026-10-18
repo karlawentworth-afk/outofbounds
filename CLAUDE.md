@@ -106,6 +106,12 @@ Screenshots of each go in `docs/screens/web` and
 `docs/screens/app`. Nothing native leaks to web, nothing
 web-only leaks to native.
 
+## Writing in Karla's name
+
+No em dashes. Use a full stop, comma or "and" instead. This applies
+to emails, social posts, marketing copy and anything published
+under her name.
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in
