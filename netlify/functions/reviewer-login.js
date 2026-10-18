@@ -113,38 +113,59 @@ exports.handler = async function (event) {
     return sb.respond(403, { error: 'Invalid credentials' });
   }
 
+  var REVIEWER_EMAIL = 'review@outofboundsevents.com';
+
   try {
-    // 1. Get the demo organiser to find its auth user
+    // 1. Find the demo organiser
     var demo = await sb.sbGet(
       'organisers?slug=eq.demo&select=id,auth_user_id&limit=1'
     );
-    if (!demo || !demo.length || !demo[0].auth_user_id) {
-      return sb.respond(500, { error: 'Demo organiser not configured' });
+    if (!demo || !demo.length) {
+      return sb.respond(500, { error: 'Demo organiser not found' });
     }
 
-    var authUserId = demo[0].auth_user_id;
-
-    // 2. Get the user's email from Supabase admin API
-    var userRes = await authAdmin('GET', '/admin/users/' + authUserId);
-    if (userRes.status !== 200 || !userRes.data || !userRes.data.email) {
-      return sb.respond(500, { error: 'Could not look up demo user' });
-    }
-
-    var demoEmail = userRes.data.email;
-
-    // 3. Generate a magic link via admin API (server-side only, no email sent)
-    var linkRes = await authAdmin('POST', '/admin/generate_link', {
+    // 2. Find or create the reviewer Supabase user
+    var userRes = await authAdmin('POST', '/admin/generate_link', {
       type: 'magiclink',
-      email: demoEmail
+      email: REVIEWER_EMAIL
     });
-    if (linkRes.status !== 200 || !linkRes.data || !linkRes.data.hashed_token) {
+
+    var userId;
+    if (userRes.status === 200 && userRes.data && userRes.data.id) {
+      userId = userRes.data.id;
+    } else {
+      // User doesn't exist — create it
+      var createRes = await authAdmin('POST', '/admin/users', {
+        email: REVIEWER_EMAIL,
+        email_confirm: true
+      });
+      if (createRes.status !== 200 || !createRes.data || !createRes.data.id) {
+        return sb.respond(500, { error: 'Could not create reviewer user' });
+      }
+      userId = createRes.data.id;
+
+      // Generate the link again now that user exists
+      userRes = await authAdmin('POST', '/admin/generate_link', {
+        type: 'magiclink',
+        email: REVIEWER_EMAIL
+      });
+    }
+
+    // 3. Link reviewer user to demo org if not already linked
+    if (demo[0].auth_user_id !== userId) {
+      await sb.sbPatch('organisers?id=eq.' + demo[0].id, {
+        auth_user_id: userId
+      });
+    }
+
+    // 4. Verify the magic link token to get session tokens
+    if (!userRes.data || !userRes.data.hashed_token) {
       return sb.respond(500, { error: 'Could not generate sign-in link' });
     }
 
-    // 4. Verify the token server-side to get session tokens
     var verifyRes = await authAdmin('POST', '/verify', {
       type: 'magiclink',
-      token_hash: linkRes.data.hashed_token
+      token_hash: userRes.data.hashed_token
     });
     if (verifyRes.status !== 200 || !verifyRes.data || !verifyRes.data.access_token) {
       return sb.respond(500, { error: 'Could not create session' });

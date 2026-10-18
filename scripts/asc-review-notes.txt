@@ -3,7 +3,7 @@ Out of Bounds is a live golf scoring app for event organisers. Organisers sign i
 To sign in for review:
 1. On the sign-in screen, tap "Sign in with email".
 2. Enter: review@outofboundsevents.com
-3. A code field appears. Enter the 6-digit code below.
+3. A code field appears. Enter: 479649
 
 This signs you in to a demo organiser account (Fairway Events) with sample events and data.
 
