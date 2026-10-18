@@ -1,6 +1,6 @@
 workflows:
-  oob-native:
-    name: Out of Bounds — iOS & Android
+  oob-ios:
+    name: Out of Bounds — iOS
     max_build_duration: 60
     instance_type: mac_mini_m2
     triggering:
@@ -26,13 +26,43 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync
 
+      - name: Check if build already on TestFlight
+        script: |
+          MARKETING=$CM_TAG
+          MARKETING=${MARKETING#v}
+          BUILD_NUM=$PROJECT_BUILD_NUMBER
+
+          echo "Checking TestFlight for version $MARKETING build $BUILD_NUM"
+
+          # Generate JWT for App Store Connect
+          NOW=$(date +%s)
+          HEADER=$(printf '{"alg":"ES256","kid":"%s","typ":"JWT"}' "$APP_STORE_CONNECT_KEY_IDENTIFIER" | base64 | tr -d '=\n' | tr '+/' '-_')
+          CLAIMS=$(printf '{"iss":"%s","iat":%d,"exp":%d,"aud":"appstoreconnect-v1"}' "$APP_STORE_CONNECT_ISSUER_ID" "$NOW" "$((NOW+600))" | base64 | tr -d '=\n' | tr '+/' '-_')
+          SIG=$(printf '%s.%s' "$HEADER" "$CLAIMS" | openssl dgst -sha256 -sign <(echo "$APP_STORE_CONNECT_PRIVATE_KEY") | base64 | tr -d '=\n' | tr '+/' '-_')
+          JWT="${HEADER}.${CLAIMS}.${SIG}"
+
+          RESP=$(curl -s -H "Authorization: Bearer $JWT" \
+            "https://api.appstoreconnect.apple.com/v1/builds?filter[app]=6820134986&filter[version]=$BUILD_NUM&filter[preReleaseVersion.version]=$MARKETING&limit=1")
+
+          COUNT=$(echo "$RESP" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('data',[])))" 2>/dev/null || echo "0")
+
+          if [ "$COUNT" != "0" ]; then
+            echo "Version $MARKETING build $BUILD_NUM already on TestFlight — skipping iOS build"
+            echo "SKIP_IOS_PUBLISH=true" >> $CM_ENV
+          else
+            echo "No matching build on TestFlight — will publish"
+          fi
+
       - name: Set up iOS code signing
         script: |
-          # Decode and import certificate
+          if [ "$SKIP_IOS_PUBLISH" = "true" ]; then
+            echo "Skipping — already on TestFlight"
+            exit 0
+          fi
+
           echo "$DIST_CERTIFICATE_P12" | base64 --decode > /tmp/dist.p12
           echo "$DIST_PROFILE" | base64 --decode > /tmp/dist.mobileprovision
 
-          # Create and configure keychain
           KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
           security create-keychain -p "" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 3600 "$KEYCHAIN_PATH"
@@ -40,12 +70,10 @@ workflows:
           security list-keychains -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
           security default-keychain -s "$KEYCHAIN_PATH"
 
-          # Import certificate
           security import /tmp/dist.p12 -k "$KEYCHAIN_PATH" -P "$DIST_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN_PATH"
           echo "Certificate imported"
 
-          # Install provisioning profile
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILE_DIR"
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i /tmp/dist.mobileprovision))
@@ -54,6 +82,11 @@ workflows:
 
       - name: Create export options
         script: |
+          if [ "$SKIP_IOS_PUBLISH" = "true" ]; then
+            echo "Skipping — already on TestFlight"
+            exit 0
+          fi
+
           cat > /tmp/ExportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -76,9 +109,12 @@ workflows:
 
       - name: Build iOS and package IPA
         script: |
-          cd ios/App
+          if [ "$SKIP_IOS_PUBLISH" = "true" ]; then
+            echo "Skipping — already on TestFlight"
+            exit 0
+          fi
 
-          # List available signing identities for debugging
+          cd ios/App
           security find-identity -v -p codesigning
 
           xcodebuild -project App.xcodeproj \
@@ -97,6 +133,51 @@ workflows:
             -exportPath "$HOME/build/ipa" \
             -exportOptionsPlist /tmp/ExportOptions.plist
 
+    artifacts:
+      - $HOME/build/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+
+      email:
+        recipients:
+          - karla.wentworth@thatsclevermx.com
+        notify:
+          success: true
+          failure: true
+
+  oob-android:
+    name: Out of Bounds — Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+
+    environment:
+      groups:
+        - appstore
+      java: 21
+      vars:
+        BUNDLE_ID: com.outofboundsevents.scoring
+        APP_BASE_URL: https://score.outofboundsevents.com
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Run engine tests
+        script: node tests/engine.test.js
+
+      - name: Sync Capacitor
+        script: npx cap sync
+
       - name: Build Android AAB
         script: |
           cd android
@@ -109,16 +190,9 @@ workflows:
             -Pandroid.injected.signing.key.password="$ANDROID_KEY_PASSWORD"
 
     artifacts:
-      - $HOME/build/ipa/*.ipa
       - android/app/build/outputs/bundle/release/*.aab
 
     publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
-
       google_play:
         credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
         track: internal
