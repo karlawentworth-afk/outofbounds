@@ -163,8 +163,6 @@ exports.handler = async function (event) {
     await sb.sbDelete('people?organiser_id=eq.' + orgId);
     await sb.sbDelete('plan_events?organiser_id=eq.' + orgId);
     await sb.sbDelete('branding_versions?organiser_id=eq.' + orgId);
-    await sb.sbDelete('device_tokens?organiser_id=eq.' + orgId);
-
     // Delete the organiser row
     await sb.sbDelete('organisers?id=eq.' + orgId);
 

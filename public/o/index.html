@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OOB Organiser">
+<meta name="apple-itunes-app" content="app-id=6820134986">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -1266,7 +1267,7 @@ Bob Wilson"></textarea>
   </div>
 </div>
 
-<!-- Install prompt — top bar, max 2 shows -->
+<!-- Install prompt — PWA banner (shown when STORE_LIVE is false) -->
 <div id="install-banner" style="display:none;background:var(--navy);color:#fff;padding:6px 16px;z-index:250;">
   <div style="max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;">
     <span style="font-size:13px;">Add to home screen</span>
@@ -1277,9 +1278,30 @@ Bob Wilson"></textarea>
   </div>
 </div>
 
+<!-- Get the app banner — store links (shown when STORE_LIVE is true) -->
+<div id="store-banner" style="display:none;background:var(--navy);color:#fff;padding:8px 16px;z-index:250;">
+  <div style="max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    <span style="font-size:13px;font-weight:600;">Get the app</span>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <a id="store-ios" href="https://apps.apple.com/app/id6820134986" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#fff;color:#000;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;font-family:inherit;line-height:1.2;">
+        <svg width="14" height="17" viewBox="0 0 14 17"><path fill="currentColor" d="M11.18 8.97c-.02-1.94 1.58-2.87 1.65-2.91-.9-1.31-2.3-1.49-2.8-1.51-1.19-.12-2.32.7-2.93.7-.61 0-1.54-.68-2.54-.66A3.75 3.75 0 0 0 1.4 6.5c-1.35 2.34-.34 5.82.97 7.72.65.93 1.42 1.98 2.43 1.94.97-.04 1.34-.63 2.52-.63s1.51.63 2.54.61c1.05-.02 1.71-.95 2.35-1.89.74-1.08 1.05-2.13 1.07-2.18-.02-.01-2.05-.79-2.08-3.12zM9.26 3.42c.54-.65.9-1.56.8-2.46-.77.03-1.7.51-2.26 1.16-.49.57-.92 1.48-.81 2.36.86.07 1.74-.44 2.27-1.06z"/></svg>
+        App Store</a>
+      <a id="store-android" href="https://play.google.com/store/apps/details?id=com.outofboundsevents.scoring" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#fff;color:#000;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;font-family:inherit;line-height:1.2;">
+        <svg width="14" height="16" viewBox="0 0 14 16"><path fill="#34A853" d="M.54.32 7.72 8 .54 15.68A1.56 1.56 0 0 1 0 14.42V1.58C0 1.08.2.64.54.32z"/><path fill="#FBBC04" d="M10.3 5.56 7.72 8l2.58 2.44 2.92-1.64c.5-.28.78-.7.78-1.2s-.28-.92-.78-1.2L10.3 5.56z"/><path fill="#4285F4" d="M.54 15.68 10.3 10.44 7.72 8 .54 15.68z"/><path fill="#EA4335" d="M10.3 5.56.54.32 7.72 8l2.58-2.44z"/></svg>
+        Google Play</a>
+    </div>
+    <button id="store-dismiss" style="padding:4px 8px;background:transparent;color:rgba(255,255,255,.6);border:none;cursor:pointer;font-size:14px;">&times;</button>
+  </div>
+</div>
+
 <script>
 (function() {
   'use strict';
+
+  // ── Store launch flag ─────────────────────────────────────────
+  // Flip to true when both stores are approved and we're ready to
+  // show App Store / Google Play links instead of the PWA banner.
+  var STORE_LIVE = false;
 
   // ── Supabase Auth client ──────────────────────────────────────
   var SB_URL = 'https://ahutmswadskdkqhnrhhh.supabase.co';
@@ -4899,33 +4921,47 @@ Bob Wilson"></textarea>
     }
   };
 
-  // ── Install prompt ────────────────────────────────────────────
-  var deferredPrompt = null;
-  var installShownCount = parseInt(localStorage.getItem('oob-install-shown') || '0');
-  window.addEventListener('beforeinstallprompt', function (e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installShownCount < 2) {
-      $('install-banner').style.display = 'block';
-      installShownCount++;
-      localStorage.setItem('oob-install-shown', String(installShownCount));
+  // ── Install / store prompt ─────────────────────────────────────
+  if (STORE_LIVE) {
+    // Show store links banner (max 2 shows, dismissible)
+    var storeShownCount = parseInt(localStorage.getItem('oob-store-shown') || '0');
+    if (storeShownCount < 2) {
+      $('store-banner').style.display = 'block';
+      storeShownCount++;
+      localStorage.setItem('oob-store-shown', String(storeShownCount));
     }
-  });
+    $('store-dismiss').onclick = function () {
+      $('store-banner').style.display = 'none';
+    };
+  } else {
+    // PWA install banner fallback
+    var deferredPrompt = null;
+    var installShownCount = parseInt(localStorage.getItem('oob-install-shown') || '0');
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installShownCount < 2) {
+        $('install-banner').style.display = 'block';
+        installShownCount++;
+        localStorage.setItem('oob-install-shown', String(installShownCount));
+      }
+    });
 
-  $('install-btn').onclick = function () {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function () {
-        $('install-banner').style.display = 'none';
-        deferredPrompt = null;
-      });
-    }
-  };
+    $('install-btn').onclick = function () {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function () {
+          $('install-banner').style.display = 'none';
+          deferredPrompt = null;
+        });
+      }
+    };
 
-  $('install-dismiss').onclick = function () {
-    $('install-banner').style.display = 'none';
-    deferredPrompt = null;
-  };
+    $('install-dismiss').onclick = function () {
+      $('install-banner').style.display = 'none';
+      deferredPrompt = null;
+    };
+  }
 
   // ── 10s loading timeout ────────────────────────────────────────
   setTimeout(function () {
