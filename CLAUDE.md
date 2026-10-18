@@ -52,7 +52,11 @@ oobAlert in /o/; showSheet in /p/). The only exception is
 Never ask the user to paste API keys. Load env vars from Netlify CLI
 with the appropriate context (`--context production` or
 `--context branch-deploy`). If a local `.env` is needed, confirm it
-is in `.gitignore` and delete it when done.
+is in `.gitignore` and delete it when done. If a test needs a secret,
+get it yourself: `netlify env:get SUPABASE_SERVICE_KEY --context production`
+via the CLI you are already logged into, or read it from the gitignored
+.env, or run the test as a Netlify function that already has the env.
+Asking Karla is never the answer.
 
 ## Branching and extraction
 
