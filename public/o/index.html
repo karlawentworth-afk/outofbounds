@@ -1627,6 +1627,7 @@ Bob Wilson"></textarea>
 
     showScreen('screen-dashboard');
     window.location.hash = 'dashboard';
+    stopLivePoll();
     updateProGating();
 
     // Load fresh branding from server
@@ -3978,9 +3979,26 @@ Bob Wilson"></textarea>
 
     // Render leaderboard
     await renderLiveLeaderboard();
+
+    // Poll every 30s while the live view is open
+    stopLivePoll();
+    livePollTimer = setInterval(function () {
+      if (!state.currentEventData || state.currentEventData.status !== 'live') {
+        stopLivePoll();
+        return;
+      }
+      renderLiveGroups();
+      renderLiveLeaderboard();
+    }, 30000);
+
     } catch (err) {
       console.error('renderLiveView error:', err);
     }
+  }
+
+  var livePollTimer = null;
+  function stopLivePoll() {
+    if (livePollTimer) { clearInterval(livePollTimer); livePollTimer = null; }
   }
 
   function renderLiveGroups() {
