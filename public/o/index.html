@@ -3263,7 +3263,7 @@ Bob Wilson"></textarea>
         var banner = $('players-saved-banner');
         var bannerText = $('players-saved-banner-text');
         if (banner && bannerText) {
-          bannerText.textContent = name + ' is saved. Now add your players, any way you like.';
+          bannerText.textContent = esc(name) + ' is saved. Now add your players.';
           banner.style.display = '';
         }
       }
@@ -3353,7 +3353,7 @@ Bob Wilson"></textarea>
 
       // Build meta line
       var metaParts = [];
-      if (p.pair_label) metaParts.push('<span>' + esc(p.pair_label) + '</span>');
+      if (p.pair_key) metaParts.push('<span class="chip pair" style="height:18px;font-size:11px;padding:0 6px;">Pair ' + esc(p.pair_key) + '</span>');
       if (isClaimed) {
         if (metaParts.length) metaParts.push('<span>&middot;</span>');
         metaParts.push('<span class="in">Tapped in</span>');
