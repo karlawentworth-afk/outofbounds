@@ -237,26 +237,7 @@ a { color: inherit; text-decoration: none; }
 .holes-grid .hg-label { font-weight: 600; color: var(--muted); font-size: 12px; }
 .holes-grid select { padding: 6px 8px; font-size: 13px; border-radius: 6px; }
 
-/* Player list */
-.player-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.player-count { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
-.player-count .warn { color: #7A5A00; font-weight: 600; }
-.player-item {
-  display: grid; grid-template-columns: 1fr 60px 60px 36px; gap: 8px;
-  align-items: center; padding: 14px 16px; margin-bottom: 2px;
-  background: var(--white); border-radius: 10px; font-size: 15px;
-  transition: background var(--transition);
-}
-.player-item:hover { background: var(--paper); }
-.player-item .pi-name { font-weight: 600; font-size: 14px; }
-.player-item .pi-idx { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
-.player-item .pi-ph { font-family: Poppins, sans-serif; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
-.player-item .pi-del {
-  width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
-  color: var(--line); cursor: pointer; font-size: 18px; display: flex;
-  align-items: center; justify-content: center; transition: all var(--transition);
-}
-.player-item .pi-del:hover { color: var(--red); background: var(--red-soft); }
+/* Player list — now uses .plist / .prow from components.css */
 
 /* Paste modal */
 .modal-overlay {
@@ -975,40 +956,49 @@ a { color: inherit; text-decoration: none; }
 
     <!-- PLAYERS TAB -->
     <div class="tab-panel" id="tab-players">
-      <div id="players-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
-        <p style="font-size:15px;margin-bottom:12px;">No players yet. Add them one at a time, paste a list from WhatsApp, or upload a spreadsheet.</p>
+      <!-- Banner: shown when arriving from Details save -->
+      <div class="banner info" id="players-saved-banner" style="display:none;margin-bottom:var(--s-4)"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div id="players-saved-banner-text"></div></div>
+
+      <!-- Empty state -->
+      <div class="empty quiet" id="players-empty-state" style="display:none;">
+        <p>No players yet. Paste a list from WhatsApp or add them one at a time.</p>
       </div>
-      <div class="player-actions">
-        <button class="btn btn-green btn-sm" onclick="showAddPlayersSheet()">Add players</button>
-        <a href="#" onclick="addMeAsPlayer();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;margin-left:8px;">Add me</a>
+
+      <!-- Button row -->
+      <div class="btn-row" style="margin-bottom:var(--s-5)">
+        <button class="btn btn-primary" onclick="showAddPlayersSheet()"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add players</button>
+        <button class="btn btn-secondary" onclick="addMeAsPlayer()">Add me as a player</button>
       </div>
 
       <!-- Inline add player -->
-      <div id="add-player-form" style="display:none;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px;">
+      <div id="add-player-form" style="display:none;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;">
         <div class="inline-row">
-          <div class="form-row"><label>First name</label><input type="text" id="ap-first" class="field-input"></div>
-          <div class="form-row"><label>Last name</label><input type="text" id="ap-last" class="field-input"></div>
+          <div class="field"><label>First name</label><input type="text" id="ap-first" class="input"></div>
+          <div class="field"><label>Last name</label><input type="text" id="ap-last" class="input"></div>
         </div>
-        <div class="form-row">
+        <div class="field">
           <label>Handicap index (optional)</label>
-          <input type="number" id="ap-index" class="field-input" step="0.1" placeholder="e.g. 18.4">
+          <input type="number" id="ap-index" class="input" step="0.1" placeholder="e.g. 18.4">
         </div>
-        <div id="ap-ph-preview" style="font-size:13px;color:var(--muted);margin-bottom:8px;"></div>
+        <div id="ap-ph-preview" style="font-size:13px;color:var(--ink-muted);margin-bottom:8px;"></div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-green btn-sm" onclick="addPlayerSubmit()">Add</button>
-          <button class="btn btn-outline btn-sm" onclick="hideAddPlayer()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="addPlayerSubmit()">Add</button>
+          <button class="btn btn-secondary btn-sm" onclick="hideAddPlayer()">Cancel</button>
         </div>
       </div>
 
-      <div class="player-count" id="player-count"></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Tap a name to edit their details.</p>
-      <div class="player-item" style="border-bottom:2px solid var(--line);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
-        <span class="pi-name">Name</span>
-        <span class="pi-idx">Index</span>
-        <span class="pi-ph">Plays off</span>
-        <span style="width:36px;"></span>
-      </div>
-      <div id="player-list"></div>
+      <!-- Player list card -->
+      <section class="card flush" id="players-card" style="display:none;">
+        <div style="padding:var(--s-4) var(--s-5) 0">
+          <h3 id="player-count"></h3>
+          <div class="hint" style="margin:var(--s-1) 0 var(--s-2)">Tap a name to change their handicap.</div>
+          <div id="players-remind-wrap" style="display:none;margin-bottom:var(--s-3)"><a href="#" class="link small" onclick="nudgeInvited();return false" id="players-remind-link"></a></div>
+        </div>
+        <div class="plist" style="padding:0 var(--s-5)">
+          <div class="hd"><span>Name</span><span>Index</span><span>Plays off</span><span></span></div>
+          <div id="player-list"></div>
+        </div>
+      </section>
     </div>
 
     <!-- GROUPS TAB -->
@@ -3269,7 +3259,13 @@ Bob Wilson"></textarea>
         window.location.hash = 'event-' + res.event.id;
         $('ev-title').textContent = name;
         switchTab(document.querySelector('.step[data-tab="players"]'));
-        toast('Event created — add your players');
+        // Show the saved banner on the Players tab
+        var banner = $('players-saved-banner');
+        var bannerText = $('players-saved-banner-text');
+        if (banner && bannerText) {
+          bannerText.textContent = name + ' is saved. Now add your players, any way you like.';
+          banner.style.display = '';
+        }
       }
       $('ev-title').textContent = name;
       updateStepStates();
@@ -3298,38 +3294,44 @@ Bob Wilson"></textarea>
   function renderPlayerList() {
     var el = $('player-list');
     var countEl = $('player-count');
-
+    var cardEl = $('players-card');
     var emptyEl = $('players-empty-state');
+    var remindWrap = $('players-remind-wrap');
+    var remindLink = $('players-remind-link');
+
     if (state.players.length === 0) {
       el.innerHTML = '';
-      countEl.textContent = '';
+      countEl.innerHTML = '';
+      if (cardEl) cardEl.style.display = 'none';
       if (emptyEl) emptyEl.style.display = '';
       return;
     }
     if (emptyEl) emptyEl.style.display = 'none';
+    if (cardEl) cardEl.style.display = '';
 
     var confirmed = state.players.filter(function(p) { return p.player_status === 'confirmed'; }).length;
     var invited = state.players.length - confirmed;
     var missing = state.players.filter(function(p) { return p.handicap_index == null; }).length;
 
+    // Header: "N players · M handicaps missing"
     var countHtml = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
-    if (state.currentEventData && state.currentEventData.status === 'live') {
-      countHtml += ' &middot; <strong>' + confirmed + ' of ' + state.players.length + ' confirmed</strong>';
-    }
     if (missing > 0) {
-      countHtml += ' &middot; <span class="warn">' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
+      countHtml += ' <span class="muted" style="font-weight:400">&middot; ' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
     }
+    countEl.innerHTML = countHtml;
+
+    // "Remind N who haven't tapped in" link
     if (invited > 0 && state.currentEventData && state.currentEventData.status === 'live') {
       var invitedNames = state.players
         .filter(function(p) { return p.player_status !== 'confirmed'; })
         .map(function(p) { return p.first_name; })
         .join(', ');
-      countHtml += '<br><button class="btn btn-outline btn-sm" style="margin-top:8px;font-size:12px;" onclick="nudgeInvited()">' +
-        'Nudge ' + invited + ' invited</button>';
-      // Store for nudge
       state._invitedNames = invitedNames;
+      if (remindWrap) remindWrap.style.display = '';
+      if (remindLink) remindLink.textContent = 'Remind ' + invited + ' who haven\'t tapped in';
+    } else {
+      if (remindWrap) remindWrap.style.display = 'none';
     }
-    countEl.innerHTML = countHtml;
 
     // Compute PH on display from current tee data
     var tee = state.teeData;
@@ -3338,26 +3340,38 @@ Bob Wilson"></textarea>
     var cap = parseInt(evd.max_handicap) || 54;
 
     el.innerHTML = state.players.map(function(p) {
-      var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '-';
-      var phStr = '-';
+      var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '';
+      var phStr = '';
       if (p.handicap_index != null && tee) {
         phStr = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
       } else if (p.playing_handicap != null) {
         phStr = p.playing_handicap;
       }
-      var statusDot = '';
-      if (state.currentEventData && state.currentEventData.status === 'live') {
-        statusDot = p.player_status === 'confirmed'
-          ? '<span style="color:var(--green);font-size:8px;margin-right:10px;flex-shrink:0;" title="Confirmed">&#9679;</span>'
-          : '<span style="color:var(--amber);font-size:8px;margin-right:10px;flex-shrink:0;" title="Invited">&#9675;</span>';
+
+      var isClaimed = p.player_status === 'confirmed';
+      var hasHandicap = p.handicap_index != null;
+
+      // Build meta line
+      var metaParts = [];
+      if (p.pair_label) metaParts.push('<span>' + esc(p.pair_label) + '</span>');
+      if (isClaimed) {
+        if (metaParts.length) metaParts.push('<span>&middot;</span>');
+        metaParts.push('<span class="in">Tapped in</span>');
       }
-      return '<div class="player-item">' +
-        statusDot +
-        '<span class="pi-name" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Tap to edit">' + esc(p.display_name) + '</span>' +
-        '<span class="pi-idx" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + idxStr + '</span>' +
-        '<span class="pi-ph">' + phStr + '</span>' +
-        '<button class="pi-del" onclick="deletePlayer(\'' + p.id + '\')" title="Remove">&times;</button>' +
-      '</div>';
+      var metaHtml = metaParts.length ? '<span class="m">' + metaParts.join('') + '</span>' : '';
+
+      // Handicap columns or "Add handicap" tag
+      var handicapHtml = hasHandicap
+        ? '<span class="idx num">' + esc(idxStr) + '</span><span class="off num">' + esc(String(phStr)) + '</span>'
+        : '<span class="add">Add handicap</span>';
+
+      return '<button class="prow' + (isClaimed ? ' claimed' : '') + '" onclick="editPlayer(\'' + p.id + '\')">' +
+        '<span class="nm"><span class="n">' + esc(p.display_name) + '</span>' + metaHtml + '</span>' +
+        handicapHtml +
+        '<span class="x" onclick="event.stopPropagation();deletePlayer(\'' + p.id + '\')" aria-label="Remove ' + esc(p.display_name) + '">' +
+          '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+        '</span>' +
+      '</button>';
     }).join('');
   }
 
