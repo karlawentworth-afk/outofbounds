@@ -3271,15 +3271,15 @@ Bob Wilson"></textarea>
         switchTab(document.querySelector('.step[data-tab="players"]'));
         toast('Event created — add your players');
       }
-      $(‘ev-title’).textContent = name;
+      $('ev-title').textContent = name;
       updateStepStates();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\’t work. Try again.’);
+      console.error(err.message); toast('That didn\'t work. Try again.');
     }
 
-    btn.classList.remove(‘is-loading’);
+    btn.classList.remove('is-loading');
     btn.disabled = false;
-    btn.textContent = isNew && !state.currentEvent ? ‘Save and add players’ : ‘Save changes’;
+    btn.textContent = isNew && !state.currentEvent ? 'Save and add players' : 'Save changes';
   };
 
   // ── Players ───────────────────────────────────────────────────
