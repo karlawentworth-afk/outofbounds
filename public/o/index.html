@@ -4024,8 +4024,8 @@ Bob Wilson"></textarea>
       var scoresRes = await api('leaderboard', {
         query: { event: state.currentEvent }
       });
-      if (scoresRes && scoresRes.standings) {
-        renderLeaderboardTable($('live-leaderboard'), scoresRes.standings);
+      if (scoresRes && scoresRes.entries) {
+        renderLeaderboardTable($('live-leaderboard'), scoresRes.entries);
         return;
       }
     } catch (err) {
@@ -4395,8 +4395,8 @@ Bob Wilson"></textarea>
       var res = await api('leaderboard', {
         query: { event: state.currentEvent }
       });
-      if (res && res.standings) {
-        renderLeaderboardTable($('finished-leaderboard'), res.standings);
+      if (res && res.entries) {
+        renderLeaderboardTable($('finished-leaderboard'), res.entries);
       }
     } catch (err) {
       $('finished-leaderboard').innerHTML = '<div class="empty-state"><p>Could not load results.</p></div>';
