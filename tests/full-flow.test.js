@@ -1830,29 +1830,27 @@ async function stepPhase0Proofs() {
   step('P0-1: Organiser leaderboard has rows with thru > 0', !!player0Entry,
     player0Entry ? 'thru=' + player0Entry.thru + ' pts=' + player0Entry.points : 'no entries with thru');
 
-  // 2. Live view polls: score another hole, wait 35s, check leaderboard updated
-  // Score hole 5 for a second player
+  // 2. Live view polls: score a player in a different group, check leaderboard has 2+ entries with thru
+  // Player 4 is in group 2 (players 0-3 in group 1 after the move test rearranged to 3+5)
+  var p2idx = Math.min(4, state.playerIds.length - 1);
   await apiFetch('player-save', {
-    body: { event_id: state.eventId, player_id: state.playerIds[1], scores: [{ hole_number: 4, gross_score: 4 }] }
+    body: { event_id: state.eventId, player_id: state.playerIds[p2idx], scores: [{ hole_number: 1, gross_score: 5 }, { hole_number: 2, gross_score: 4 }] }
   });
-  // The poll test: we check that the leaderboard API returns both players with thru > 0
-  // (The 30s poll itself runs in the browser; here we prove the data is available for it)
-  await sleep(1000);
+  await sleep(500);
   var lb2 = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
-  var playersWithThru = (lb2.data && lb2.data.entries || []).filter(function (e) { return e.thru > 0; });
-  step('P0-2: Second player score available for poll', playersWithThru.length >= 2,
-    playersWithThru.length + ' players with thru > 0');
+  var entriesWithThru = (lb2.data && lb2.data.entries || []).filter(function (e) { return e.thru > 0; });
+  step('P0-2: Second group score available for poll', entriesWithThru.length >= 2,
+    entriesWithThru.length + ' entries with thru > 0');
 
-  // 3. Reload on #event-<id> → lands on that event
+  // 3. Reload on #event-<id> → lands on that event, not dashboard
+  // Use the test's own event ID and sign in via reviewer login, then navigate directly
   var browser = await chromium.launch({ headless: true });
   try {
     var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     var page = await ctx.newPage();
 
-    // Set auth and navigate to /o/#event-<id>
+    // Sign in first
     await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 20000 });
-
-    // Sign in via reviewer login
     await page.locator('button[onclick="showEmailSignIn()"]').click();
     await sleep(500);
     await page.locator('#magic-email').fill('review@outofboundsevents.com');
@@ -1867,19 +1865,17 @@ async function stepPhase0Proofs() {
       await sleep(5000);
     }
 
-    // Navigate to an event so the hash is set
-    var eventLink = page.locator('.event-row').first();
-    if (await eventLink.isVisible({ timeout: 3000 }).catch(function () { return false; })) {
-      await eventLink.click();
-      await sleep(2000);
-    }
+    // Now reload with the event hash directly (simulates phone discard on an event page)
+    // Use one of the demo org's events visible on the dashboard
+    var firstEventId = await page.evaluate(function () {
+      var row = document.querySelector('[onclick*="openEvent"]');
+      if (!row) return null;
+      var match = row.getAttribute('onclick').match(/openEvent\(['"]([^'"]+)['"]\)/);
+      return match ? match[1] : null;
+    });
 
-    // Get the current hash
-    var hashBefore = await page.evaluate(function () { return window.location.hash; });
-
-    // Reload the page (simulates phone discard)
-    if (hashBefore.indexOf('#event-') === 0) {
-      await page.goto(LIVE_URL + '/o/' + hashBefore, { waitUntil: 'networkidle', timeout: 20000 });
+    if (firstEventId) {
+      await page.goto(LIVE_URL + '/o/#event-' + firstEventId, { waitUntil: 'networkidle', timeout: 20000 });
       await sleep(5000);
 
       var activeScreen = await page.evaluate(function () {
@@ -1887,9 +1883,9 @@ async function stepPhase0Proofs() {
         return s.length ? s[0].id : 'none';
       });
       step('P0-3: Reload on #event-<id> lands on event', activeScreen === 'screen-event',
-        'screen=' + activeScreen + ' hash=' + hashBefore);
+        'screen=' + activeScreen + ' event=' + firstEventId);
     } else {
-      step('P0-3: Reload on #event-<id> lands on event', false, 'no event hash found: ' + hashBefore);
+      step('P0-3: Reload on #event-<id> lands on event', false, 'could not find an event ID on dashboard');
     }
 
     await ctx.close();
