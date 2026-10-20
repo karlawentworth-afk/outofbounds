@@ -465,9 +465,48 @@ a { color: inherit; text-decoration: none; }
   .auth .hero { justify-content: center; padding: var(--s-16); }
   .auth .panel { border-radius: 0; justify-content: center; padding: var(--s-16) var(--s-12); }
 }
+
+/* Dashboard greet */
+.greet { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-5); }
+.greet .sub { color: var(--ink-muted); font-size: var(--fs-small); }
+.greet .btn { display: none; }
+@media (min-width: 900px) { .greet .btn { display: inline-flex; } }
+@media (min-width: 900px) { #screen-dashboard .sticky-action { display: none; } }
 </style>
 </head>
 <body>
+
+<!-- App bar (shown after sign-in) -->
+<header class="appbar" id="oob-appbar" style="display:none">
+  <div class="in">
+    <a class="brand" href="#" id="appbar-brand"><span class="ob-mark" id="appbar-mark"></span><span id="appbar-name"></span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#" class="on" onclick="goToDashboard();return false">Events</a>
+      <a href="#" onclick="goToPeople();return false">People</a>
+      <a href="#" onclick="goToSettings();return false">Settings</a>
+    </nav>
+    <button class="acct" id="appbar-acct" aria-label="Account menu">
+      <span class="who" id="appbar-who"></span>
+      <span class="avatar" id="appbar-avatar"></span>
+    </button>
+  </div>
+</header>
+
+<!-- Tab bar (shown after sign-in, hidden at 900px+ by CSS) -->
+<nav class="tabbar" id="oob-tabbar" style="display:none" aria-label="Sections">
+  <a href="#" class="on" id="tab-events" onclick="goToDashboard();return false">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span>Events</span>
+  </a>
+  <a href="#" id="tab-people" onclick="goToPeople();return false">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 5"/></svg>
+    <span>People</span>
+  </a>
+  <a href="#" id="tab-settings" onclick="goToSettings();return false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span>Settings</span>
+  </a>
+</nav>
 
 <!-- Loading -->
 <div id="screen-loading" class="screen active">
@@ -551,27 +590,16 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Dashboard -->
 <div id="screen-dashboard" class="screen">
-  <div class="top-bar">
-    <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
-    <button class="user-pill" id="user-pill" onclick="signOut()">Sign out</button>
-  </div>
-  <div class="container">
-    <div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.6),rgba(16,52,78,.45)),url(/img/photos/course-wide.jpg) center/cover;color:#fff;padding:28px 24px;margin-bottom:20px;">
-      <h2 id="dash-greeting" style="color:#fff;font-size:24px;margin-bottom:4px;">Your events</h2>
-      <p style="color:rgba(255,255,255,.7);font-size:14px;margin:0;">Set up, score, and share.</p>
-    </div>
-    <div class="dash-header" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" onclick="goToPeople()" style="padding:10px 12px;font-size:13px;">People</button>
-        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;">Settings</button>
-        <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
+  <main class="page">
+    <div class="greet" id="dash-greet">
+      <div>
+        <h1 id="dash-greeting">Your events</h1>
+        <div class="sub">Set up, score, and share.</div>
       </div>
+      <a href="#" class="btn btn-primary" onclick="newEvent();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New event</a>
     </div>
-    <div id="event-list" class="event-list"></div>
-    <div style="text-align:center;padding:24px 0 8px;">
-      <button onclick="openHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;">Help</button>
-    </div>
-  </div>
+    <div id="event-list"></div>
+  </main>
 </div>
 
 <!-- People -->
@@ -1326,6 +1354,10 @@ Bob Wilson"></textarea>
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     $(id).classList.add('active');
+    // Hide shell chrome on auth/loading screens
+    var hideShell = (id === 'screen-signin' || id === 'screen-loading' || id === 'screen-onboard');
+    if ($('oob-appbar')) $('oob-appbar').style.display = hideShell ? 'none' : '';
+    if ($('oob-tabbar')) $('oob-tabbar').style.display = hideShell ? 'none' : '';
   }
 
   function toast(msg) {
@@ -1608,19 +1640,51 @@ Bob Wilson"></textarea>
   }
 
   window.goToDashboard = async function() {
-    // Update user pills with organiser name
-    var name = state.organiser ? (state.organiser.display_name || state.organiser.name) : 'Sign out';
-    var firstName = name.split(' ')[0];
-    var pill1 = $('user-pill');
-    var pill2 = $('user-pill-ev');
-    if (pill1) pill1.textContent = name + ' \u00B7 Sign out';
-    if (pill2) pill2.textContent = name + ' \u00B7 Sign out';
+    var org = state.organiser || {};
+    var fullName = org.name || '';
+    var firstName = fullName.split(' ')[0];
 
-    // Greeting
+    // Show shell chrome
+    $('oob-appbar').style.display = '';
+    $('oob-tabbar').style.display = '';
+
+    // Highlight Events tab in appbar and tabbar
+    $('oob-appbar').querySelectorAll('.nav a').forEach(function(a) { a.classList.remove('on'); });
+    $('oob-appbar').querySelector('.nav a').classList.add('on');
+    $('oob-tabbar').querySelectorAll('a').forEach(function(a) { a.classList.remove('on'); });
+    $('tab-events').classList.add('on');
+
+    // Greeting — use organiser's first name (from name, not display_name)
     var hour = new Date().getHours();
     var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     var greetEl = $('dash-greeting');
-    if (greetEl) greetEl.textContent = greeting + ', ' + firstName;
+    if (greetEl) greetEl.textContent = firstName ? (greeting + ', ' + esc(firstName)) : greeting;
+
+    // Appbar brand
+    var brandName = org.display_name || org.name || '';
+    var brandEl = $('appbar-brand');
+    var markEl = $('appbar-mark');
+    var nameEl = $('appbar-name');
+    if (org.logo_url) {
+      markEl.style.display = 'none';
+      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
+    } else {
+      markEl.style.display = '';
+      nameEl.textContent = brandName;
+    }
+    if (org.primary_colour) {
+      document.documentElement.style.setProperty('--brand', org.primary_colour);
+    }
+
+    // Avatar initials
+    var parts = fullName.split(' ').filter(Boolean);
+    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (parts[0] || '?')[0].toUpperCase();
+    $('appbar-avatar').textContent = initials;
+    $('appbar-who').textContent = fullName;
+
+    // Update old user pills for other screens
+    var pill2 = $('user-pill-ev');
+    if (pill2) pill2.textContent = (org.display_name || org.name || 'Sign out') + ' \u00B7 Sign out';
 
     showScreen('screen-dashboard');
     window.location.hash = 'dashboard';
@@ -1660,12 +1724,15 @@ Bob Wilson"></textarea>
     var el = $('event-list');
     var showArchived = state.showArchived || false;
 
+    // Empty state
     if (state.events.length === 0) {
-      el.innerHTML = '<div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.85),rgba(16,52,78,.7)),url(/img/photos/bunker-shot.jpg) center/cover;color:#fff;text-align:center;padding:48px 28px;">' +
-        '<h3 style="font-size:22px;color:#fff;margin-bottom:10px;">Ready to score?</h3>' +
-        '<p style="font-size:15px;color:rgba(255,255,255,.7);max-width:34ch;margin:0 auto 24px;line-height:1.6;">Create your first event, add your players, and go live. Takes about five minutes.</p>' +
-        '<button class="btn btn-green" onclick="newEvent()" style="box-shadow:0 4px 14px rgba(0,0,0,.3);">Create your first event</button>' +
-      '</div>';
+      el.innerHTML =
+        '<div class="empty" style="margin-top:var(--s-8)">' +
+          '<span class="ob-mark size-lg" aria-hidden="true"></span>' +
+          '<h3>Ready to score?</h3>' +
+          '<p>Create your first event, add your players, and go live. About five minutes.</p>' +
+          '<a href="#" class="btn btn-primary btn-lg" onclick="newEvent();return false">Create your first event</a>' +
+        '</div>';
       return;
     }
 
@@ -1676,54 +1743,73 @@ Bob Wilson"></textarea>
 
     function renderCard(ev) {
       var status = ev.archived ? 'finished' : ev.status;
-      var chipClass = status === 'live' ? 'chip live' : status === 'draft' ? 'chip draft' : 'chip';
+      var chipClass = status === 'live' ? 'live' : status === 'draft' ? 'draft' : status === 'finished' ? 'done' : '';
       var chipLabel = ev.archived ? 'Archived' : status === 'draft' ? 'Draft' : status === 'live' ? 'Live' : 'Finished';
-      var cardClass = 'event-card ev-' + status;
+      var readyChip = (status === 'draft' && ev.format) ? 'ready' : '';
+      if (readyChip) { chipClass = 'ready'; chipLabel = 'Ready'; }
 
-      var action = '';
-      if (status === 'draft') action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Add players</button>';
-      else if (status === 'live') action = '<button class="btn btn-green btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Open</button>';
-      else if (status === 'finished' && !ev.archived) action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Share results</button>';
+      // Next action text
+      var next = '';
+      var btnLabel = '';
+      var btnClass = 'btn-secondary';
+      var btnAction = "event.stopPropagation();openEvent('" + ev.id + "')";
+      if (status === 'live') {
+        next = 'Scoring in progress';
+        btnLabel = 'Open';
+        btnClass = 'btn-primary';
+      } else if (status === 'draft') {
+        next = 'Next: set up your event.';
+        btnLabel = 'Continue setup';
+      } else if (status === 'finished') {
+        next = '';
+        btnLabel = 'Share results';
+      }
 
-      return '<div class="' + cardClass + '" onclick="openEvent(\'' + ev.id + '\')">' +
-        '<div class="ev-bar"></div>' +
-        '<div class="ev-body">' +
-          '<div class="ev-name">' + esc(ev.name) + '</div>' +
-          '<div class="ev-meta">' +
-            '<span class="' + chipClass + '">' + chipLabel + '</span>' +
-            (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
-          '</div>' +
+      // Date and format meta
+      var meta = '';
+      if (ev.event_date) meta += formatDate(ev.event_date);
+      if (ev.format) meta += (meta ? ' \u00B7 ' : '') + esc(ev.format);
+
+      return '<article class="event-card ' + esc(status) + '" onclick="openEvent(\'' + ev.id + '\')">' +
+        '<div class="bar"></div>' +
+        '<div class="body">' +
+          '<div class="top"><h3>' + esc(ev.name) + '</h3><span class="chip ' + chipClass + '">' + chipLabel + '</span></div>' +
+          (meta ? '<div class="meta">' + meta + '</div>' : '') +
+          (next ? '<div class="next">' + next + '</div>' : '') +
+          '<div class="act"><button class="btn ' + btnClass + '" onclick="' + btnAction + '">' + btnLabel + '</button></div>' +
         '</div>' +
-        (action ? '<div class="ev-act">' + action + '</div>' : '') +
-      '</div>';
+      '</article>';
     }
 
     var html = '';
 
     if (live.length) {
-      html += '<div class="section-title live">Live now</div>';
-      html += live.map(renderCard).join('');
+      html += '<h2 class="section-title live">Live now</h2>';
+      html += '<div class="stack">' + live.map(renderCard).join('') + '</div>';
     }
 
     if (drafts.length) {
-      html += '<div class="section-title">Coming up</div>';
-      html += drafts.map(renderCard).join('');
+      html += '<h2 class="section-title">Coming up</h2>';
+      html += '<div class="stack">' + drafts.map(renderCard).join('') + '</div>';
     }
 
     if (finished.length) {
-      html += '<div class="section-title">Finished</div>';
-      html += finished.map(renderCard).join('');
+      html += '<h2 class="section-title">Finished</h2>';
+      html += '<div class="stack">' + finished.map(renderCard).join('') + '</div>';
     }
 
     if (archived.length) {
-      html += '<div style="margin-top:16px;text-align:center;">';
-      html += '<button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="toggleArchived()">' +
+      html += '<div style="text-align:center;margin-top:var(--s-5);">';
+      html += '<button class="link muted" onclick="toggleArchived()">' +
         (showArchived ? 'Hide' : 'Show') + ' ' + archived.length + ' archived</button>';
       html += '</div>';
       if (showArchived) {
-        html += archived.map(renderCard).join('');
+        html += '<div class="stack">' + archived.map(renderCard).join('') + '</div>';
       }
     }
+
+    // Sticky new-event button (mobile only, hidden at 900px+ by CSS in components)
+    html += '<div class="sticky-action"><a href="#" class="btn btn-primary btn-lg" onclick="newEvent();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New event</a></div>';
 
     el.innerHTML = html;
   }
