@@ -101,6 +101,10 @@ a { color: inherit; text-decoration: none; }
 
 /* Sign-in — layout handled by .auth in components; override .screen defaults */
 #screen-signin.active { display: block; padding: 0; background: none; }
+/* Reset old .btn overrides inside .auth so components.css wins */
+.auth .btn { padding: 0 var(--s-6); font-size: var(--fs-ui); min-height: var(--control-h); box-shadow: none; }
+.auth .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+.auth .btn-primary { background: var(--accent); color: var(--ink-on-accent); border-color: transparent; }
 /* Old auth styles removed — handled by .auth in components */
 .magic-link-sent { color: var(--green); font-weight: 600; font-size: 15px; margin-top: 16px; }
 
@@ -450,7 +454,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Sign-in (design system) ─────────────────────────────────── */
 .auth { min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: var(--dark-gradient); color: var(--dark-ink); }
-.auth .hero { padding: calc(var(--s-12) + var(--safe-t)) var(--s-6) var(--s-6); display: flex; flex-direction: column; justify-content: flex-end; gap: var(--s-3); }
+.auth .hero { padding: calc(var(--s-12) + var(--safe-t)) var(--gutter) var(--s-6); display: flex; flex-direction: column; justify-content: flex-end; gap: var(--s-3); }
 .auth .hero .ob-mark { width: 72px; height: 50px; }
 .auth .hero h1 { font-size: var(--fs-display); color: #fff; }
 .auth .hero p { color: var(--dark-ink-muted); font-size: var(--fs-body); }
