@@ -977,12 +977,16 @@ a { color: inherit; text-decoration: none; }
           <div class="field"><label>Last name</label><input type="text" id="ap-last" class="input"></div>
         </div>
         <div class="field">
-          <label>Handicap index (optional)</label>
+          <label>Handicap index <span class="opt">(optional)</span></label>
           <input type="number" id="ap-index" class="input" step="0.1" placeholder="e.g. 18.4">
         </div>
-        <div id="ap-ph-preview" style="font-size:13px;color:var(--ink-muted);margin-bottom:8px;"></div>
+        <div id="ap-ph-preview" style="font-size:var(--fs-small);color:var(--ink-muted);margin-bottom:var(--s-2);"></div>
+        <div class="two">
+          <div class="field"><label>Email <span class="opt">(optional)</span></label><input type="email" id="ap-email" class="input" placeholder="for results" inputmode="email" autocomplete="email"></div>
+          <div class="field"><label>Mobile <span class="opt">(optional)</span></label><input type="tel" id="ap-mobile" class="input" placeholder="for reminders" inputmode="tel"></div>
+        </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="addPlayerSubmit()">Add</button>
+          <button class="btn btn-primary btn-sm" onclick="addPlayerSubmit()">Add player</button>
           <button class="btn btn-secondary btn-sm" onclick="hideAddPlayer()">Cancel</button>
         </div>
       </div>
@@ -991,7 +995,8 @@ a { color: inherit; text-decoration: none; }
       <section class="card flush" id="players-card" style="display:none;">
         <div style="padding:var(--s-4) var(--s-5) 0">
           <h3 id="player-count"></h3>
-          <div class="hint" style="margin:var(--s-1) 0 var(--s-2)">Tap a name to change their handicap.</div>
+          <div class="hint" style="margin:var(--s-1) 0 0">Tap a name to change their handicap.</div>
+          <div class="hint" id="players-email-count" style="margin:var(--s-1) 0 var(--s-2)"></div>
           <div id="players-remind-wrap" style="display:none;margin-bottom:var(--s-3)"><a href="#" class="link small" onclick="nudgeInvited();return false" id="players-remind-link"></a></div>
         </div>
         <div class="plist" style="padding:0 var(--s-5)">
@@ -3320,6 +3325,19 @@ Bob Wilson"></textarea>
     }
     countEl.innerHTML = countHtml;
 
+    // "Results will be sent to N of M players"
+    var emailCountEl = $('players-email-count');
+    if (emailCountEl) {
+      var withEmail = state.players.filter(function(p) { return p.email; }).length;
+      if (withEmail > 0) {
+        emailCountEl.textContent = 'Results will be sent to ' + withEmail + ' of ' + state.players.length + ' players.';
+        emailCountEl.style.display = '';
+      } else {
+        emailCountEl.textContent = 'No players have an email yet. Add one when you add a player, or they can add their own.';
+        emailCountEl.style.display = '';
+      }
+    }
+
     // "Remind N who haven't tapped in" link
     if (invited > 0 && state.currentEventData && state.currentEventData.status === 'live') {
       var invitedNames = state.players
@@ -3426,6 +3444,8 @@ Bob Wilson"></textarea>
     $('ap-first').value = '';
     $('ap-last').value = '';
     $('ap-index').value = '';
+    if ($('ap-email')) $('ap-email').value = '';
+    if ($('ap-mobile')) $('ap-mobile').value = '';
     $('ap-ph-preview').textContent = '';
   };
 
@@ -3450,14 +3470,19 @@ Bob Wilson"></textarea>
 
     var idx = $('ap-index').value.trim();
     var idxNum = idx ? parseFloat(idx) : null;
+    var email = $('ap-email') ? $('ap-email').value.trim() : '';
+    var mobile = $('ap-mobile') ? $('ap-mobile').value.trim() : '';
 
     try {
+      var playerData = { first_name: first, last_name: last, handicap_index: idxNum };
+      if (email) playerData.email = email;
+      if (mobile) playerData.mobile = mobile;
       var res = await api('org-players', {
         method: 'POST',
         body: {
           event_id: state.currentEvent,
           organiser_id: state.organiser.id,
-          players: [{ first_name: first, last_name: last, handicap_index: idxNum }]
+          players: [playerData]
         }
       });
       await loadPlayers();
