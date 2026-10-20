@@ -4499,18 +4499,34 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'seed' }
       });
-      loadPrizes();
-      toast('Standard prizes added');
+      await loadPrizes();
+      openPrizesSheet();
     } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
   };
 
   window.addCustomPrize = async function() {
+    closePrizesSheet();
     var cat = await oobPrompt('Prize name (e.g. Sweep, Best dressed)', 'Add');
     if (!cat) return;
-    api('org-prizes', {
-      method: 'POST',
-      body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'add', category: cat }
-    }).then(loadPrizes).catch(function (err) { console.error(err.message); toast('That didn’t work. Try again.'); });
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'add', category: cat }
+      });
+      await loadPrizes();
+      openPrizesSheet();
+    } catch (err) { console.error(err.message); }
+  };
+
+  window.removePrize = async function(prizeId) {
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'delete', prize_id: prizeId }
+      });
+      await loadPrizes();
+      openPrizesSheet();
+    } catch (err) { console.error(err.message); }
   };
 
   window.savePrizeWinner = async function(prizeId, playerId) {
@@ -4535,10 +4551,11 @@ Bob Wilson"></textarea>
       '</div>';
     } else {
       html += '<div style="margin-bottom:var(--s-4);">';
-      prizes.forEach(function (p) {
+      prizes.forEach(function (p, idx) {
         html += '<div class="prize"><div class="medal">' + esc(p.category.substring(0, 2)) + '</div>' +
           '<div class="grow"><div class="who">' + esc(p.category) + '</div>' +
-          (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '') + '</div></div>';
+          (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '') + '</div>' +
+          '<button class="btn-danger-quiet" style="padding:0 8px;min-height:36px;font-size:13px;" onclick="removePrize(&quot;' + p.id + '&quot;)">Remove</button></div>';
       });
       html += '</div>';
       html += '<div class="actions">' +
