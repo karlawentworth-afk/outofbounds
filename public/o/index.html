@@ -2638,6 +2638,14 @@ Bob Wilson"></textarea>
       return true;
     }
 
+    // Restore #event-<id> on reload
+    var eventMatch = hash.match(/^#event-(.+)$/);
+    if (eventMatch) {
+      var eventId = eventMatch[1];
+      openEvent(eventId);
+      return true;
+    }
+
     return false; // not handled
   }
 
