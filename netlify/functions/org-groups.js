@@ -87,7 +87,7 @@ exports.handler = async function (event) {
 
       var players = await sb.sbGet(
         'players?event_id=eq.' + eventId +
-        '&select=id,display_name,group_id,pair_key,handicap_index,playing_handicap' +
+        '&select=id,display_name,group_id,pair_key,handicap_index,playing_handicap,player_status,first_name,last_name,email' +
         '&order=created_at.asc'
       );
 
