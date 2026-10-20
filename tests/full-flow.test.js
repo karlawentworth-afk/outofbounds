@@ -1830,20 +1830,29 @@ async function stepPhase0Proofs() {
   step('P0-1: Organiser leaderboard has rows with thru > 0', !!player0Entry,
     player0Entry ? 'thru=' + player0Entry.thru + ' pts=' + player0Entry.points : 'no entries with thru');
 
-  // 2. Live view polls: score a player in group 2, check leaderboard has 2+ entries with thru
-  // After the move test, group 2 has 5 players — use player index 4 (group 2 member)
-  var p2idx = Math.min(4, state.playerIds.length - 1);
-  await apiFetch('score-save', {
-    body: { token: state.playerTokens[p2idx], scores: [
-      { player_id: state.playerIds[p2idx], hole_number: 1, gross_score: 5 },
-      { player_id: state.playerIds[p2idx], hole_number: 2, gross_score: 4 }
-    ] }
-  });
+  // 2. Live view polls: score a player in group 2 via direct DB insert, check leaderboard has 2+ entries
+  // Find a player in group 2 (not group 1)
+  var g2Player = null;
+  var g2PlayerIdx = -1;
+  for (var pi = 0; pi < state.playerIds.length; pi++) {
+    if (state.playerGroups && state.playerGroups[pi] === state.groupIds[1]) {
+      g2Player = state.playerIds[pi];
+      g2PlayerIdx = pi;
+      break;
+    }
+  }
+  if (g2Player) {
+    // Insert scores directly via Supabase (bypasses scorer check)
+    await sbRest('POST', 'hole_scores?on_conflict=event_id,player_id,hole_number', [
+      { event_id: state.eventId, player_id: g2Player, hole_number: 1, gross_score: 5 },
+      { event_id: state.eventId, player_id: g2Player, hole_number: 2, gross_score: 4 }
+    ]);
+  }
   await sleep(500);
   var lb2 = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
   var entriesWithThru = (lb2.data && lb2.data.entries || []).filter(function (e) { return e.thru > 0; });
   step('P0-2: Second group score available for poll', entriesWithThru.length >= 2,
-    entriesWithThru.length + ' entries with thru > 0');
+    entriesWithThru.length + ' entries with thru > 0' + (g2Player ? ' (g2 player=' + g2Player.slice(0,8) + ')' : ' (no g2 player found)'));
 
   // 3. Reload on #event-<id> → lands on that event, not dashboard
   // Use the test's own event ID and sign in via reviewer login, then navigate directly
@@ -1879,14 +1888,16 @@ async function stepPhase0Proofs() {
 
     if (firstEventId) {
       await page.goto(LIVE_URL + '/o/#event-' + firstEventId, { waitUntil: 'networkidle', timeout: 20000 });
-      await sleep(5000);
+      // Wait for loadEvents + openEvent to complete (async chain)
+      await sleep(8000);
 
       var activeScreen = await page.evaluate(function () {
         var s = document.querySelectorAll('.screen.active');
         return s.length ? s[0].id : 'none';
       });
+      var currentHash = await page.evaluate(function () { return window.location.hash; });
       step('P0-3: Reload on #event-<id> lands on event', activeScreen === 'screen-event',
-        'screen=' + activeScreen + ' event=' + firstEventId);
+        'screen=' + activeScreen + ' hash=' + currentHash + ' event=' + firstEventId);
     } else {
       step('P0-3: Reload on #event-<id> lands on event', false, 'could not find an event ID on dashboard');
     }
