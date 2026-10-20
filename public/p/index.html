@@ -1372,7 +1372,7 @@ html, body {
       btn.textContent = "Didn\u2019t save, try again";
       btn.disabled = false;
       // Don't advance — let them retry or it will flush later
-      updateStatusLine();
+      renderHole();
       return;
     }
 
