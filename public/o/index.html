@@ -2643,10 +2643,19 @@ Bob Wilson"></textarea>
     var eventMatch = hash.match(/^#event-(.+)$/);
     if (eventMatch) {
       var eventId = eventMatch[1];
+      // Clear the hash immediately so a second onAuthStateChange
+      // call to handleHashRoutes does not race with openEvent
+      state._hashEventPending = eventId;
       // Load events first (they haven't been fetched yet on a fresh reload)
-      loadEvents().then(function () { openEvent(eventId); });
+      loadEvents().then(function () {
+        delete state._hashEventPending;
+        openEvent(eventId);
+      });
       return true;
     }
+
+    // A pending hash-event open is still loading — don't go to dashboard
+    if (state._hashEventPending) return true;
 
     return false; // not handled
   }
