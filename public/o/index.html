@@ -2643,7 +2643,8 @@ Bob Wilson"></textarea>
     var eventMatch = hash.match(/^#event-(.+)$/);
     if (eventMatch) {
       var eventId = eventMatch[1];
-      openEvent(eventId);
+      // Load events first (they haven't been fetched yet on a fresh reload)
+      loadEvents().then(function () { openEvent(eventId); });
       return true;
     }
 

@@ -1817,10 +1817,10 @@ async function stepPhase0Proofs() {
   // Ensure event is live
   await sbRest('PATCH', 'events?id=eq.' + state.eventId, { status: 'live', locked_at: null, results_published: false });
 
-  // 1. Player saves hole 1 → organiser leaderboard shows that player with thru and points
-  // Score hole 4 for player 0 (holes 1-3 already scored in stepG)
-  var scoreRes = await apiFetch('player-save', {
-    body: { event_id: state.eventId, player_id: state.playerIds[0], scores: [{ hole_number: 4, gross_score: 5 }] }
+  // 1. Player saves hole 4 → organiser leaderboard shows that player with thru and points
+  // Holes 1-3 already scored in stepG for group 1
+  await apiFetch('score-save', {
+    body: { token: state.playerTokens[0], scores: [{ player_id: state.playerIds[0], hole_number: 4, gross_score: 5 }] }
   });
 
   // Fetch the organiser leaderboard via the same API the live view uses
@@ -1830,11 +1830,14 @@ async function stepPhase0Proofs() {
   step('P0-1: Organiser leaderboard has rows with thru > 0', !!player0Entry,
     player0Entry ? 'thru=' + player0Entry.thru + ' pts=' + player0Entry.points : 'no entries with thru');
 
-  // 2. Live view polls: score a player in a different group, check leaderboard has 2+ entries with thru
-  // Player 4 is in group 2 (players 0-3 in group 1 after the move test rearranged to 3+5)
+  // 2. Live view polls: score a player in group 2, check leaderboard has 2+ entries with thru
+  // After the move test, group 2 has 5 players — use player index 4 (group 2 member)
   var p2idx = Math.min(4, state.playerIds.length - 1);
-  await apiFetch('player-save', {
-    body: { event_id: state.eventId, player_id: state.playerIds[p2idx], scores: [{ hole_number: 1, gross_score: 5 }, { hole_number: 2, gross_score: 4 }] }
+  await apiFetch('score-save', {
+    body: { token: state.playerTokens[p2idx], scores: [
+      { player_id: state.playerIds[p2idx], hole_number: 1, gross_score: 5 },
+      { player_id: state.playerIds[p2idx], hole_number: 2, gross_score: 4 }
+    ] }
   });
   await sleep(500);
   var lb2 = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
