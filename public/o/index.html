@@ -1759,7 +1759,7 @@ Bob Wilson"></textarea>
       var pc = ev.player_count || 0;
       var gc = ev.group_count || 0;
       if (status === 'live') {
-        next = gc > 0 ? gc + ' groups scoring' : 'Scoring in progress';
+        next = ev.live_status || (gc > 0 ? gc + ' groups scoring' : 'Scoring in progress');
         btnLabel = 'Open';
         btnClass = 'btn-primary';
       } else if (status === 'draft') {

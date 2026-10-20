@@ -64,6 +64,11 @@ real authenticated call (e.g. reviewer-login or org-auth) and
 confirm 200 before reporting success. A 401 on that call means the
 deploy broke auth.
 
+Any migration instruction to Karla states the Supabase project ref
+(`ahutmswadskdkqhnrhhh`), the dashboard URL
+(`https://supabase.com/dashboard/project/ahutmswadskdkqhnrhhh/sql`)
+and the SQL. She has more than one project.
+
 ## Branching and extraction
 
 Any change that touches more than one screen, or more than 200 lines,

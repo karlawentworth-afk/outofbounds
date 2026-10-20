@@ -91,6 +91,45 @@ exports.handler = async function (event) {
         } catch (e) { console.error('Winner compute for ' + finishedEvents[fi].id + ':', e.message); }
       }
 
+      // For live events, compute scoring status (groups scoring, leader)
+      var liveEvents = (events || []).filter(function (e) { return e.status === 'live' && e.course_id; });
+      var liveStatusMap = {};
+      for (var li = 0; li < liveEvents.length; li++) {
+        try {
+          var lev = liveEvents[li];
+          var lGroups = await sb.sbGet('groups?event_id=eq.' + lev.id + '&select=id');
+          var lScores = await sb.sbGet('hole_scores?event_id=eq.' + lev.id + '&select=player_id');
+          var scoredPlayers = {};
+          (lScores || []).forEach(function (s) { scoredPlayers[s.player_id] = true; });
+          // Find which groups have at least one scored player
+          var lPlayers = await sb.sbGet('players?event_id=eq.' + lev.id + '&select=id,group_id');
+          var groupsScoring = {};
+          (lPlayers || []).forEach(function (p) {
+            if (p.group_id && scoredPlayers[p.id]) groupsScoring[p.group_id] = true;
+          });
+          var numScoring = Object.keys(groupsScoring).length;
+          var totalGroups = (lGroups || []).length;
+          // Get leader from leaderboard
+          var holes = await sb.sbGet('course_holes?course_id=eq.' + lev.course_id + '&select=hole_number,par,stroke_index&order=hole_number');
+          var lAllPlayers = await sb.sbGet('players?event_id=eq.' + lev.id + '&select=id,display_name,playing_handicap,group_id');
+          var lAllGroups = await sb.sbGet('groups?event_id=eq.' + lev.id + '&select=id,group_number');
+          var scoreMap = {};
+          var pickedUpMap = {};
+          var allScores = await sb.sbGet('hole_scores?event_id=eq.' + lev.id + '&select=player_id,hole_number,gross_score,picked_up');
+          (allScores || []).forEach(function (s) {
+            if (!scoreMap[s.player_id]) scoreMap[s.player_id] = {};
+            if (!pickedUpMap[s.player_id]) pickedUpMap[s.player_id] = {};
+            if (s.picked_up) pickedUpMap[s.player_id][s.hole_number] = true;
+            else if (s.gross_score != null) scoreMap[s.player_id][s.hole_number] = s.gross_score;
+          });
+          var entries = engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes || [], players: lAllPlayers || [], groups: lAllGroups || [], format: lev.format, maxHole: 18 });
+          var leader = entries && entries.length > 0 && entries[0].points > 0 ? entries[0] : null;
+          var status_text = numScoring + ' of ' + totalGroups + ' groups scoring';
+          if (leader) status_text += ' \u00B7 leader ' + leader.points + ' pts thru ' + leader.thru;
+          liveStatusMap[lev.id] = status_text;
+        } catch (e) { console.error('Live status for ' + liveEvents[li].id + ':', e.message); }
+      }
+
       // Flatten course name and add counts
       (events || []).forEach(function (e) {
         e.course_name = (e.courses && e.courses.name) || null;
@@ -98,6 +137,7 @@ exports.handler = async function (event) {
         e.player_count = playerCounts[e.id] || 0;
         e.group_count = groupCounts[e.id] || 0;
         e.winner_text = winnerMap[e.id] || null;
+        e.live_status = liveStatusMap[e.id] || null;
       });
 
       return sb.respond(200, { events: events || [] });
