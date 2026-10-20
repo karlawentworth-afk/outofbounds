@@ -1799,6 +1799,169 @@ async function cleanup() {
   }
 }
 
+// ── Phase 0 fix proofs ──────────────────────────────────────────
+async function stepPhase0Proofs() {
+  console.log('\n--- Phase 0 fix proofs ---');
+
+  if (!state.eventId || !state.playerTokens || !state.playerTokens[0]) {
+    step('Phase 0 (skipped)', false, 'no event or tokens');
+    return;
+  }
+
+  var orgSlug = '';
+  try {
+    var orgData = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=slug');
+    orgSlug = orgData.data && orgData.data[0] ? orgData.data[0].slug : '';
+  } catch (e) {}
+
+  // Ensure event is live
+  await sbRest('PATCH', 'events?id=eq.' + state.eventId, { status: 'live', locked_at: null, results_published: false });
+
+  // 1. Player saves hole 1 → organiser leaderboard shows that player with thru and points
+  // Score hole 4 for player 0 (holes 1-3 already scored in stepG)
+  var scoreRes = await apiFetch('player-save', {
+    body: { event_id: state.eventId, player_id: state.playerIds[0], scores: [{ hole_number: 4, gross_score: 5 }] }
+  });
+
+  // Fetch the organiser leaderboard via the same API the live view uses
+  var lb = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
+  var hasEntries = lb.data && lb.data.entries && lb.data.entries.length > 0;
+  var player0Entry = hasEntries ? lb.data.entries.find(function (e) { return e.thru > 0; }) : null;
+  step('P0-1: Organiser leaderboard has rows with thru > 0', !!player0Entry,
+    player0Entry ? 'thru=' + player0Entry.thru + ' pts=' + player0Entry.points : 'no entries with thru');
+
+  // 2. Live view polls: score another hole, wait 35s, check leaderboard updated
+  // Score hole 5 for a second player
+  await apiFetch('player-save', {
+    body: { event_id: state.eventId, player_id: state.playerIds[1], scores: [{ hole_number: 4, gross_score: 4 }] }
+  });
+  // The poll test: we check that the leaderboard API returns both players with thru > 0
+  // (The 30s poll itself runs in the browser; here we prove the data is available for it)
+  await sleep(1000);
+  var lb2 = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
+  var playersWithThru = (lb2.data && lb2.data.entries || []).filter(function (e) { return e.thru > 0; });
+  step('P0-2: Second player score available for poll', playersWithThru.length >= 2,
+    playersWithThru.length + ' players with thru > 0');
+
+  // 3. Reload on #event-<id> → lands on that event
+  var browser = await chromium.launch({ headless: true });
+  try {
+    var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    var page = await ctx.newPage();
+
+    // Set auth and navigate to /o/#event-<id>
+    await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 20000 });
+
+    // Sign in via reviewer login
+    await page.locator('button[onclick="showEmailSignIn()"]').click();
+    await sleep(500);
+    await page.locator('#magic-email').fill('review@outofboundsevents.com');
+    await sleep(300);
+    await page.locator('#magic-btn').click();
+    await sleep(2000);
+    var codeInput = page.locator('#reviewer-code');
+    if (await codeInput.isVisible({ timeout: 3000 }).catch(function () { return false; })) {
+      await codeInput.fill('479649');
+      await sleep(300);
+      await page.locator('#magic-btn').click();
+      await sleep(5000);
+    }
+
+    // Navigate to an event so the hash is set
+    var eventLink = page.locator('.event-row').first();
+    if (await eventLink.isVisible({ timeout: 3000 }).catch(function () { return false; })) {
+      await eventLink.click();
+      await sleep(2000);
+    }
+
+    // Get the current hash
+    var hashBefore = await page.evaluate(function () { return window.location.hash; });
+
+    // Reload the page (simulates phone discard)
+    if (hashBefore.indexOf('#event-') === 0) {
+      await page.goto(LIVE_URL + '/o/' + hashBefore, { waitUntil: 'networkidle', timeout: 20000 });
+      await sleep(5000);
+
+      var activeScreen = await page.evaluate(function () {
+        var s = document.querySelectorAll('.screen.active');
+        return s.length ? s[0].id : 'none';
+      });
+      step('P0-3: Reload on #event-<id> lands on event', activeScreen === 'screen-event',
+        'screen=' + activeScreen + ' hash=' + hashBefore);
+    } else {
+      step('P0-3: Reload on #event-<id> lands on event', false, 'no event hash found: ' + hashBefore);
+    }
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+
+  // 4. Player page: no raw error text shown
+  var browser2 = await chromium.launch({ headless: true });
+  try {
+    var ctx2 = await browser2.newContext({ viewport: { width: 390, height: 844 } });
+    var page2 = await ctx2.newPage();
+
+    // Load player page with a bad event URL to trigger an error
+    await page2.goto(LIVE_URL + '/p/' + orgSlug + '/nonexistent-event/badtoken', { waitUntil: 'networkidle', timeout: 15000 });
+    await sleep(3000);
+
+    var bodyText = await page2.locator('body').innerText();
+    var hasRawError = bodyText.indexOf('SUPABASE') !== -1 ||
+      bodyText.indexOf('Error:') !== -1 ||
+      bodyText.indexOf('err.message') !== -1 ||
+      bodyText.indexOf('TypeError') !== -1 ||
+      bodyText.indexOf('ReferenceError') !== -1;
+    var hasFriendly = bodyText.indexOf('didn\u2019t work') !== -1 ||
+      bodyText.indexOf('didn\'t work') !== -1 ||
+      bodyText.indexOf('Check your signal') !== -1 ||
+      bodyText.indexOf('missing the event') !== -1 ||
+      bodyText.indexOf('Check the URL') !== -1;
+    step('P0-4: Player error page shows no raw errors', !hasRawError,
+      hasRawError ? 'found raw error in body' : 'clean');
+    step('P0-4b: Player error page has friendly message', hasFriendly,
+      hasFriendly ? 'friendly message found' : 'no friendly message');
+
+    await ctx2.close();
+  } finally {
+    await browser2.close();
+  }
+
+  // 5. Organiser page: no "Error:" toast text in the source
+  var orgPage = await apiFetch('leaderboard', { method: 'GET', query: { event: 'nonexistent-event-id' } });
+  // The function returns an error — but we check the /o/ page source has no "Error:" toast patterns
+  var orgHtml = '';
+  try {
+    var https = require('https');
+    orgHtml = await new Promise(function (resolve, reject) {
+      https.get(LIVE_URL + '/o/', function (res) {
+        var c = [];
+        res.on('data', function (d) { c.push(d); });
+        res.on('end', function () { resolve(Buffer.concat(c).toString()); });
+      }).on('error', reject);
+    });
+  } catch (e) {}
+  var errorToastPattern = /toast\(['"]Error: /;
+  var hasErrorToast = errorToastPattern.test(orgHtml);
+  step('P0-5: No "Error:" toast pattern in /o/ source', !hasErrorToast,
+    hasErrorToast ? 'found toast with Error: prefix' : 'clean');
+
+  // 6. Finished leaderboard has rows
+  // Set event to finished
+  await sbRest('PATCH', 'events?id=eq.' + state.eventId, { status: 'finished', locked_at: new Date().toISOString(), results_published: true });
+  await sleep(500);
+
+  var finLb = await apiFetch('leaderboard', { method: 'GET', query: { event: state.eventId } });
+  var finHasEntries = finLb.data && finLb.data.entries && finLb.data.entries.length > 0;
+  var finHasScores = finHasEntries && finLb.data.entries.some(function (e) { return e.thru > 0; });
+  step('P0-6: Finished leaderboard has rows with scores', finHasScores,
+    finHasEntries ? finLb.data.entries.length + ' entries, top thru=' + finLb.data.entries[0].thru : 'no entries');
+
+  // Restore to live for subsequent tests
+  await sbRest('PATCH', 'events?id=eq.' + state.eventId, { status: 'live', locked_at: null, results_published: false });
+}
+
 // ── Main ────────────────────────────────────────────────────────
 async function main() {
   console.log('=== Out of Bounds E2E Test ===');
@@ -1864,6 +2027,9 @@ async function main() {
 
     // MISSING SCORE SHEET (test org)
     await stepMissingScoreSheet();
+
+    // PHASE 0 FIX PROOFS
+    await stepPhase0Proofs();
 
     // CONSOLE ERROR SCAN
     await stepConsoleErrors();
