@@ -193,48 +193,9 @@ a { color: inherit; text-decoration: none; }
 .empty-state h3 { color: var(--ink); margin-bottom: 8px; font-size: 18px; }
 .empty-state p { font-size: 15px; max-width: 38ch; margin: 0 auto 20px; line-height: 1.6; }
 
-/* Event detail — step navigation */
-.step-strip {
-  display: flex; gap: 0; margin: 0 -20px; padding: 0 20px;
-  border-bottom: 1px solid var(--line); background: #fff;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-}
-.step-btn {
-  background: none; border: none; border-bottom: 3px solid transparent;
-  padding: 14px 16px 12px; text-align: center; cursor: pointer;
-  font-family: inherit; flex-shrink: 0; transition: all var(--transition);
-  position: relative;
-}
-.step-btn .step-num {
-  display: inline-grid; place-items: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--paper); color: var(--muted);
-  font-family: Poppins, sans-serif; font-weight: 700; font-size: 11px;
-  margin-right: 6px; vertical-align: middle;
-}
-.step-btn.active { border-bottom-color: var(--green); }
-.step-btn.active .step-num { background: var(--green); color: #fff; }
-.step-btn.active .step-label { color: var(--ink); }
-.step-btn.done .step-num { background: var(--green); color: #fff; font-size: 0; }
-.step-btn.done .step-num::after { content: '\2713'; font-size: 11px; }
-.step-btn .step-label { display: inline; font-family: Inter, sans-serif; font-weight: 600; font-size: 13px; color: var(--muted); vertical-align: middle; }
-.step-btn .step-state { display: none; }
-@media (max-width: 520px) {
-  .step-strip { padding: 0 12px; }
-  .step-btn { padding: 12px 10px 10px; }
-  .step-btn .step-num { width: 20px; height: 20px; font-size: 10px; }
-  .step-btn .step-label { font-size: 12px; }
-}
+/* Tab panels */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
-
-/* Sticky next button */
-.step-next {
-  position: sticky; bottom: 0; z-index: 50;
-  background: linear-gradient(to top, var(--paper) 70%, rgba(247,245,240,0));
-  padding: 16px 0 20px; margin-top: 8px;
-}
-.step-next .btn { width: 100%; }
 
 /* Forms */
 .form-section { margin-bottom: 20px; }
@@ -250,12 +211,11 @@ a { color: inherit; text-decoration: none; }
 }
 .form-row select { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235B6672' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 34px; }
 .form-row input:focus, .form-row select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(47,122,69,.08); }
-.inline-row, .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
-.disclaimer {
-  background: var(--paper); border-radius: 12px; border-left: 3px solid var(--line);
-  padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5;
-}
+.inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Course selected state */
+.course-sel { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--control-h); padding: 0 var(--s-4); border: 1.5px solid var(--accent); background: var(--accent-soft); border-radius: var(--r-md); font-weight: 600; }
+.course-sel .link { font-size: var(--fs-small); }
 
 /* Course inline form */
 .course-search-wrap { position: relative; }
@@ -894,151 +854,123 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Event detail -->
 <div id="screen-event" class="screen">
-  <div class="top-bar">
-    <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
-    <button class="user-pill" id="user-pill-ev" onclick="signOut()">Sign out</button>
-  </div>
   <div class="container">
-    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
-    <h2 id="ev-title" style="font-size:20px;margin-bottom:16px;">New event</h2>
+    <a class="crumb" onclick="goToDashboard();return false" href="#"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
+    <div class="page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub">Step 1 of 4. You can change anything later.</div></div>
 
-    <div class="step-strip" id="ev-tabs">
-      <button class="step-btn active" data-tab="details" onclick="switchTab(this)">
-        <span class="step-num">1</span>
-        <span class="step-label">Details</span>
-        <span class="step-state" id="step-state-details"></span>
-      </button>
-      <button class="step-btn" data-tab="players" onclick="switchTab(this)">
-        <span class="step-num">2</span>
-        <span class="step-label">Players</span>
-        <span class="step-state" id="step-state-players"></span>
-      </button>
-      <button class="step-btn" data-tab="groups" onclick="switchTab(this)">
-        <span class="step-num">3</span>
-        <span class="step-label">Groups</span>
-        <span class="step-state" id="step-state-groups"></span>
-      </button>
-      <button class="step-btn" data-tab="golive" onclick="switchTab(this)">
-        <span class="step-num">4</span>
-        <span class="step-label">Go live</span>
-        <span class="step-state" id="step-state-golive"></span>
-      </button>
+    <div class="steps" role="list" aria-label="Set-up steps" id="ev-tabs">
+      <a class="step on" role="listitem" data-tab="details" onclick="switchTab(this)"><span class="n">1</span><span class="t">Details</span><span class="s" id="step-state-details"></span></a>
+      <a class="step todo" role="listitem" data-tab="players" onclick="switchTab(this)"><span class="n">2</span><span class="t">Players</span><span class="s" id="step-state-players"></span></a>
+      <a class="step todo" role="listitem" data-tab="groups" onclick="switchTab(this)"><span class="n">3</span><span class="t">Groups</span><span class="s" id="step-state-groups"></span></a>
+      <a class="step todo" role="listitem" data-tab="golive" onclick="switchTab(this)"><span class="n">4</span><span class="t">Go live</span><span class="s" id="step-state-golive"></span></a>
     </div>
+    <div class="sub-status" id="ev-sub-status"></div>
 
     <!-- DETAILS TAB -->
     <div class="tab-panel active" id="tab-details">
-      <div class="form-row">
-        <label>Event name</label>
-        <input type="text" id="ev-name" class="field-input" placeholder="e.g. Summer Open 2026">
-      </div>
-      <div class="form-row">
-        <label>Date</label>
-        <input type="date" id="ev-date">
-      </div>
-      <!-- Starting mode moved to Groups tab -->
-
-      <!-- Course -->
-      <div class="form-section">
-        <h3>Course</h3>
-        <div class="form-row course-search-wrap">
-          <label>Search courses</label>
-          <input type="text" id="course-search" class="field-input" placeholder="Start typing course name...">
-          <div class="course-results" id="course-results" style="display:none;"></div>
+      <section class="card">
+        <h3>Basics</h3>
+        <div class="sub">What it's called, when, where and how you're scoring.</div>
+        <div class="field">
+          <label for="ev-name">Event name</label>
+          <input type="text" id="ev-name" class="input" placeholder="e.g. Summer Open 2026">
         </div>
-        <div id="course-selected" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
-            <span id="course-selected-name" style="font-weight:600;"></span>
-            <button class="btn btn-outline btn-sm" onclick="clearCourse()" style="padding:6px 14px;font-size:13px;">Change</button>
+        <div class="field">
+          <label for="ev-date">Date</label>
+          <input type="date" id="ev-date" class="input">
+        </div>
+        <!-- Course -->
+        <div class="field" id="course-field">
+          <label for="course-search">Course</label>
+          <div class="course-search-wrap">
+            <input type="text" id="course-search" class="input" placeholder="Type the course name">
+            <div class="course-results" id="course-results" style="display:none;"></div>
           </div>
-          <div class="form-row">
-            <label>Tee</label>
-            <select id="course-tee-select"></select>
+          <div id="course-selected" style="display:none;">
+            <div class="course-sel"><span id="course-selected-name"></span><a href="#" class="link" onclick="clearCourse();return false">Change</a></div>
+            <div class="field" style="margin-top:var(--s-3)">
+              <label for="course-tee-select">Tees</label>
+              <div class="select-wrap"><select id="course-tee-select" class="select"></select></div>
+              <div class="hint" id="tee-hint"></div>
+            </div>
           </div>
+          <div class="hint">Not in the list? You can add it in a minute.</div>
         </div>
         <div id="course-inline-form" style="display:none;" class="course-inline">
           <h3 style="font-size:15px;margin-bottom:12px;">Add a new course</h3>
-          <div class="form-row"><label>Course name</label><input type="text" id="ci-name" class="field-input"></div>
-          <div class="inline-row">
-            <div class="form-row"><label>Tee colour</label><input type="text" id="ci-tee-colour" class="field-input" placeholder="e.g. White"></div>
-            <div class="form-row"><label>Par total</label><input type="number" id="ci-par" class="field-input" value="72"></div>
+          <div class="field"><label for="ci-name">Course name</label><input type="text" id="ci-name" class="input"></div>
+          <div class="two">
+            <div class="field"><label for="ci-tee-colour">Tee colour</label><input type="text" id="ci-tee-colour" class="input" placeholder="e.g. White"></div>
+            <div class="field"><label for="ci-par">Par total</label><input type="number" id="ci-par" class="input" value="72"></div>
           </div>
-          <div class="inline-row">
-            <div class="form-row"><label>Slope</label><input type="number" id="ci-slope" class="field-input" value="113" step="1"></div>
-            <div class="form-row"><label>Rating</label><input type="number" id="ci-rating" class="field-input" value="72.0" step="0.1"></div>
+          <div class="two">
+            <div class="field"><label for="ci-slope">Slope</label><input type="number" id="ci-slope" class="input" value="113" step="1"></div>
+            <div class="field"><label for="ci-rating">Rating</label><input type="number" id="ci-rating" class="input" value="72.0" step="0.1"></div>
           </div>
           <h3 style="font-size:14px;margin:16px 0 8px;">Holes</h3>
           <div class="holes-grid" id="holes-grid">
             <span class="hg-label">Hole</span><span class="hg-label">Par</span><span class="hg-label">SI</span>
           </div>
           <div style="margin-top:12px;">
-            <button class="btn btn-green btn-sm" onclick="saveCourseInline()">Save course</button>
-            <button class="btn btn-outline btn-sm" onclick="cancelCourseInline()" style="margin-top:8px;">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveCourseInline()">Save course</button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelCourseInline()" style="margin-top:8px;">Cancel</button>
           </div>
         </div>
-      </div>
-
-      <!-- Format -->
-      <div class="form-row">
-        <label>Format</label>
-        <select id="ev-format">
-          <option value="individual_stableford">Individual Stableford</option>
-          <option value="better_ball_pairs">Better ball pairs</option>
-          <option value="better_ball_2from4">Best 2 from 4</option>
-        </select>
-      </div>
-      <div class="disclaimer" id="hcp-disclaimer">
-        Handicaps can't be checked against the WHS. The organiser has the final say.
-      </div>
-
-      <!-- More options (collapsed) -->
-      <details style="margin-top:20px;margin-bottom:16px;">
-        <summary style="font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;padding:10px 0;list-style:none;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> More options</summary>
-        <div style="padding-top:12px;">
-          <div class="form-row">
-            <label>Handicap allowance</label>
-            <select id="ev-allowance">
+        <!-- Format -->
+        <div class="field" style="margin-bottom:var(--s-2)">
+          <label for="ev-format">Format</label>
+          <div class="select-wrap"><select id="ev-format" class="select">
+            <option value="individual_stableford">Individual Stableford</option>
+            <option value="better_ball_pairs">Better ball pairs</option>
+            <option value="better_ball_2from4">Best 2 from 4</option>
+          </select></div>
+          <div class="hint" id="hcp-disclaimer">We can't check handicaps against the WHS. You have the final say on the day.</div>
+        </div>
+        <!-- More options -->
+        <button class="more-toggle" id="more-opts-toggle" aria-expanded="false" onclick="toggleMoreOpts()"><span>More options</span><span class="r"><span class="txt" id="more-opts-summary"></span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></button>
+        <div id="more-opts-panel" style="display:none;">
+          <div class="two" style="margin-top:var(--s-4)">
+            <div class="field"><label for="ev-allowance">Handicap allowance <span class="tip" data-tip="95% for individual, 85% for pairs is normal" tabindex="0">i</span></label><div class="select-wrap"><select id="ev-allowance" class="select">
               <option value="1.00">100%</option>
               <option value="0.95" selected>95%</option>
               <option value="0.90">90%</option>
               <option value="0.85">85%</option>
               <option value="0.80">80%</option>
-            </select>
+            </select></div></div>
+            <div class="field"><label for="ev-max-hcp">Highest handicap allowed</label><input type="number" id="ev-max-hcp" class="input" inputmode="numeric" value="54" min="0" max="54"></div>
           </div>
-          <div class="inline-row">
-            <div class="form-row">
-              <label>Max handicap</label>
-              <input type="number" id="ev-max-hcp" value="54" min="0" max="54">
-            </div>
-            <div class="form-row">
-              <label>Freeze hole</label>
-              <select id="ev-freeze">
-                <option value="0">Off</option>
-                <option value="6">6</option>
-                <option value="9">9</option>
-                <option value="12" selected>12</option>
-                <option value="15">15</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-section" style="margin-top:12px;">
-            <h3 style="font-size:14px;">Charity (optional)</h3>
-            <div class="form-row"><label>Charity name</label><input type="text" id="ev-charity-name" class="field-input" placeholder="e.g. Macmillan Cancer Support"></div>
-            <div class="form-row"><label>One line</label><input type="text" id="ev-charity-line" class="field-input" placeholder="e.g. Supporting families affected by cancer"></div>
-            <div class="form-row"><label>Donate link</label><input type="text" id="ev-charity-url" class="field-input" placeholder="https://..."></div>
-            <div class="form-row"><label>Charity logo URL</label><input type="text" id="ev-charity-logo" class="field-input" placeholder="https://..."></div>
+          <div class="field" style="margin-bottom:0">
+            <label for="ev-freeze">Hide scores from players after hole</label>
+            <div class="select-wrap"><select id="ev-freeze" class="select">
+              <option value="0">Never hide</option>
+              <option value="6">Hole 6</option>
+              <option value="9">Hole 9</option>
+              <option value="12" selected>Hole 12</option>
+              <option value="15">Hole 15</option>
+            </select></div>
+            <div class="hint">Keeps the finish a surprise. You always see everything.</div>
           </div>
         </div>
-      </details>
+      </section>
 
       <!-- Prizes card -->
-      <div id="details-prizes-card" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:14px;font-weight:600;" id="details-prizes-label">Prizes: none yet</span>
-          <button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="switchTab(document.querySelector('.step-btn[data-tab=&quot;golive&quot;]'));setTimeout(function(){loadPrizes()},100)">Add prizes</button>
-        </div>
-      </div>
+      <section class="card" id="details-prizes-card">
+        <div class="row between"><div><h3>Prizes</h3><div class="sub" style="margin:0" id="details-prizes-label">None yet. Add prizes for your event.</div></div><a href="#" class="btn btn-quiet" onclick="switchTab(document.querySelector('.step[data-tab=&quot;golive&quot;]'));setTimeout(function(){loadPrizes()},100);return false">Edit</a></div>
+      </section>
 
-      <button class="btn btn-green" onclick="saveEventDetails()" id="save-details-btn">Save details</button>
+      <!-- Charity card -->
+      <section class="card" id="details-charity-card">
+        <div class="row between"><div><h3>Charity <span class="muted" style="font-weight:400">(optional)</span></h3><div class="sub" style="margin:0" id="details-charity-label">None yet. Add a name, a line and a donation link.</div></div><a href="#" class="btn btn-quiet" id="charity-edit-btn" onclick="openCharityEdit();return false">Add</a></div>
+        <div id="charity-fields" style="display:none;margin-top:var(--s-4);">
+          <div class="field"><label for="ev-charity-name">Charity name</label><input type="text" id="ev-charity-name" class="input" placeholder="e.g. Macmillan Cancer Support"></div>
+          <div class="field"><label for="ev-charity-line">One line</label><input type="text" id="ev-charity-line" class="input" placeholder="e.g. Supporting families affected by cancer"></div>
+          <div class="field"><label for="ev-charity-url">Donate link</label><input type="text" id="ev-charity-url" class="input" placeholder="https://..."></div>
+          <div class="field"><label for="ev-charity-logo">Charity logo URL</label><input type="text" id="ev-charity-logo" class="input" placeholder="https://..."></div>
+        </div>
+      </section>
+
+      <!-- Sticky action -->
+      <div class="sticky-action"><button class="btn btn-primary btn-lg btn-block" onclick="saveEventDetails()" id="save-details-btn">Save and add players</button></div>
     </div>
 
     <!-- PLAYERS TAB -->
@@ -2792,7 +2724,7 @@ Bob Wilson"></textarea>
     window.location.hash = 'new-event';
     $('ev-title').textContent = 'New event';
     resetEventForm();
-    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+    switchTab(document.querySelector('.step[data-tab="details"]'));
     updateGoLiveTab();
   };
 
@@ -2822,13 +2754,13 @@ Bob Wilson"></textarea>
     // Determine which tab set to show based on status
     if (state.currentEventData && state.currentEventData.status === 'live') {
       updateTabsForStatus('live');
-      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step[data-tab="golive"]'));
     } else if (state.currentEventData && state.currentEventData.status === 'finished') {
       updateTabsForStatus('finished');
-      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step[data-tab="golive"]'));
     } else {
       updateTabsForStatus('draft');
-      switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+      switchTab(document.querySelector('.step[data-tab="details"]'));
     }
 
     // Load players and groups
@@ -2841,7 +2773,8 @@ Bob Wilson"></textarea>
 
   function updateTabsForStatus(status) {
     var stepStrip = $('ev-tabs');
-    var goliveBtn = document.querySelector('.step-btn[data-tab="golive"]');
+    var goliveStep = document.querySelector('.step[data-tab="golive"]');
+    var goliveLabel = goliveStep ? goliveStep.querySelector('.t') : null;
 
     // Hide step strip for live/finished (they use the live/finished view directly)
     if (status === 'live' || status === 'finished') {
@@ -2849,9 +2782,11 @@ Bob Wilson"></textarea>
     } else {
       if (stepStrip) stepStrip.style.display = '';
     }
-    if (status === 'live') goliveBtn.textContent = 'Live';
-    else if (status === 'finished') goliveBtn.textContent = 'Results';
-    else goliveBtn.textContent = 'Go live';
+    if (goliveLabel) {
+      if (status === 'live') goliveLabel.textContent = 'Live';
+      else if (status === 'finished') goliveLabel.textContent = 'Results';
+      else goliveLabel.textContent = 'Go live';
+    }
   }
 
   function resetEventForm() {
@@ -2862,9 +2797,27 @@ Bob Wilson"></textarea>
     $('ev-max-hcp').value = '54';
     $('ev-freeze').value = '12';
     $('course-search').value = '';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
     $('course-selected').style.display = 'none';
     $('course-inline-form').style.display = 'none';
     $('course-results').style.display = 'none';
+    $('ev-charity-name').value = '';
+    $('ev-charity-line').value = '';
+    $('ev-charity-url').value = '';
+    $('ev-charity-logo').value = '';
+    $('charity-fields').style.display = 'none';
+    $('charity-edit-btn').textContent = 'Add';
+    updateCharityLabel();
+    var teeHint = $('tee-hint');
+    if (teeHint) teeHint.textContent = '';
+    var btn = $('save-details-btn');
+    if (btn) btn.textContent = 'Save and add players';
+    // Close more options panel
+    $('more-opts-panel').style.display = 'none';
+    $('more-opts-toggle').classList.remove('open');
+    $('more-opts-toggle').setAttribute('aria-expanded', 'false');
+    updateMoreOptsSummary();
     selectStartingMode('tee_times');
   }
 
@@ -2878,6 +2831,21 @@ Bob Wilson"></textarea>
     $('ev-freeze').value = ev.leaderboard_freeze_hole != null ? ev.leaderboard_freeze_hole : 12;
     selectStartingMode(ev.starting_mode || 'tee_times');
 
+    // Update save button text for existing events
+    var btn = $('save-details-btn');
+    if (btn && state.currentEvent) btn.textContent = 'Save changes';
+    else if (btn) btn.textContent = 'Save and add players';
+
+    // Populate charity fields
+    if (ev.charity_name) $('ev-charity-name').value = ev.charity_name;
+    if (ev.charity_line) $('ev-charity-line').value = ev.charity_line;
+    if (ev.charity_url) $('ev-charity-url').value = ev.charity_url;
+    if (ev.charity_logo_url) $('ev-charity-logo').value = ev.charity_logo_url;
+    updateCharityLabel();
+
+    // Update more-options summary
+    updateMoreOptsSummary();
+
     // Load course if set
     if (ev.course_id) {
       loadCourseForEvent(ev.course_id, ev.tee_id);
@@ -2888,7 +2856,8 @@ Bob Wilson"></textarea>
     try {
       var res = await api('org-courses', { query: { id: courseId } });
       state.courseData = res;
-      $('course-search').style.display = 'none';
+      var searchWrap = $('course-search').closest('.course-search-wrap');
+      if (searchWrap) searchWrap.style.display = 'none';
       $('course-selected').style.display = 'block';
       $('course-selected-name').textContent = res.course.name;
 
@@ -2896,15 +2865,31 @@ Bob Wilson"></textarea>
       var teeSelect = $('course-tee-select');
       teeSelect.innerHTML = (res.tees || []).map(function(t) {
         var sel = teeId && t.id === teeId ? ' selected' : '';
-        return '<option value="' + t.id + '"' + sel + '>' + t.tee_name +
-          ' (slope ' + t.slope + ', rating ' + t.rating + ', par ' + t.par_total + ')</option>';
+        return '<option value="' + t.id + '"' + sel + '>' + esc(t.tee_name) + ' tees</option>';
       }).join('');
 
-      // Set tee data
+      // Set tee data and update hint
       var selectedTee = teeId ? (res.tees || []).find(function(t) { return t.id === teeId; }) : (res.tees || [])[0];
-      if (selectedTee) state.teeData = selectedTee;
+      if (selectedTee) {
+        state.teeData = selectedTee;
+        updateTeeHint(selectedTee);
+      }
+
+      // Listen for tee changes
+      teeSelect.onchange = function() {
+        var t = (res.tees || []).find(function(t) { return t.id === teeSelect.value; });
+        if (t) { state.teeData = t; updateTeeHint(t); }
+        updateStepStates();
+      };
     } catch (err) {
       console.error('Load course error:', err);
+    }
+  }
+
+  function updateTeeHint(tee) {
+    var hint = $('tee-hint');
+    if (hint && tee) {
+      hint.textContent = 'Slope ' + tee.slope + ' \u00B7 Rating ' + tee.rating + ' \u00B7 Par ' + tee.par_total;
     }
   }
 
@@ -2923,9 +2908,9 @@ Bob Wilson"></textarea>
   window.switchTab = function(btn) {
     if (!btn) return;
     var tab = btn.dataset.tab;
-    document.querySelectorAll('.step-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.step').forEach(function(b) { b.classList.remove('on'); });
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    btn.classList.add('active');
+    btn.classList.add('on');
     $('tab-' + tab).classList.add('active');
 
     if (tab === 'players') renderPlayerList();
@@ -2948,37 +2933,52 @@ Bob Wilson"></textarea>
 
     // Details step
     var ds = $('step-state-details');
-    var db = document.querySelector('.step-btn[data-tab="details"]');
-    if (ds) ds.textContent = detailsDone ? (evd.name || '') : '';
-    if (db) { if (detailsDone) db.classList.add('done'); else db.classList.remove('done'); }
+    var db = document.querySelector('.step[data-tab="details"]');
+    var detailsSub = '';
+    if (detailsDone) {
+      var courseName = state.courseData ? state.courseData.course.name : '';
+      var teeName = state.teeData ? state.teeData.tee_name : '';
+      detailsSub = courseName + (teeName ? ', ' + teeName.toLowerCase() : '');
+    }
+    if (ds) ds.textContent = detailsSub || '';
+    if (db) {
+      if (detailsDone) { db.classList.add('done'); db.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { db.classList.remove('done'); db.querySelector('.n').textContent = '1'; }
+    }
 
     // Players step
     var ps = $('step-state-players');
-    var pb = document.querySelector('.step-btn[data-tab="players"]');
+    var pb = document.querySelector('.step[data-tab="players"]');
     if (ps) {
       if (playerCount > 0) {
         var txt = playerCount + ' player' + (playerCount !== 1 ? 's' : '');
-        if (missingHcp > 0) txt += ', ' + missingHcp + ' handicap missing';
+        if (missingHcp > 0) txt += ', ' + missingHcp + ' missing handicap';
         ps.textContent = txt;
       } else {
-        ps.textContent = '';
+        ps.textContent = 'Not added yet';
       }
     }
-    if (pb) { if (playersDone) pb.classList.add('done'); else pb.classList.remove('done'); }
+    if (pb) {
+      if (playersDone) { pb.classList.add('done'); pb.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { pb.classList.remove('done'); pb.querySelector('.n').textContent = '2'; }
+    }
 
     // Groups step
     var gs = $('step-state-groups');
-    var gb = document.querySelector('.step-btn[data-tab="groups"]');
+    var gb = document.querySelector('.step[data-tab="groups"]');
     if (gs) {
       if (groupCount > 0) {
         var gtxt = groupCount + ' group' + (groupCount !== 1 ? 's' : '');
         if (unassigned > 0) gtxt += ', ' + unassigned + ' unassigned';
         gs.textContent = gtxt;
       } else {
-        gs.textContent = '';
+        gs.textContent = 'Not made yet';
       }
     }
-    if (gb) { if (groupsDone) gb.classList.add('done'); else gb.classList.remove('done'); }
+    if (gb) {
+      if (groupsDone) { gb.classList.add('done'); gb.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { gb.classList.remove('done'); gb.querySelector('.n').textContent = '3'; }
+    }
 
     // Go live step
     var ls = $('step-state-golive');
@@ -2988,23 +2988,74 @@ Bob Wilson"></textarea>
       else if (detailsDone && playersDone && groupsDone) ls.textContent = 'Ready';
       else ls.textContent = '';
     }
+
+    // Sub-status line (visible on small screens below the step strip)
+    var subStatus = $('ev-sub-status');
+    if (subStatus) {
+      if (detailsSub) subStatus.textContent = detailsSub + '. Next, add players.';
+      else subStatus.textContent = '';
+    }
+
+    // Update more-options summary
+    updateMoreOptsSummary();
   }
 
-  // Add "Next" buttons to each panel
+  // Add "Next" sticky-action buttons to non-details panels
   function addNextButtons() {
     var steps = [
-      { tab: 'details', next: 'players', label: 'Next: Players' },
-      { tab: 'players', next: 'groups', label: 'Next: Groups' },
-      { tab: 'groups', next: 'golive', label: 'Next: Go live' }
+      { tab: 'players', next: 'groups', label: 'Next: make groups' },
+      { tab: 'groups', next: 'golive', label: 'Next: go live' }
     ];
     steps.forEach(function (s) {
       var panel = $('tab-' + s.tab);
-      if (!panel || panel.querySelector('.step-next')) return;
+      if (!panel || panel.querySelector('.sticky-action')) return;
       var div = document.createElement('div');
-      div.className = 'step-next';
-      div.innerHTML = '<button class="btn btn-green" onclick="switchTab(document.querySelector(\'.step-btn[data-tab=&quot;' + s.next + '&quot;]\'))">' + s.label + '</button>';
+      div.className = 'sticky-action';
+      div.innerHTML = '<button class="btn btn-primary btn-lg btn-block" onclick="switchTab(document.querySelector(\'.step[data-tab=&quot;' + s.next + '&quot;]\'))">' + s.label + '</button>';
       panel.appendChild(div);
     });
+  }
+
+  // ── More options toggle ─────────────────────────────────────
+  window.toggleMoreOpts = function() {
+    var panel = $('more-opts-panel');
+    var toggle = $('more-opts-toggle');
+    var open = panel.style.display === 'none';
+    panel.style.display = open ? '' : 'none';
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', open);
+  };
+
+  function updateMoreOptsSummary() {
+    var el = $('more-opts-summary');
+    if (!el) return;
+    var parts = [];
+    var al = $('ev-allowance');
+    if (al) { var pct = Math.round(parseFloat(al.value) * 100); if (pct !== 95) parts.push(pct + '% allowance'); }
+    var fz = $('ev-freeze');
+    if (fz && fz.value !== '0') parts.push('hide after ' + fz.value);
+    el.textContent = parts.join(' \u00B7 ') || '';
+  }
+
+  // ── Charity card toggle ────────────────────────────────────
+  window.openCharityEdit = function() {
+    var fields = $('charity-fields');
+    var btn = $('charity-edit-btn');
+    if (fields.style.display === 'none') {
+      fields.style.display = '';
+      btn.textContent = 'Done';
+    } else {
+      fields.style.display = 'none';
+      btn.textContent = $('ev-charity-name').value.trim() ? 'Edit' : 'Add';
+      updateCharityLabel();
+    }
+  };
+
+  function updateCharityLabel() {
+    var label = $('details-charity-label');
+    var name = $('ev-charity-name').value.trim();
+    if (name) label.textContent = name;
+    else label.textContent = 'None yet. Add a name, a line and a donation link.';
   }
 
   // ── Format change → default allowance ────────────────────────
@@ -3054,20 +3105,26 @@ Bob Wilson"></textarea>
     state.courseData = null;
     state.teeData = null;
     $('course-selected').style.display = 'none';
-    $('course-search').style.display = 'block';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
     $('course-search').value = '';
+    var teeHint = $('tee-hint');
+    if (teeHint) teeHint.textContent = '';
+    updateStepStates();
   };
 
   window.showCourseInline = function() {
     $('course-results').style.display = 'none';
-    $('course-search').style.display = 'none';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = 'none';
     $('course-inline-form').style.display = 'block';
     buildHolesGrid();
   };
 
   window.cancelCourseInline = function() {
     $('course-inline-form').style.display = 'none';
-    $('course-search').style.display = 'block';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
   };
 
   function buildHolesGrid() {
@@ -3169,8 +3226,9 @@ Bob Wilson"></textarea>
     if (!name) { toast('Enter event name'); return; }
 
     var btn = $('save-details-btn');
+    var isNew = !state.currentEvent;
+    btn.classList.add('is-loading');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
 
     var modeEl = document.querySelector('#starting-mode-group .radio-opt.selected');
     var mode = modeEl ? modeEl.dataset.value : 'tee_times';
@@ -3202,7 +3260,7 @@ Bob Wilson"></textarea>
         payload.id = state.currentEvent;
         res = await api('org-events', { method: 'PATCH', body: payload });
         state.currentEventData = res.event;
-        toast('Event saved');
+        toast('Saved');
       } else {
         // Create — then switch to Players tab
         res = await api('org-events', { method: 'POST', body: payload });
@@ -3210,16 +3268,18 @@ Bob Wilson"></textarea>
         state.currentEventData = res.event;
         window.location.hash = 'event-' + res.event.id;
         $('ev-title').textContent = name;
-        switchTab(document.querySelector('.step-btn[data-tab="players"]'));
+        switchTab(document.querySelector('.step[data-tab="players"]'));
         toast('Event created — add your players');
       }
-      $('ev-title').textContent = name;
+      $(‘ev-title’).textContent = name;
+      updateStepStates();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast(‘That didn\’t work. Try again.’);
     }
 
+    btn.classList.remove(‘is-loading’);
     btn.disabled = false;
-    btn.textContent = 'Save details';
+    btn.textContent = isNew && !state.currentEvent ? ‘Save and add players’ : ‘Save changes’;
   };
 
   // ── Players ───────────────────────────────────────────────────
@@ -4491,7 +4551,7 @@ Bob Wilson"></textarea>
   };
 
   window.showEditEventFromLive = function() {
-    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+    switchTab(document.querySelector('.step[data-tab="details"]'));
   };
 
   window.archiveEvent = async function() {
