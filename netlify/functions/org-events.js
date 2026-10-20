@@ -65,12 +65,12 @@ exports.handler = async function (event) {
 
       // For finished events, compute winner using the scoring engine
       var engine = require('./shared/engine');
-      var finishedEvents = (events || []).filter(function (e) { return e.status === 'finished' && e.tee_id; });
+      var finishedEvents = (events || []).filter(function (e) { return e.status === 'finished' && e.course_id; });
       var winnerMap = {};
       for (var fi = 0; fi < finishedEvents.length; fi++) {
         try {
           var fev = finishedEvents[fi];
-          var holes = await sb.sbGet('course_holes?tee_id=eq.' + fev.tee_id + '&select=hole_number,par,stroke_index&order=hole_number');
+          var holes = await sb.sbGet('course_holes?course_id=eq.' + fev.course_id + '&select=hole_number,par,stroke_index&order=hole_number');
           var fplayers = await sb.sbGet('players?event_id=eq.' + fev.id + '&select=id,display_name,playing_handicap,group_id');
           var fgroups = await sb.sbGet('groups?event_id=eq.' + fev.id + '&select=id,group_number');
           var fscores = await sb.sbGet('hole_scores?event_id=eq.' + fev.id + '&select=player_id,hole_number,gross_score,picked_up');

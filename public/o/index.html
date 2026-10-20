@@ -1654,11 +1654,12 @@ Bob Wilson"></textarea>
     $('oob-tabbar').querySelectorAll('a').forEach(function(a) { a.classList.remove('on'); });
     $('tab-events').classList.add('on');
 
-    // Greeting — person's name is not reliably stored yet; use time-of-day only
+    // Greeting — use first_name from the organiser profile if set
     var hour = new Date().getHours();
     var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    var firstName = org.first_name || '';
     var greetEl = $('dash-greeting');
-    if (greetEl) greetEl.textContent = greeting;
+    if (greetEl) greetEl.textContent = firstName ? (greeting + ', ' + esc(firstName)) : greeting;
 
     // Appbar brand — OB mark only for OOB's superadmin organiser viewing as themselves.
     // Every other organiser shows their logo if set, otherwise their name as text.
