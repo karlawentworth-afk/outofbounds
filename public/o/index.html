@@ -1654,22 +1654,25 @@ Bob Wilson"></textarea>
     $('oob-tabbar').querySelectorAll('a').forEach(function(a) { a.classList.remove('on'); });
     $('tab-events').classList.add('on');
 
-    // Greeting — use organiser's first name (from name, not display_name)
+    // Greeting — person's name is not reliably stored yet; use time-of-day only
     var hour = new Date().getHours();
     var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     var greetEl = $('dash-greeting');
-    if (greetEl) greetEl.textContent = firstName ? (greeting + ', ' + esc(firstName)) : greeting;
+    if (greetEl) greetEl.textContent = greeting;
 
-    // Appbar brand
+    // Appbar brand — OB mark only for OOB's own organiser; everyone else gets logo or name
     var brandName = org.display_name || org.name || '';
-    var brandEl = $('appbar-brand');
     var markEl = $('appbar-mark');
     var nameEl = $('appbar-name');
+    var isOwnOrg = org.slug === 'demo' || org.is_superadmin;
     if (org.logo_url) {
       markEl.style.display = 'none';
       nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
-    } else {
+    } else if (isOwnOrg) {
       markEl.style.display = '';
+      nameEl.textContent = brandName;
+    } else {
+      markEl.style.display = 'none';
       nameEl.textContent = brandName;
     }
     if (org.primary_colour) {
@@ -1743,12 +1746,13 @@ Bob Wilson"></textarea>
 
     function renderCard(ev) {
       var status = ev.archived ? 'finished' : ev.status;
-      var chipClass = status === 'live' ? 'live' : status === 'draft' ? 'draft' : status === 'finished' ? 'done' : '';
-      var chipLabel = ev.archived ? 'Archived' : status === 'draft' ? 'Draft' : status === 'live' ? 'Live' : 'Finished';
-      var readyChip = (status === 'draft' && ev.format) ? 'ready' : '';
-      if (readyChip) { chipClass = 'ready'; chipLabel = 'Ready'; }
+      var chipClass, chipLabel;
+      if (ev.archived) { chipClass = 'done'; chipLabel = 'Archived'; }
+      else if (status === 'live') { chipClass = 'live'; chipLabel = 'Live'; }
+      else if (status === 'finished') { chipClass = 'done'; chipLabel = 'Finished'; }
+      else { chipClass = 'draft'; chipLabel = 'Draft'; }
 
-      // Next action text
+      // Next action text and button
       var next = '';
       var btnLabel = '';
       var btnClass = 'btn-secondary';
@@ -1758,17 +1762,23 @@ Bob Wilson"></textarea>
         btnLabel = 'Open';
         btnClass = 'btn-primary';
       } else if (status === 'draft') {
-        next = 'Next: set up your event.';
-        btnLabel = 'Continue setup';
+        if (!ev.player_count_at_payment && !ev.course_id) {
+          next = 'Add your event details and players.';
+          btnLabel = 'Continue setup';
+        } else {
+          next = 'Set up in progress.';
+          btnLabel = 'Continue setup';
+        }
       } else if (status === 'finished') {
         next = '';
         btnLabel = 'Share results';
       }
 
-      // Date and format meta
+      // Meta: date + course name if we have it, otherwise player count
       var meta = '';
       if (ev.event_date) meta += formatDate(ev.event_date);
-      if (ev.format) meta += (meta ? ' \u00B7 ' : '') + esc(ev.format);
+      var playerCount = ev.player_count_at_payment || 0;
+      if (playerCount) meta += (meta ? ' \u00B7 ' : '') + playerCount + ' players';
 
       return '<article class="event-card ' + esc(status) + '" onclick="openEvent(\'' + ev.id + '\')">' +
         '<div class="bar"></div>' +
