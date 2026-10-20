@@ -1887,8 +1887,9 @@ async function stepPhase0Proofs() {
     });
 
     if (firstEventId) {
-      await page.goto(LIVE_URL + '/o/#event-' + firstEventId, { waitUntil: 'networkidle', timeout: 20000 });
-      // Wait for loadEvents + openEvent to complete (async chain)
+      // Set the hash then force a full page reload (simulates phone tab discard)
+      await page.evaluate(function (eid) { window.location.hash = 'event-' + eid; }, firstEventId);
+      await page.reload({ waitUntil: 'networkidle', timeout: 25000 });
       await sleep(8000);
 
       var activeScreen = await page.evaluate(function () {
