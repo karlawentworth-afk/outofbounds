@@ -1660,19 +1660,17 @@ Bob Wilson"></textarea>
     var greetEl = $('dash-greeting');
     if (greetEl) greetEl.textContent = greeting;
 
-    // Appbar brand — OB mark only for OOB's own organiser; everyone else gets logo or name
+    // Appbar brand — OB mark only for OOB's superadmin organiser viewing as themselves.
+    // Every other organiser shows their logo if set, otherwise their name as text.
     var brandName = org.display_name || org.name || '';
     var markEl = $('appbar-mark');
     var nameEl = $('appbar-name');
-    var isOwnOrg = org.slug === 'demo' || org.is_superadmin;
+    var showOBMark = org.is_superadmin && !state.realOrganiser; // viewing as self, not impersonating
     if (org.logo_url) {
       markEl.style.display = 'none';
       nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
-    } else if (isOwnOrg) {
-      markEl.style.display = '';
-      nameEl.textContent = brandName;
     } else {
-      markEl.style.display = 'none';
+      markEl.style.display = showOBMark ? '' : 'none';
       nameEl.textContent = brandName;
     }
     if (org.primary_colour) {
@@ -1757,28 +1755,39 @@ Bob Wilson"></textarea>
       var btnLabel = '';
       var btnClass = 'btn-secondary';
       var btnAction = "event.stopPropagation();openEvent('" + ev.id + "')";
+      var pc = ev.player_count || 0;
+      var gc = ev.group_count || 0;
       if (status === 'live') {
-        next = 'Scoring in progress';
+        next = gc > 0 ? gc + ' groups scoring' : 'Scoring in progress';
         btnLabel = 'Open';
         btnClass = 'btn-primary';
       } else if (status === 'draft') {
-        if (!ev.player_count_at_payment && !ev.course_id) {
+        if (pc === 0) {
+          next = 'Add your players.';
+          btnLabel = 'Add players';
+        } else if (gc === 0) {
+          next = pc + ' players added. Next, make your groups.';
+          btnLabel = 'Make groups';
+        } else {
+          next = 'Everything is ready. Go live when you like.';
+          btnLabel = 'Go live';
+          chipClass = 'ready'; chipLabel = 'Ready';
+        }
+        if (!ev.course_id) {
           next = 'Add your event details and players.';
           btnLabel = 'Continue setup';
-        } else {
-          next = 'Set up in progress.';
-          btnLabel = 'Continue setup';
+          chipClass = 'draft'; chipLabel = 'Draft';
         }
       } else if (status === 'finished') {
-        next = '';
+        next = ev.winner_text || '';
         btnLabel = 'Share results';
       }
 
-      // Meta: date + course name if we have it, otherwise player count
+      // Meta: date + course + player count
       var meta = '';
       if (ev.event_date) meta += formatDate(ev.event_date);
-      var playerCount = ev.player_count_at_payment || 0;
-      if (playerCount) meta += (meta ? ' \u00B7 ' : '') + playerCount + ' players';
+      if (ev.course_name) meta += (meta ? ' \u00B7 ' : '') + esc(ev.course_name);
+      if (pc > 0) meta += (meta ? ' \u00B7 ' : '') + pc + ' players';
 
       return '<article class="event-card ' + esc(status) + '" onclick="openEvent(\'' + ev.id + '\')">' +
         '<div class="bar"></div>' +
