@@ -955,7 +955,7 @@ a { color: inherit; text-decoration: none; }
 
       <!-- Prizes card -->
       <section class="card" id="details-prizes-card">
-        <div class="row between"><div><h3>Prizes</h3><div class="sub" style="margin:0" id="details-prizes-label">None yet. Add prizes for your event.</div></div><a href="#" class="btn btn-quiet" onclick="switchTab(document.querySelector('.step[data-tab=&quot;golive&quot;]'));setTimeout(function(){loadPrizes()},100);return false">Edit</a></div>
+        <div class="row between"><div><h3>Prizes</h3><div class="sub" style="margin:0" id="details-prizes-label">None yet. Optional, add any time.</div></div><a href="#" class="btn btn-quiet" onclick="openPrizesSheet();return false" id="prizes-edit-btn">Edit</a></div>
       </section>
 
       <!-- Charity card -->
@@ -4520,6 +4520,57 @@ Bob Wilson"></textarea>
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, player_id: playerId || null }
       });
     } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+  };
+
+  window.openPrizesSheet = async function() {
+    if (!state.currentEvent) return;
+    await loadPrizes();
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+
+    var html = '<h2>Prizes</h2><p>Optional. Winners fill in from the leaderboard when you finish.</p>';
+    if (prizes.length === 0) {
+      html += '<div class="actions">' +
+        '<button class="btn btn-primary btn-block" onclick="seedPrizes();closePrizesSheet()">Add standard prizes</button>' +
+        '<button class="btn btn-quiet" onclick="addCustomPrize();closePrizesSheet()">+ Custom prize</button>' +
+      '</div>';
+    } else {
+      html += '<div style="margin-bottom:var(--s-4);">';
+      prizes.forEach(function (p) {
+        html += '<div class="prize"><div class="medal">' + esc(p.category.substring(0, 2)) + '</div>' +
+          '<div class="grow"><div class="who">' + esc(p.category) + '</div>' +
+          (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '') + '</div></div>';
+      });
+      html += '</div>';
+      html += '<div class="actions">' +
+        '<button class="btn btn-quiet" onclick="addCustomPrize();closePrizesSheet()">+ Custom prize</button>' +
+        '<button class="btn btn-secondary btn-block" onclick="closePrizesSheet()">Done</button>' +
+      '</div>';
+    }
+
+    var wrap = document.createElement('div');
+    wrap.id = 'prizes-sheet-wrap';
+    wrap.className = 'sheet-wrap';
+    wrap.onclick = function (e) { if (e.target === wrap) closePrizesSheet(); };
+    var sheet = document.createElement('div');
+    sheet.className = 'sheet';
+    sheet.innerHTML = '<div class="grab"></div>' + html;
+    wrap.appendChild(sheet);
+    document.body.appendChild(wrap);
+  };
+
+  window.closePrizesSheet = function () {
+    var wrap = $('prizes-sheet-wrap');
+    if (wrap) wrap.remove();
+    // Update the prizes label on the details card
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+    var label = $('details-prizes-label');
+    if (label) {
+      if (prizes.length > 0) {
+        label.textContent = prizes.length + ' prizes: ' + prizes.map(function (p) { return p.category; }).join(', ');
+      } else {
+        label.textContent = 'None yet. Optional, add any time.';
+      }
+    }
   };
 
   window.sendResultsEmail = async function() {
