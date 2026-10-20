@@ -763,7 +763,8 @@ html, body {
 
       await loadContext();
     } catch (err) {
-      document.getElementById('loading-msg').textContent = err.message || 'Failed to load. Check your connection.';
+      console.error('Init error:', err.message);
+      document.getElementById('loading-msg').textContent = 'That didn\u2019t work. Check your signal and try again.';
     }
   }
 
@@ -823,7 +824,8 @@ html, body {
         }
       });
     } catch (err) {
-      document.getElementById('find-list').innerHTML = '<div style="padding:24px;color:var(--muted)">' + esc(err.message) + '</div>';
+      console.error('Find list error:', err.message);
+      document.getElementById('find-list').innerHTML = '<div style="padding:24px;color:var(--muted)">That didn\u2019t work. Check your signal and try again.</div>';
     }
   }
 
@@ -891,7 +893,8 @@ html, body {
     } catch (err) {
       btn.disabled = false;
       btn.textContent = "That's me";
-      showSheet('Error: ' + err.message, 'OK', function () {});
+      console.error('Player confirm error:', err.message);
+      showSheet('That didn\u2019t work. Check your signal and try again.', 'OK', function () {});
     }
   };
 
@@ -900,7 +903,8 @@ html, body {
     try {
       ctx = await OOB.api('player-context', { query: { token: token } });
     } catch (err) {
-      document.getElementById('loading-msg').textContent = err.message || 'Could not load player data.';
+      console.error('Load context error:', err.message);
+      document.getElementById('loading-msg').textContent = 'That didn\u2019t work. Check your signal and try again.';
       showScreen('s-loading');
       return;
     }
