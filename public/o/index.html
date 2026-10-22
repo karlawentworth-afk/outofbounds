@@ -413,6 +413,52 @@ a { color: inherit; text-decoration: none; }
 .greet .btn { display: none; }
 @media (min-width: 900px) { .greet .btn { display: inline-flex; } }
 @media (min-width: 900px) { #screen-dashboard .sticky-action { display: none; } }
+
+/* Go Live review fee breakdown */
+.review p { font-size: var(--fs-body); line-height: 1.6; }
+.fee { margin-top: var(--s-4); border-top: 1px solid var(--line); }
+.fee .r { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); }
+.fee .r span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.fee .r.total { border-bottom: 0; padding-top: var(--s-4); }
+.fee .r.total span:first-child { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-h3); }
+.fee .r.total span:last-child { font-family: var(--font-score); font-weight: 700; font-size: var(--fs-score-lg); line-height: 1; }
+
+/* Live header */
+.livehead { background: var(--dark-surface); color: var(--dark-ink); padding: var(--s-5) 0; }
+.livehead .in { width: min(var(--col), 100%); margin: 0 auto; padding: 0 var(--gutter); }
+.livehead .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.livehead .top .crumb { color: var(--dark-ink-muted); }
+.livehead .top .crumb svg { stroke: currentColor; }
+.livehead h1 { color: #fff; font-size: var(--fs-h1); display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.livehead .meta { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-1); display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+.livehead .meta a { color: var(--dark-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.livehead .stats { margin-top: var(--s-4); }
+.livehead .stat { background: var(--dark-surface-2); border-color: transparent; }
+.livehead .stat b { color: #fff; } .livehead .stat span { color: var(--dark-ink-muted); }
+.livehead .chip.live { background: rgba(143,211,164,.18); color: var(--dark-accent); }
+.livehead .chip.live::before { background: var(--dark-accent); }
+.page.wide { padding-top: var(--s-5); }
+.upd { font-size: var(--fs-small); color: var(--ink-muted); display: inline-flex; align-items: center; gap: 6px; }
+.upd i { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.remote { display: grid; grid-template-columns: 1fr; gap: var(--s-2); }
+.remote .btn { padding: 0 var(--s-3); }
+@media (min-width: 600px) { .remote { grid-template-columns: 1fr 1fr; } }
+.playing { display: flex; align-items: center; gap: var(--s-3); }
+.playing .avatar { background: var(--brand); border: 0; flex: 0 0 auto; }
+@media (min-width: 900px) { .livehead .in { width: min(1120px, 100%); } }
+
+/* Winner card (finished) */
+.winner { background: var(--dark-gradient); color: #fff; border-radius: var(--r-lg); padding: var(--s-6) var(--s-5); text-align: center; }
+.winner .micro { color: var(--dark-accent); }
+.winner h2 { color: #fff; font-size: var(--fs-h1); margin: var(--s-2) 0 var(--s-1); }
+.winner .pts { font-family: var(--font-score); font-weight: 700; font-size: var(--fs-score-lg); line-height: 1; font-variant-numeric: tabular-nums; color: var(--dark-accent); }
+.winner .pts small { font-family: var(--font-body); font-weight: 500; font-size: var(--fs-ui); color: var(--dark-ink-muted); margin-left: 4px; }
+.winner .sub { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-2); }
+.podium { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: var(--s-5); }
+.podium div { background: rgba(255,255,255,.1); border-radius: var(--r-md); padding: var(--s-3); }
+.podium b { display: block; font-family: var(--font-score); font-size: var(--fs-h2); color: #fff; }
+.podium span { font-size: var(--fs-small); color: var(--dark-ink-muted); }
 </style>
 </head>
 <body>
@@ -1064,18 +1110,25 @@ a { color: inherit; text-decoration: none; }
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
-        <div class="card review" style="background:linear-gradient(170deg,rgba(16,52,78,.65),rgba(16,52,78,.5)),url(/img/photos/golfer-swing.jpg) center/cover;color:#fff;border:none;">
-          <h2 style="margin-bottom:10px;color:#fff;">Ready to go live?</h2>
-          <p id="golive-summary" style="color:rgba(255,255,255,.85);"></p>
-          <div class="price-row" style="border-color:rgba(255,255,255,.2);">
-            <span id="golive-breakdown" style="color:rgba(255,255,255,.7);"></span>
-            <span id="golive-price" class="big" style="color:#fff;"></span>
+        <section class="card review">
+          <h2>Ready to go live?</h2>
+          <p id="golive-summary" style="margin-top:var(--s-2)"></p>
+          <div class="fee" id="golive-fee">
+            <div class="r" id="golive-fee-base"><span>For the event</span><span class="num"></span></div>
+            <div class="r" id="golive-fee-players"><span></span><span class="num"></span></div>
+            <div class="r total"><span>To pay</span><span class="num" id="golive-total"></span></div>
           </div>
-          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.7);margin-top:14px;">Handicaps can't be checked against the WHS. You have the final say on the day.</div>
-        </div>
-        <div class="step-next">
-          <button class="btn btn-green btn-block" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
-          <p class="quiet" style="text-align:center;margin-top:10px;">You can still edit players and groups after this.</p>
+          <div id="golive-pro-line" style="display:none" class="r"><span class="chip pro" style="margin-top:2px">Pro</span><div id="golive-pro-text"></div></div>
+          <div class="hint" id="golive-disclaimer" style="margin-top:var(--s-3)">We can't check handicaps against the WHS. You have the final say on the day. Adding a player later costs 99p.</div>
+        </section>
+        <section class="card sunken" id="golive-pro-card" style="display:none">
+          <div class="row" style="align-items:flex-start"><span class="chip pro" style="margin-top:2px">Pro</span><div class="small muted" id="golive-pro-note"></div></div>
+        </section>
+        <div id="golive-blocked" class="why" style="display:none;text-align:center;margin-top:var(--s-3)"></div>
+        <div id="golive-native-block" style="display:none" class="banner warn">This event needs a Play pass. Open outofboundsscoring.netlify.app on a browser to pay and go live.</div>
+        <div class="sticky-action">
+          <button class="btn btn-primary btn-lg" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
+          <div class="why">You can still change players and groups after this.</div>
         </div>
       </div>
 
@@ -4055,8 +4108,6 @@ Bob Wilson"></textarea>
       $('golive-draft').style.display = 'block';
       $('golive-live').style.display = 'none';
       $('golive-finished').style.display = 'none';
-      $('golive-breakdown').textContent = 'Save your event first.';
-      $('golive-price').textContent = '';
       $('golive-btn').style.display = 'none';
       return;
     }
@@ -4074,9 +4125,9 @@ Bob Wilson"></textarea>
       }).then(function (r) {
         var note = $('results-email-note');
         if (r.with_email > 0) {
-          note.textContent = 'Results will be emailed to ' + r.with_email + ' of ' + r.total + ' players (the ones with an email).';
+          note.textContent = r.with_email + ' player' + (r.with_email !== 1 ? 's' : '') + ' gave an email and will get the results.';
         } else {
-          note.textContent = 'No players have an email address.';
+          note.textContent = 'No players gave an email.';
         }
       }).catch(function () {});
       return;
@@ -4100,33 +4151,82 @@ Bob Wilson"></textarea>
     var gn = state.groups ? state.groups.length : 0;
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
 
-    // Build review summary
-    var summary = '<strong>' + esc(ev.name || 'Your event') + '</strong>';
-    if (ev.event_date) summary += ' on ' + formatDate(ev.event_date);
-    summary += '. ' + n + ' player' + (n !== 1 ? 's' : '') + ' in ' + gn + ' group' + (gn !== 1 ? 's' : '') + '.';
+    // Build review summary - richer version per go-live.html
+    var courseName = state.courseData ? state.courseData.course.name : '';
+    var teeName = state.teeData ? state.teeData.tee_name : '';
+    var formatLabel = ev.format ? ev.format.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }) : '';
+    var allowance = ev.handicap_allowance != null ? Math.round(ev.handicap_allowance * 100) + '%' : '95%';
+    var firstTee = '';
+    if (state.groups && state.groups.length > 0 && state.groups[0].tee_time) firstTee = state.groups[0].tee_time;
+
+    var summary = esc(ev.name || 'Your event');
+    if (ev.event_date) summary += ', ' + formatDate(ev.event_date);
+    if (courseName) summary += ' at ' + esc(courseName);
+    if (teeName) summary += ', ' + esc(teeName).toLowerCase() + ' tees';
+    summary += '. ' + esc(formatLabel);
+    if (allowance) summary += ', ' + allowance + ' allowance';
+    summary += '. ' + n + ' player' + (n !== 1 ? 's' : '') + ' in ' + gn + ' group' + (gn !== 1 ? 's' : '');
+    if (firstTee) summary += ', first tee ' + firstTee;
+    summary += '.';
     var summaryEl = $('golive-summary');
     if (summaryEl) summaryEl.innerHTML = summary;
 
+    // Fee or Pro display
+    var feeEl = $('golive-fee');
+    var proCard = $('golive-pro-card');
+    var blockedEl = $('golive-blocked');
+    var nativeBlock = $('golive-native-block');
+
+    // Check native
+    var isNative = false;
+    try { isNative = window.Capacitor && window.Capacitor.isNativePlatform(); } catch(e) {}
+
     if (orgIsPro) {
-      $('golive-breakdown').innerHTML = n + ' player' + (n !== 1 ? 's' : '') + ' ready to go';
-      $('golive-price').textContent = 'Included with Pro';
-      $('golive-price').style.fontSize = '20px';
+      feeEl.style.display = 'none';
+      if (proCard) {
+        proCard.style.display = '';
+        $('golive-pro-note').innerHTML = '<b style="color:var(--ink)">' + n + ' player' + (n !== 1 ? 's' : '') + ' ready \u00b7 Included with Pro</b>';
+      }
       $('golive-btn').textContent = 'Go live';
+      if (nativeBlock) nativeBlock.style.display = 'none';
+    } else if (isNative) {
+      // Native: no payment in-app
+      feeEl.style.display = 'none';
+      if (proCard) proCard.style.display = 'none';
+      if (nativeBlock) nativeBlock.style.display = '';
+      $('golive-btn').style.display = 'none';
     } else {
+      feeEl.style.display = '';
+      if (proCard) {
+        proCard.style.display = '';
+        $('golive-pro-note').innerHTML = 'On Pro this step says <b style="color:var(--ink)">' + n + ' player' + (n !== 1 ? 's' : '') + ' ready \u00b7 Included with Pro</b> and the button is simply \u201cGo live\u201d. Your logo and colours go on every screen.';
+      }
+      if (nativeBlock) nativeBlock.style.display = 'none';
       var base = 999;
       var perPlayer = 99;
       var total = base + (n * perPlayer);
-      $('golive-breakdown').innerHTML = formatPrice(base) + ' + ' + formatPrice(perPlayer) + ' &times; ' + n + ' player' + (n !== 1 ? 's' : '');
-      $('golive-price').textContent = formatPrice(total);
-      $('golive-price').style.fontSize = '';
-      $('golive-btn').textContent = 'Go live and pay';
+      // Fee rows
+      $('golive-fee-base').querySelector('span:last-child').textContent = formatPrice(base);
+      var playersRow = $('golive-fee-players');
+      playersRow.querySelector('span:first-child').textContent = '99p for each of ' + n + ' player' + (n !== 1 ? 's' : '');
+      playersRow.querySelector('span:last-child').textContent = formatPrice(n * perPlayer);
+      $('golive-total').textContent = formatPrice(total);
+      $('golive-btn').textContent = 'Pay ' + formatPrice(total) + ' and go live';
     }
 
-    if (n === 0) {
-      $('golive-breakdown').innerHTML = 'Add players before going live.';
-      $('golive-price').textContent = '';
+    // Blocked states
+    var hasNoCourse = !state.courseData || !state.teeData;
+    if (hasNoCourse && n === 0) {
+      if (blockedEl) { blockedEl.textContent = 'Choose a course and tees to go live. Add at least one player to go live.'; blockedEl.style.display = ''; }
+      $('golive-btn').disabled = true;
+    } else if (hasNoCourse) {
+      if (blockedEl) { blockedEl.textContent = 'Choose a course and tees to go live.'; blockedEl.style.display = ''; }
+      $('golive-btn').disabled = true;
+    } else if (n === 0) {
+      if (blockedEl) { blockedEl.textContent = 'Add at least one player to go live.'; blockedEl.style.display = ''; }
       $('golive-btn').disabled = true;
     } else {
+      if (blockedEl) blockedEl.style.display = 'none';
       $('golive-btn').disabled = false;
     }
   }
@@ -4156,15 +4256,21 @@ Bob Wilson"></textarea>
       if (res.url) {
         window.location.href = res.url;
       } else {
-        toast('No checkout URL returned');
+        toast('Couldn\u2019t start payment. Try again.');
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('Couldn\u2019t start payment. Try again.');
     }
 
     $('golive-btn').disabled = false;
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
-    $('golive-btn').textContent = orgIsPro ? 'Go live' : 'Go live and pay';
+    if (orgIsPro) {
+      $('golive-btn').textContent = 'Go live';
+    } else {
+      var n2 = state.players ? state.players.length : 0;
+      var total2 = 999 + (n2 * 99);
+      $('golive-btn').textContent = 'Pay ' + formatPrice(total2) + ' and go live';
+    }
   };
 
   // ── Live view ─────────────────────────────────────────────────
