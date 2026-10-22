@@ -1220,6 +1220,8 @@ a { color: inherit; text-decoration: none; }
           <div class="podium" id="finished-podium"></div>
         </section>
 
+        <div class="banner info" id="finished-email-banner" style="margin-bottom:var(--s-4);display:none"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div id="finished-email-banner-text"></div></div>
+
         <div class="cols" style="margin-top:var(--s-3)">
         <div>
           <!-- Share results -->
@@ -4174,9 +4176,17 @@ Bob Wilson"></textarea>
         body: { action: 'count', event_id: state.currentEvent, organiser_id: state.organiser.id }
       }).then(function (r) {
         var note = $('results-email-note');
+        var banner = $('finished-email-banner');
+        var bannerText = $('finished-email-banner-text');
         if (r.with_email > 0) {
+          var noEmail = r.total - r.with_email;
+          var bannerMsg = 'Results published and emailed to ' + r.with_email + ' player' + (r.with_email !== 1 ? 's' : '') + '.';
+          if (noEmail === 1) bannerMsg += ' One player didn\'t give an email.';
+          else if (noEmail > 1) bannerMsg += ' ' + noEmail + ' players didn\'t give an email.';
+          if (banner) { bannerText.textContent = bannerMsg; banner.style.display = ''; }
           note.textContent = r.with_email + ' player' + (r.with_email !== 1 ? 's' : '') + ' gave an email and will get the results.';
         } else {
+          if (banner) banner.style.display = 'none';
           note.textContent = 'No players gave an email.';
         }
       }).catch(function () {});
@@ -4820,7 +4830,40 @@ Bob Wilson"></textarea>
       var res = await api('org-prizes', { query: { event_id: state.currentEvent } });
       state.prizeData = res;
       renderPrizesTab();
+      renderFinishedPrizes();
     } catch (err) { /* silent */ }
+  }
+
+  function renderFinishedPrizes() {
+    var el = $('finished-prizes-list');
+    if (!el) return;
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+    var players = (state.prizeData && state.prizeData.players) || [];
+    if (prizes.length === 0) {
+      el.innerHTML = '<p class="sub">No prizes set up.</p>';
+      return;
+    }
+    var medalMap = { '1st': 'gold', '2nd': 'silver', '3rd': 'bronze' };
+    el.innerHTML = prizes.map(function(p) {
+      var winnerName = '';
+      if (p.player_id) {
+        var found = players.find(function(pl) { return pl.id === p.player_id; });
+        winnerName = found ? found.display_name : '';
+      }
+      var cat = p.category || '';
+      var medalClass = medalMap[cat] || '';
+      var shortLabel = cat.substring(0, 2).toUpperCase();
+      if (cat.toLowerCase().indexOf('nearest') >= 0) shortLabel = 'NP';
+      if (cat.toLowerCase().indexOf('longest') >= 0) shortLabel = 'LD';
+      var ptsHtml = p.points ? '<span class="pts num">' + p.points + '</span>' : '';
+      var whoClass = winnerName ? 'who' : 'who pick';
+      var whoText = winnerName ? esc(winnerName) : 'Pick a player';
+      return '<div class="prize">' +
+        '<span class="medal' + (medalClass ? ' ' + medalClass : '') + '">' + shortLabel + '</span>' +
+        '<div><div class="' + whoClass + '">' + whoText + '</div>' +
+        (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '<div class="what">' + esc(cat) + '</div>') +
+        '</div>' + ptsHtml + '</div>';
+    }).join('');
   }
 
   function renderPrizesTab() {
