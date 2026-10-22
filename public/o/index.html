@@ -1134,73 +1134,78 @@ a { color: inherit; text-decoration: none; }
 
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
-        <div style="text-align:right;margin-bottom:8px;">
-          <a href="#" onclick="showEditEventFromLive();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;">Edit event details</a>
-        </div>
-        <div id="live-paid-info" style="display:none;background:var(--green-light);border:1px solid var(--green);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--green);">
-        </div>
+       <div class="cols">
+        <div>
+          <!-- Groups status -->
+          <section class="card">
+            <div class="row between" style="margin-bottom:var(--s-3)"><h3>Groups <span class="muted" id="live-groups-scoring" style="font-weight:400"></span></h3></div>
+            <div class="lgrid" id="live-groups-list"></div>
+            <div class="key"><span class="ok"><i></i>Scoring</span><span class="warn"><i></i>Nothing for 45 minutes</span><span class="stop"><i></i>Not started after tee time</span></div>
+            <div class="hint">Tap a group to see or fix scores.</div>
+          </section>
 
-        <!-- Score my round — prominent when organiser is a player -->
-        <div id="live-score-my-round" style="display:none;margin-bottom:16px;">
-          <div class="card" style="background:linear-gradient(135deg, #f0faf3 0%, #e8f5e9 100%);border:1.5px solid var(--green);text-align:center;padding:24px;">
-            <h3 style="font-size:17px;margin-bottom:6px;">You're playing</h3>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Tap to open your scorecard. You can switch back here any time.</p>
-            <a id="score-my-round-link" href="#" class="btn btn-green" style="text-decoration:none;font-size:16px;padding:14px 32px;">Score my round</a>
-          </div>
+          <!-- Leaderboard -->
+          <section class="card">
+            <div class="row between" style="margin-bottom:var(--s-2)"><h3>Leaderboard</h3><span class="upd" id="live-upd"><i></i>Every 30 seconds</span></div>
+            <div id="live-leaderboard"><p class="sub">Nobody has scored yet. This updates every 30 seconds.</p></div>
+          </section>
         </div>
+        <div>
+          <!-- Score my round -->
+          <section class="card" id="live-score-my-round" style="display:none">
+            <div class="playing"><span class="avatar" id="live-my-avatar"></span><div class="grow"><h3 id="live-my-playing"></h3><div class="sub" style="margin:0">Your scorecard is a tap away. You can come back here any time.</div></div></div>
+            <a id="score-my-round-link" href="#" class="btn btn-secondary btn-block" style="margin-top:var(--s-3)">Open my scorecard</a>
+          </section>
 
-        <!-- Leaderboard — front and centre -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Leaderboard</h3>
-          <div id="live-leaderboard"><p style="color:var(--muted);font-size:14px;">Scores will appear here as players save them.</p></div>
-        </div>
-
-        <!-- Groups status -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Groups</h3>
-          <div id="live-groups-list"></div>
-        </div>
-
-        <!-- Share with players -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Share with your players</h3>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Scan this or tap it to start scoring.</p>
-          <div class="qr-wrap" id="invite-qr-wrap" onclick="openInviteLink()" style="cursor:pointer;"></div>
-          <div class="invite-url" id="invite-url" onclick="openInviteLink()" style="cursor:pointer;"></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="shareWhatsApp()" style="background:#25D366;color:#fff;border:none;flex:1;min-width:140px;">WhatsApp</button>
-            <button class="btn btn-outline btn-sm" onclick="copyInviteLink()" style="flex:1;min-width:100px;">Copy link</button>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="copyAllPlayerLinks()" style="margin-top:8px;width:100%;">Copy all individual links</button>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button class="btn btn-outline btn-sm" onclick="downloadQRPoster()" style="flex:1;font-size:12px;">QR poster (A4)</button>
-            <button class="btn btn-outline btn-sm" onclick="copyEmbedSnippet()" style="flex:1;font-size:12px;">Embed snippet</button>
-          </div>
-        </div>
-
-        <!-- Big screen -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:8px;">Big screen</h3>
-          <div class="invite-url" id="board-url"></div>
-          <button class="btn btn-outline btn-sm" onclick="copyBoardLink()" style="margin-bottom:8px;">Copy board link</button>
-          <p style="font-size:12px;color:var(--muted);line-height:1.6;">
-            Open this link on the telly's browser. The board keeps the screen awake automatically.
-          </p>
-        </div>
-
-        <!-- Finish -->
-        <div class="card" style="margin-top:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Finish the event</h3>
-          <button class="btn btn-green btn-block" onclick="finishEvent(18)" style="margin-bottom:8px;">Finish and publish results</button>
-          <button onclick="showFinishOptions()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;display:block;text-align:center;width:100%;">Something went wrong?</button>
-          <div id="finish-options" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-              <button class="btn btn-outline btn-sm" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="flex:1;">Count holes 1 to</button>
-              <input type="number" id="finish-hole-n" value="14" min="1" max="17" style="width:56px;padding:8px;border:1.5px solid var(--line);border-radius:8px;font-size:16px;text-align:center;font-family:inherit;">
+          <!-- Big screen -->
+          <section class="card">
+            <h3>Big screen</h3>
+            <div class="sub">Plug a laptop or Fire Stick into the telly and open this link. It stays awake and updates itself.</div>
+            <div class="remote">
+              <a id="board-open-link" href="#" target="_blank" class="btn btn-primary"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Open big screen</a>
+              <button class="btn btn-secondary" onclick="copyBoardLink()"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> Copy link for the telly</button>
             </div>
-            <button class="btn btn-outline btn-sm btn-block" onclick="abandonEvent()" style="color:var(--red);border-color:var(--red);">Abandon — no results</button>
-          </div>
+          </section>
+
+          <!-- Share with players -->
+          <section class="card">
+            <h3>Share with your players</h3>
+            <div class="sub">Players scan or tap, find their name, and score. One phone per group is enough.</div>
+            <div class="share">
+              <div class="qr" id="invite-qr-wrap" aria-label="QR code for the scoring link"></div>
+              <div class="lnk" id="invite-url"></div>
+              <div class="btn-row">
+                <button class="btn btn-whatsapp" onclick="shareWhatsApp()"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 12 12 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg> Send on WhatsApp</button>
+                <button class="btn btn-secondary" onclick="copyInviteLink()">Copy link</button>
+              </div>
+              <div class="row" style="justify-content:center;gap:var(--s-4)"><button class="link muted small" onclick="downloadQRPoster()">Print a QR poster</button><button class="link muted small" onclick="copyAllPlayerLinks()">Copy a link for each player</button></div>
+            </div>
+          </section>
+
+          <!-- Prizes -->
+          <section class="card">
+            <div class="row between"><div><h3>Prizes</h3><div class="sub" id="live-prizes-sub" style="margin:0"></div></div><button class="btn btn-quiet" onclick="editLivePrizes()">Edit</button></div>
+          </section>
+
+          <!-- Finish -->
+          <section class="card">
+            <h3>Finish the event</h3>
+            <div class="sub">Counts every card in. You can still fix a score afterwards.</div>
+            <button class="btn btn-primary btn-block btn-lg" onclick="finishEvent(18)">Finish and publish results</button>
+            <div style="text-align:center;margin-top:var(--s-4)"><button class="link muted" onclick="showFinishOptions()">Rain stopped play?</button></div>
+            <div id="finish-options" style="display:none;margin-top:var(--s-3);padding-top:var(--s-3);border-top:1px solid var(--line);">
+              <div class="field"><label>Finish early and count holes 1 to</label>
+                <div class="select-wrap"><select id="finish-hole-n" class="select"><option value="9">9</option><option value="12">12</option><option value="15" selected>15</option></select></div>
+              </div>
+              <button class="btn btn-secondary btn-block" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="margin-bottom:var(--s-2)">Finish early</button>
+              <button class="btn btn-danger-quiet btn-block btn-sm" onclick="abandonEvent()">Abandon, no results</button>
+            </div>
+            <div class="hint" id="live-paid-info" style="text-align:center;display:none"></div>
+          </section>
+
+          <div style="text-align:center;margin-top:var(--s-4)"><button class="link muted" onclick="showEditEventFromLive()">Edit set-up</button></div>
         </div>
+       </div>
       </div>
 
       <!-- Finished state -->
@@ -4284,17 +4289,21 @@ Bob Wilson"></textarea>
     var evd = state.currentEventData || {};
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
     if (orgIsPro) {
-      paidEl.style.display = 'block';
-      paidEl.innerHTML = '<strong>Included with Pro</strong>';
+      paidEl.style.display = '';
+      paidEl.textContent = 'Included with Pro';
     } else if (evd.paid && evd.paid_amount_pence) {
       var paidDate = evd.paid_at ? new Date(evd.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-      paidEl.style.display = 'block';
-      paidEl.innerHTML = '<strong>Paid ' + formatPrice(evd.paid_amount_pence) + '</strong>' + (paidDate ? ' on ' + paidDate : '');
+      paidEl.style.display = '';
+      paidEl.textContent = 'Paid ' + formatPrice(evd.paid_amount_pence) + (paidDate ? ' on ' + paidDate : '');
     } else {
       paidEl.style.display = 'none';
     }
 
-    // "Score my round" — find the organiser's player by email or name match
+    // Prizes sub line
+    var prizesSub = $('live-prizes-sub');
+    if (prizesSub) prizesSub.textContent = 'Winners fill in when you finish.';
+
+    // "Score my round" -- find the organiser's player by email or name match
     var orgEmail = (state.organiser && state.organiser.contact_email ? state.organiser.contact_email : '').toLowerCase();
     var orgName = (state.organiser ? state.organiser.name : '').toLowerCase();
     var myPlayer = state.players.find(function (p) {
@@ -4310,6 +4319,11 @@ Bob Wilson"></textarea>
       $('score-my-round-link').onclick = function () {
         localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
       };
+      // Find group for player
+      var myGroup = state.groups.find(function(g) { return g.id === myPlayer.group_id; });
+      var initials = (myPlayer.display_name || '').split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+      $('live-my-avatar').textContent = initials;
+      $('live-my-playing').textContent = 'You\u2019re playing as ' + esc(myPlayer.display_name) + (myGroup ? ', Group ' + myGroup.group_number : '');
       scoreEl.style.display = '';
     } else {
       scoreEl.style.display = 'none';
@@ -4321,13 +4335,13 @@ Bob Wilson"></textarea>
     var evSlug = state.currentEventData ? state.currentEventData.slug : '';
 
     if (!orgSlug || !evSlug) {
-      $('invite-url').textContent = 'Event link not available — check event details are saved.';
-      $('invite-qr-wrap').innerHTML = '<p style="color:var(--muted);font-size:13px;">Save your event details to generate the QR code.</p>';
+      $('invite-url').textContent = 'Link not available yet';
+      $('invite-qr-wrap').innerHTML = '';
     } else {
       var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
       $('invite-url').textContent = inviteUrl;
 
-      // Generate QR code — render inline as img
+      // Generate QR code
       var qrEl = $('invite-qr-wrap');
       qrEl.innerHTML = '';
       try {
@@ -4350,23 +4364,19 @@ Bob Wilson"></textarea>
         }
         var img = document.createElement('img');
         img.src = c.toDataURL();
-        img.width = 220; img.height = 220;
-        img.style.cssText = 'border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:block;margin:0 auto;';
-        img.alt = 'QR code — scan to score';
+        img.style.cssText = 'width:100%;height:auto;display:block;';
+        img.alt = 'QR code for the scoring link';
         qrEl.appendChild(img);
-        var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;text-align:center;';
-        lbl.textContent = 'Scan to find your name';
-        qrEl.appendChild(lbl);
       } catch (e) {
-        qrEl.innerHTML = '<p style="color:var(--red);font-size:13px;">QR failed: ' + e.message + '</p>';
+        qrEl.innerHTML = '';
       }
     }
 
     // Board URL
     if (orgSlug && evSlug) {
       var boardUrl = baseUrl + '/board/#/' + orgSlug + '/' + evSlug;
-      $('board-url').textContent = boardUrl;
+      var boardLink = $('board-open-link');
+      if (boardLink) boardLink.href = boardUrl;
     }
 
     // Render group cards with status
@@ -4399,25 +4409,92 @@ Bob Wilson"></textarea>
   function renderLiveGroups() {
     var el = $('live-groups-list');
     if (state.groups.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No groups</p></div>';
+      el.innerHTML = '<div class="empty quiet"><h3>No groups yet</h3><p>Edit set-up to make them.</p></div>';
+      var scoringEl = $('live-groups-scoring');
+      if (scoringEl) scoringEl.textContent = '';
       return;
     }
 
+    // Build group status from leaderboard entries if available
+    var entries = state.liveEntries || [];
+    var now = Date.now();
+
+    var scoringCount = 0;
+    var totalGroups = state.groups.length;
+
     el.innerHTML = state.groups.map(function(g) {
       var members = state.players.filter(function(p) { return p.group_id === g.id; });
-      var scorer = members.find(function(p) { return p.id === g.scorer_player_id; });
-      var scorerName = scorer ? scorer.display_name : 'No scorer';
-      // Determine status dot based on scorer
-      var dotClass = scorer ? 'green' : 'red';
+      var surnames = members.map(function(p) {
+        var parts = (p.display_name || '').split(' ');
+        return esc(parts[parts.length - 1]);
+      }).join(', ');
 
-      return '<div class="live-group-card" onclick="editGroupScores(\'' + g.id + '\')">' +
-        '<div class="lgc-row">' +
-          '<span class="lgc-group">Group ' + g.group_number + '</span>' +
-          '<span class="status-dot ' + dotClass + '"></span>' +
-        '</div>' +
-        '<div class="lgc-meta">Scorer: ' + esc(scorerName) + ' &middot; ' + members.length + ' players</div>' +
-      '</div>';
+      // Determine group status from entries
+      var maxThru = 0;
+      var lastSaved = 0;
+      members.forEach(function(p) {
+        entries.forEach(function(e) {
+          // Match by name
+          if (e.names && e.names.indexOf(p.display_name) >= 0) {
+            if (e.thru > maxThru) maxThru = e.thru;
+            if (e.last_saved) {
+              var t = new Date(e.last_saved).getTime();
+              if (t > lastSaved) lastSaved = t;
+            }
+          }
+        });
+      });
+
+      var statusClass = '';
+      var statusText = '';
+      var thruText = '';
+      var holes = state.courseData ? state.courseData.holes.length : 18;
+
+      if (maxThru >= holes) {
+        // Finished
+        statusClass = 'done';
+        thruText = 'F';
+        statusText = 'Finished';
+        scoringCount++;
+      } else if (maxThru > 0) {
+        scoringCount++;
+        var minAgo = lastSaved ? Math.round((now - lastSaved) / 60000) : 0;
+        if (minAgo >= 45) {
+          statusClass = 'warn';
+          thruText = 'Thru ' + maxThru;
+          statusText = minAgo + ' min ago, give them a ring';
+        } else {
+          statusClass = 'ok';
+          thruText = 'Thru ' + maxThru;
+          statusText = minAgo <= 1 ? 'just now' : minAgo + ' min ago';
+        }
+      } else {
+        // Not started
+        var teeTime = g.tee_time;
+        if (teeTime) {
+          var parts = teeTime.split(':');
+          var teeDate = new Date();
+          teeDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+          if (now > teeDate.getTime()) {
+            statusClass = 'stop';
+            statusText = 'Not started. Tee time was ' + teeTime;
+          } else {
+            statusText = 'Tee time ' + teeTime;
+          }
+        } else {
+          statusText = 'Not started yet';
+        }
+      }
+
+      return '<button class="lg ' + statusClass + '" onclick="editGroupScores(\'' + g.id + '\')">' +
+        '<span class="g">Group ' + g.group_number + (thruText ? '<span class="thru">' + thruText + '</span>' : '') + '</span>' +
+        '<span class="st">' + statusText + '</span>' +
+        '<span class="who">' + surnames + '</span>' +
+      '</button>';
     }).join('');
+
+    var scoringEl = $('live-groups-scoring');
+    if (scoringEl) scoringEl.textContent = '\u00b7 ' + scoringCount + ' of ' + totalGroups + ' scoring';
   }
 
   async function renderLiveLeaderboard() {
@@ -4464,28 +4541,62 @@ Bob Wilson"></textarea>
     });
   }
 
-  function renderLeaderboardTable(el, standings) {
+  function renderLeaderboardTable(el, standings, isFinished) {
     if (!standings || standings.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No scores yet.</p></div>';
+      el.innerHTML = '<p class="sub">Nobody has scored yet. This updates every 30 seconds.</p>';
       return;
     }
 
-    var html = '<table class="lb-table"><thead><tr>' +
-      '<th class="lb-pos">#</th><th class="lb-name">Player</th><th class="lb-thru">Thru</th><th class="lb-pts">Pts</th>' +
+    // Store entries for live groups to use
+    if (!isFinished) state.liveEntries = standings;
+
+    var ev = state.currentEventData || {};
+    var isTeam = ev.format && ev.format.indexOf('better_ball') >= 0;
+    var freezeHole = ev.leaderboard_freeze_hole || null;
+    var holes = state.courseData ? state.courseData.holes.length : 18;
+
+    var html = '<table class="lb"><thead><tr>' +
+      '<th class="pos">Pos</th><th>' + (isTeam ? 'Team' : 'Player') + '</th><th></th><th class="thru">Thru</th><th class="pts" style="text-align:right">Pts</th>' +
       '</tr></thead><tbody>';
 
     var pos = 0;
     var lastPts = -1;
+    var frozenInserted = false;
+
     standings.forEach(function(s, i) {
       if (s.points !== lastPts) {
         pos = i + 1;
         lastPts = s.points;
       }
-      html += '<tr>' +
-        '<td class="lb-pos">' + (s.hasPlayed ? pos : '-') + '</td>' +
-        '<td class="lb-name">' + esc(s.names) + (s.countback ? '<div class="lb-cb">' + s.countback + '</div>' : '') + '</td>' +
-        '<td class="lb-thru">' + (s.thru || '-') + '</td>' +
-        '<td class="lb-pts">' + s.points + '</td>' +
+
+      // Insert frozen line if applicable
+      if (freezeHole && !frozenInserted && s.thru && s.thru < freezeHole) {
+        frozenInserted = true;
+        html += '<tr class="frozen-line"><td colspan="5"><div class="frozen">Players see down to here</div></td></tr>';
+      }
+
+      var rowClass = i === 0 && s.hasPlayed !== false ? 'leader' : '';
+      var thruDisplay = '';
+      if (s.thru >= holes) {
+        thruDisplay = '<span class="fin">F</span>';
+      } else {
+        thruDisplay = s.thru || '-';
+      }
+
+      // Movement arrow
+      var mvHtml = '<td class="mv"></td>';
+      if (s.movement === 'up') {
+        mvHtml = '<td class="mv up"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 5l7 8h-4v6H9v-6H5z"/></svg></td>';
+      } else if (s.movement === 'down') {
+        mvHtml = '<td class="mv down"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 19l-7-8h4V5h6v6h4z"/></svg></td>';
+      }
+
+      html += '<tr class="' + rowClass + '">' +
+        '<td class="pos">' + (s.hasPlayed !== false ? pos : '-') + '</td>' +
+        '<td class="name">' + esc(s.names) + '</td>' +
+        mvHtml +
+        '<td class="thru num">' + thruDisplay + '</td>' +
+        '<td class="pts num">' + s.points + '</td>' +
       '</tr>';
     });
 
@@ -4904,10 +5015,16 @@ Bob Wilson"></textarea>
   };
 
   // ── Invite link / QR ─────────────────────────────────────────
+  window.editLivePrizes = function() {
+    // Switch to prizes editing (reuse existing prize setup)
+    loadPrizes();
+    switchTab(document.querySelector('.step[data-tab="details"]'));
+  };
+
   window.shareWhatsApp = function() {
     var evName = state.currentEventData ? state.currentEventData.name : 'the event';
     var url = $('invite-url').textContent;
-    var text = "You're playing in " + evName + "! Tap your name and confirm your handicap: " + url;
+    var text = 'Scoring for ' + evName + ' is on your phone. Tap the link, find your name and you\u2019re in: ' + url;
     var waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
     // On mobile: open normally. On desktop: reuse a named window so repeat taps don't pile up tabs.
     var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -5000,16 +5117,14 @@ Bob Wilson"></textarea>
   };
 
   window.copyBoardLink = function() {
-    var url = $('board-url').textContent;
-    navigator.clipboard.writeText(url).then(function () { toast('Board link copied'); });
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+    var url = window.location.origin + '/board/#/' + orgSlug + '/' + evSlug;
+    navigator.clipboard.writeText(url).then(function () { toast('Big screen link copied'); });
   };
 
   window.openInviteLink = function() {
-    var url = $('invite-url').textContent;
-    if (url) {
-      localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
-      window.location.href = url;
-    }
+    // No longer navigates away -- removed per audit #21
   };
 
   window.copyInviteLink = function() {
