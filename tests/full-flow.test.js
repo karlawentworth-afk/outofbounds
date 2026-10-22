@@ -1859,10 +1859,8 @@ async function stepPhase0Proofs() {
   var browser = await chromium.launch({ headless: true });
   try {
     // Get a session via reviewer-login (this also links the auth user to the demo org)
-    var rlRes = await httpGet(LIVE_URL + '/.netlify/functions/reviewer-login');
-    var rlData = null;
-    try { rlData = JSON.parse(rlRes.body); } catch (e) {}
-    var reviewerToken = rlData ? rlData.access_token : null;
+    var rlRes = await callFn('reviewer-login', { method: 'GET' });
+    var reviewerToken = rlRes && rlRes.data ? rlRes.data.access_token : null;
 
     // Find an event belonging to the demo org
     var demoEvRes = await sbRest('GET', '/rest/v1/events?organiser_id=eq.a0000000-0000-0000-0000-000000000099&status=in.(draft,live,finished)&select=id&limit=1&order=created_at.desc');
