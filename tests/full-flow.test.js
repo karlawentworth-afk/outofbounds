@@ -1743,8 +1743,8 @@ async function stepUC1_fixes() {
   var orgHtml = await httpGet(LIVE_URL + '/o/');
   step('Fix 2: QR local library loaded', orgHtml.body.indexOf('qrcode.min.js') !== -1, 'has qrcode.min.js');
 
-  // Fix 8: Disclaimer wording
-  step('Fix 8: Handicap disclaimer', orgHtml.body.indexOf("Handicaps can\\'t be checked against the WHS") !== -1 || orgHtml.body.indexOf("Handicaps can't be checked against the WHS") !== -1, 'correct wording');
+  // Fix 8: Disclaimer wording (copy deck changed "Handicaps can't" to "We can't check")
+  step('Fix 8: Handicap disclaimer', orgHtml.body.indexOf("can\\'t check handicaps against the WHS") !== -1 || orgHtml.body.indexOf("can't check handicaps against the WHS") !== -1, 'correct wording');
 
   // Fix 12: Header icon not lockup
   step('Fix 12: Header uses icon-white', orgHtml.body.indexOf('icon-white.png') !== -1 && orgHtml.body.indexOf('logo-white.png') === -1, 'icon only');
@@ -1874,13 +1874,13 @@ async function stepPhase0Proofs() {
       await codeInput.fill('479649');
       await sleep(300);
       await page.locator('#magic-btn').click();
-      await sleep(5000);
+      await sleep(8000);
     }
 
     // Now reload with the event hash directly (simulates phone discard on an event page)
     // Use one of the demo org's events visible on the dashboard
     var firstEventId = await page.evaluate(function () {
-      var row = document.querySelector('[onclick*="openEvent"]');
+      var row = document.querySelector('.event-card[onclick*="openEvent"]') || document.querySelector('[onclick*="openEvent"]');
       if (!row) return null;
       var match = row.getAttribute('onclick').match(/openEvent\(['"]([^'"]+)['"]\)/);
       return match ? match[1] : null;

@@ -18,7 +18,6 @@ body { background: var(--dark-bg); -webkit-font-smoothing: antialiased; }
 .tv { width: 1920px; height: 1080px; display: flex; flex-direction: column; background: var(--dark-gradient); color: var(--dark-ink); transform-origin: top left; }
 .tv .bar { height: 88px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 56px; }
 .tv .bar .org { display: flex; align-items: center; gap: 20px; font-family: var(--font-display); font-weight: 700; font-size: 30px; }
-.tv .bar .org .ob-mark { width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,.14); background-image: url('/img/icon-white.png'); background-size: 36px; background-position: center; background-repeat: no-repeat; }
 .tv .bar .org img { height: 44px; display: none; }
 .tv .bar .clock { font-family: var(--font-score); font-weight: 600; font-size: 32px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 16px; }
 .tv .bar .clock i { width: 14px; height: 14px; border-radius: 50%; background: var(--dark-accent); animation: pulse 1.8s infinite; }
@@ -61,7 +60,7 @@ body { background: var(--dark-bg); -webkit-font-smoothing: antialiased; }
 <body>
 <div class="tv on-dark" id="tv">
   <div class="bar">
-    <div class="org"><span class="ob-mark" aria-hidden="true"></span><img id="org-logo" alt=""><span id="orgName"></span></div>
+    <div class="org"><img id="org-logo" alt=""><span id="orgName"></span></div>
     <div class="clock"><i></i><span id="clock"></span></div>
   </div>
   <div class="title">
