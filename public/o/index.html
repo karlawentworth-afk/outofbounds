@@ -3103,7 +3103,7 @@ Bob Wilson"></textarea>
     if (ps) {
       if (playerCount > 0) {
         var txt = playerCount + ' player' + (playerCount !== 1 ? 's' : '');
-        if (missingHcp > 0) txt += ', ' + missingHcp + ' missing handicap';
+        if (missingHcp > 0) txt += ' \u00B7 ' + missingHcp + ' handicaps missing';
         ps.textContent = txt;
       } else {
         ps.textContent = 'Not added yet';
@@ -3120,7 +3120,7 @@ Bob Wilson"></textarea>
     if (gs) {
       if (groupCount > 0) {
         var gtxt = groupCount + ' group' + (groupCount !== 1 ? 's' : '');
-        if (unassigned > 0) gtxt += ', ' + unassigned + ' unassigned';
+        if (unassigned > 0) gtxt += ' \u00B7 ' + unassigned + ' not placed';
         gs.textContent = gtxt;
       } else {
         gs.textContent = 'Not made yet';
@@ -3143,8 +3143,10 @@ Bob Wilson"></textarea>
     // Sub-status line (visible on small screens below the step strip)
     var subStatus = $('ev-sub-status');
     if (subStatus) {
-      if (detailsSub) subStatus.textContent = detailsSub + '. Next, add players.';
-      else subStatus.textContent = '';
+      if (!detailsDone) subStatus.textContent = '';
+      else if (!playersDone) subStatus.textContent = detailsSub + '. Next, add players.';
+      else if (!groupsDone) subStatus.textContent = playerCount + ' players. Next, make groups.';
+      else subStatus.textContent = groupCount + ' groups. Next, go live.';
     }
 
     // Update more-options summary
@@ -3926,6 +3928,9 @@ Bob Wilson"></textarea>
         }
       });
       await loadGroups();
+      // Auto-fill tee times if in tee times mode and groups have no times
+      var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+      if (startingMode !== 'shotgun') fillGroupTimes();
       renderGroupsList();
       toast(res.message || 'Groups filled');
     } catch (err) {

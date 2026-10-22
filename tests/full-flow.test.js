@@ -1855,42 +1855,36 @@ async function stepPhase0Proofs() {
     entriesWithThru.length + ' entries with thru > 0' + (g2Player ? ' (g2 player=' + g2Player.slice(0,8) + ')' : ' (no g2 player found)'));
 
   // 3. Reload on #event-<id> → lands on that event, not dashboard
-  // Use the test's own event ID and sign in via reviewer login, then navigate directly
+  // Call reviewer-login to get a session linked to the demo org, then test hash reload
   var browser = await chromium.launch({ headless: true });
   try {
-    var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    var page = await ctx.newPage();
+    // Get a session via reviewer-login (this also links the auth user to the demo org)
+    var rlRes = await httpGet(LIVE_URL + '/.netlify/functions/reviewer-login');
+    var rlData = null;
+    try { rlData = JSON.parse(rlRes.body); } catch (e) {}
+    var reviewerToken = rlData ? rlData.access_token : null;
 
-    // Sign in first
-    await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 20000 });
-    await page.locator('button[onclick="showEmailSignIn()"]').click();
-    await sleep(500);
-    await page.locator('#magic-email').fill('review@outofboundsevents.com');
-    await sleep(300);
-    await page.locator('#magic-btn').click();
-    await sleep(2000);
-    var codeInput = page.locator('#reviewer-code');
-    if (await codeInput.isVisible({ timeout: 3000 }).catch(function () { return false; })) {
-      await codeInput.fill('479649');
-      await sleep(300);
-      await page.locator('#magic-btn').click();
-      await sleep(8000);
-    }
+    // Find an event belonging to the demo org
+    var demoEvRes = await sbRest('GET', '/rest/v1/events?organiser_id=eq.a0000000-0000-0000-0000-000000000099&status=in.(draft,live,finished)&select=id&limit=1&order=created_at.desc');
+    var demoEventId = demoEvRes && demoEvRes.length > 0 ? demoEvRes[0].id : null;
 
-    // Now reload with the event hash directly (simulates phone discard on an event page)
-    // Use one of the demo org's events visible on the dashboard
-    var firstEventId = await page.evaluate(function () {
-      var row = document.querySelector('.event-card[onclick*="openEvent"]') || document.querySelector('[onclick*="openEvent"]');
-      if (!row) return null;
-      var match = row.getAttribute('onclick').match(/openEvent\(['"]([^'"]+)['"]\)/);
-      return match ? match[1] : null;
-    });
+    if (reviewerToken && demoEventId) {
+      var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      var page = await ctx.newPage();
 
-    if (firstEventId) {
-      // Set the hash then force a full page reload (simulates phone tab discard)
-      await page.evaluate(function (eid) { window.location.hash = 'event-' + eid; }, firstEventId);
-      await page.reload({ waitUntil: 'networkidle', timeout: 25000 });
-      await sleep(8000);
+      // Inject the auth token before navigating
+      await ctx.addInitScript(function (data) {
+        try {
+          localStorage.setItem('sb-ahutmswadskdkqhnrhhh-auth-token', JSON.stringify({
+            access_token: data.token, refresh_token: '', token_type: 'bearer',
+            expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600
+          }));
+        } catch (e) {}
+      }, { token: reviewerToken });
+
+      // Navigate directly with the event hash
+      await page.goto(LIVE_URL + '/o/#event-' + demoEventId, { waitUntil: 'networkidle', timeout: 30000 });
+      await sleep(10000);
 
       var activeScreen = await page.evaluate(function () {
         var s = document.querySelectorAll('.screen.active');
@@ -1898,9 +1892,20 @@ async function stepPhase0Proofs() {
       });
       var currentHash = await page.evaluate(function () { return window.location.hash; });
       step('P0-3: Reload on #event-<id> lands on event', activeScreen === 'screen-event',
-        'screen=' + activeScreen + ' hash=' + currentHash + ' event=' + firstEventId);
+        'screen=' + activeScreen + ' hash=' + currentHash + ' event=' + demoEventId);
+
+      // Appbar: non-OOB organiser must have no visible OB mark
+      var obMarkVisible = await page.evaluate(function () {
+        var mark = document.querySelector('#appbar-mark');
+        return mark ? (mark.offsetHeight > 0 && mark.style.display !== 'none') : false;
+      });
+      step('Appbar: no OB mark for non-OOB organiser', !obMarkVisible,
+        'obMarkVisible=' + obMarkVisible);
+
+      await ctx.close();
     } else {
-      step('P0-3: Reload on #event-<id> lands on event', false, 'could not find an event ID on dashboard');
+      step('P0-3: Reload on #event-<id> lands on event', false,
+        'reviewer-login failed or no demo event (token=' + !!reviewerToken + ' event=' + demoEventId + ')');
     }
 
     await ctx.close();
