@@ -1,208 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scoreboard</title>
+<title>Leaderboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
 <style>
-:root {
-  --primary: #1B2A4A;
-  --accent: #2E7D32;
-  --text-on-primary: #FFFFFF;
-  --bg: #FFFFFF;
-  --surface: #F8F9FA;
-  --ink: #1A1A1A;
-  --muted: #6B7280;
-  --light: #9CA3AF;
-  --rule: #E5E7EB;
-  --accent-light: #E8F5E9;
-  --leader: #1B5E20;
-  --moved: #F0FFF4;
-}
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; touch-action: manipulation; }
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Header bar ── */
-.top-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 24px;
-  background: var(--primary); color: var(--text-on-primary);
-}
-.top-bar-left { display: flex; align-items: center; gap: 12px; }
-.top-bar-left img { height: 32px; display: none; }
-.top-bar-left .org-name { font-size: 13px; font-weight: 700; letter-spacing: 0.03em; }
-.top-bar-right { display: flex; align-items: center; gap: 12px; }
-.top-bar-right img { height: 24px; display: none; }
-.top-bar-right .updated { font-size: 11px; opacity: 0.7; }
-
-/* ── Event info ── */
-.event-bar {
-  padding: 16px 24px 12px; border-bottom: 1px solid var(--rule);
-}
-.event-title { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; color: var(--ink); }
-.event-headline { font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 2px; }
-.event-format { font-size: 12px; color: var(--muted); margin-top: 4px; }
-
-/* ── Sponsor banner ── */
-.sponsor-banner {
-  display: none; padding: 0; border-bottom: 1px solid var(--rule);
-  text-align: center; background: var(--surface);
-}
-.sponsor-banner img { max-height: 80px; max-width: 100%; }
-
-/* ── Leaderboard heading ── */
-.lb-heading {
-  padding: 12px 24px 8px;
-  font-size: 11px; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.12em; color: var(--muted);
-}
-
-/* ── Table ── */
-.board { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-
-.table-head {
-  display: flex; align-items: center; padding: 8px 24px;
-  background: var(--surface); border-bottom: 2px solid var(--rule);
-  font-size: 10px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.1em;
-}
-.col-pos { width: 44px; text-align: center; }
-.col-name { flex: 1; padding-left: 8px; }
-.col-thru { width: 56px; text-align: center; }
-.col-pts { width: 64px; text-align: center; }
-
-.rows { flex: 1; overflow: hidden; }
-
-.row {
-  display: flex; align-items: center; padding: 0 24px; height: 44px;
-  border-bottom: 1px solid var(--rule);
-}
-.row:nth-child(even) { background: var(--surface); }
-.row.moved { background: var(--moved); }
-.row.leader { border-left: 3px solid var(--accent); }
-
-/* Position */
-.pos {
-  width: 44px; text-align: center; font-weight: 800; font-size: 14px;
-  color: var(--muted);
-}
-.pos.p1 { color: var(--leader); font-size: 16px; }
-.pos.p2 { color: var(--ink); }
-.pos.p3 { color: var(--ink); }
-
-/* Names */
-.name-col { flex: 1; padding-left: 8px; overflow: hidden; }
-.player-names {
-  font-size: 14px; font-weight: 600; color: var(--ink);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.row.leader .player-names { color: var(--leader); font-weight: 800; }
-.cb { font-size: 9px; color: var(--light); margin-top: 1px; }
-
-/* Through */
-.thru { width: 56px; text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
-.thru .fin {
-  display: inline-block; padding: 1px 6px; border-radius: 3px;
-  background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
-}
-
-/* Points */
-.pts {
-  width: 64px; text-align: center;
-  font-size: 18px; font-weight: 900; color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.row.leader .pts { color: var(--leader); }
-
-/* ── Footer ── */
-.footer-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 24px; border-top: 1px solid var(--rule);
-  background: var(--surface);
-}
-.pager { font-size: 11px; color: var(--muted); font-weight: 600; }
-.brand { font-size: 9px; color: var(--light); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-
-/* ── Empty / loading ── */
-.empty-state {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 6px; padding: 40px;
-}
-.empty-state .title { font-size: 16px; font-weight: 700; color: var(--ink); }
-.empty-state .sub { font-size: 13px; color: var(--muted); }
-
-/* ── Section title (secondary) ── */
-.section-title {
-  padding: 12px 24px 6px; font-size: 14px; font-weight: 800;
-  color: var(--accent);
-}
-
-/* ── Sponsor slide ── */
-.slide {
-  display: none; flex: 1; flex-direction: column;
-  align-items: center; justify-content: center; padding: 40px; text-align: center;
-  background: var(--surface);
-}
-.slide.active { display: flex; }
-.slide img { max-width: 50%; max-height: 40vh; margin-bottom: 24px; }
-.slide .slide-headline { font-size: 28px; font-weight: 900; color: var(--ink); }
-.slide .slide-message { font-size: 16px; color: var(--muted); margin-top: 8px; }
-
-/* ── Tee times (before scores) ── */
-.tee-row {
-  display: flex; align-items: center; padding: 10px 24px;
-  border-bottom: 1px solid var(--rule); font-size: 13px;
-}
-.tee-row:nth-child(even) { background: var(--surface); }
-.tee-time { width: 60px; font-weight: 800; color: var(--accent); }
-.tee-group { width: 80px; font-weight: 600; color: var(--muted); }
-.tee-names { flex: 1; color: var(--ink); font-weight: 500; }
+body { background: var(--dark-bg); -webkit-font-smoothing: antialiased; }
+.tv { width: 1920px; height: 1080px; display: flex; flex-direction: column; background: var(--dark-gradient); color: var(--dark-ink); transform-origin: top left; }
+.tv .bar { height: 88px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 56px; }
+.tv .bar .org { display: flex; align-items: center; gap: 20px; font-family: var(--font-display); font-weight: 700; font-size: 30px; }
+.tv .bar .org .ob-mark { width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,.14); background-image: url('/img/icon-white.png'); background-size: 36px; background-position: center; background-repeat: no-repeat; }
+.tv .bar .org img { height: 44px; display: none; }
+.tv .bar .clock { font-family: var(--font-score); font-weight: 600; font-size: 32px; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 16px; }
+.tv .bar .clock i { width: 14px; height: 14px; border-radius: 50%; background: var(--dark-accent); animation: pulse 1.8s infinite; }
+.tv .title { padding: 32px 56px 16px; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; }
+.tv .title h1 { font-size: 56px; color: #fff; line-height: 1.05; font-family: var(--font-display); font-weight: 800; }
+.tv .title .fmt { font-size: 26px; color: var(--dark-ink-muted); margin-top: 8px; }
+.tv .title .lead { text-align: right; }
+.tv .title .lead span { display: block; font-size: 22px; color: var(--dark-accent); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.tv .title .lead b { font-family: var(--font-display); font-size: 34px; color: #fff; }
+.tv .grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; padding: 8px 56px 0; align-content: start; }
+.tv .hd { display: grid; grid-template-columns: 90px 1fr 110px 130px; padding: 0 24px 10px; font-size: 20px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dark-ink-muted); border-bottom: 2px solid var(--dark-line, rgba(255,255,255,.1)); }
+.tv .hd span:nth-child(3) { text-align: center; } .tv .hd span:nth-child(4) { text-align: right; }
+.tv .r { display: grid; grid-template-columns: 90px 1fr 110px 130px; align-items: center; height: 76px; padding: 0 24px; border-bottom: 1px solid var(--dark-line, rgba(255,255,255,.08)); font-variant-numeric: tabular-nums; }
+.tv .r .pos { font-family: var(--font-score); font-weight: 700; font-size: 32px; color: var(--dark-ink-muted); }
+.tv .r .nm { font-size: 32px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv .r .th { text-align: center; font-size: 26px; color: var(--dark-ink-muted); font-weight: 600; }
+.tv .r .th .fin { display: inline-block; background: var(--dark-accent); color: var(--dark-bg); font-weight: 700; font-size: 22px; padding: 2px 12px; border-radius: 6px; }
+.tv .r .pt { text-align: right; font-family: var(--font-score); font-weight: 700; font-size: 44px; color: #fff; }
+.tv .r.leader { background: rgba(143,211,164,.14); border-radius: 12px; border-bottom-color: transparent; }
+.tv .r.leader .pos, .tv .r.leader .nm, .tv .r.leader .pt { color: var(--dark-accent); }
+.tv .r.arrived { animation: nudge var(--dur-slow, .5s) var(--ease, ease); }
+.tv .foot { height: 110px; display: flex; align-items: center; justify-content: space-between; padding: 0 56px; border-top: 1px solid var(--dark-line, rgba(255,255,255,.08)); }
+.tv .foot .scan { display: flex; align-items: center; gap: 20px; font-size: 22px; color: var(--dark-ink-muted); }
+.tv .foot .scan b { color: #fff; font-weight: 600; display: block; font-size: 24px; }
+.tv .foot .pager { font-size: 24px; color: var(--dark-ink-muted); font-variant-numeric: tabular-nums; }
+.tv .foot .scored { display: flex; align-items: center; gap: 14px; font-size: 20px; color: var(--dark-ink-muted); letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.tv .foot .scored img { height: 30px; opacity: .5; }
+/* Empty state */
+.tv .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+.tv .empty .title { font-size: 36px; font-weight: 700; color: #fff; font-family: var(--font-display); }
+.tv .empty .sub { font-size: 24px; color: var(--dark-ink-muted); }
+/* Tee times */
+.tv .tees { flex: 1; padding: 0 56px; overflow: hidden; }
+.tv .tee { display: grid; grid-template-columns: 90px 120px 1fr; align-items: center; height: 60px; padding: 0 24px; border-bottom: 1px solid var(--dark-line, rgba(255,255,255,.08)); font-size: 26px; }
+.tv .tee .time { font-weight: 700; color: var(--dark-accent); font-variant-numeric: tabular-nums; }
+.tv .tee .gn { font-weight: 600; color: var(--dark-ink-muted); }
+.tv .tee .names { color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
-
-<div class="top-bar">
-  <div class="top-bar-left">
-    <img id="org-logo" alt="">
-    <span class="org-name" id="orgName"></span>
+<div class="tv on-dark" id="tv">
+  <div class="bar">
+    <div class="org"><span class="ob-mark" aria-hidden="true"></span><img id="org-logo" alt=""><span id="orgName"></span></div>
+    <div class="clock"><i></i><span id="clock"></span></div>
   </div>
-  <div class="top-bar-right">
-    <img id="sponsor-logo" alt="">
-    <span class="updated" id="updated"></span>
+  <div class="title">
+    <div><h1 id="eventTitle"></h1><div class="fmt" id="formatLine"></div></div>
+    <div class="lead" id="leadLine" style="display:none"><span>Leading</span><b id="leadText"></b></div>
   </div>
-</div>
-
-<div class="event-bar">
-  <div class="event-title" id="eventTitle"></div>
-  <div class="event-headline" id="headline"></div>
-  <div class="event-format" id="formatLine"></div>
-</div>
-
-<div class="lb-heading" id="lbHeading">Leaderboard</div>
-
-<div class="board" id="board">
-  <div class="empty-state">
-    <div class="title">Loading...</div>
+  <div class="grid" id="board">
+    <div class="empty"><div class="title">Loading...</div></div>
   </div>
-</div>
-
-<div class="footer-bar">
-  <span class="pager" id="pager"></span>
-  <span class="brand">Scored with Out of Bounds</span>
-  <span class="updated" id="updated2"></span>
+  <div class="foot">
+    <div class="scan" id="scanArea"></div>
+    <div class="pager" id="pager"></div>
+    <div class="scored"><img src="/img/icon-white.png" alt="OB"> Scored with Out of Bounds</div>
+  </div>
 </div>
 
 <script src="/shared/engine.js"></script>
@@ -261,7 +134,7 @@ body {
   var FORMAT_LABELS = {
     'individual_stableford': 'Individual Stableford',
     'better_ball_pairs': 'Better ball pairs Stableford',
-    'better_ball_2from4': 'Better ball Stableford \u2014 best 2 from 4'
+    'better_ball_2from4': 'Better ball Stableford, best 2 from 4'
   };
 
   function esc(s) {
@@ -271,6 +144,14 @@ body {
     return d.innerHTML;
   }
 
+  // Fit the 1920x1080 canvas to any window
+  function fit() { var s = Math.min(innerWidth/1920, innerHeight/1080); document.getElementById('tv').style.transform = 'scale(' + s + ')'; }
+  fit(); addEventListener('resize', fit);
+
+  // Clock
+  function updateClock() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
+  updateClock(); setInterval(updateClock, 30000);
+
   async function init() {
     try {
       var config = await OOB.api('config-get', { query: { org: orgSlug, event: eventSlug } });
@@ -278,31 +159,22 @@ body {
       var org = config.organiser || {};
       var ev = config.event || {};
 
-      if (org.primary_colour) document.documentElement.style.setProperty('--primary', org.primary_colour);
-      if (org.accent_colour) {
-        document.documentElement.style.setProperty('--accent', org.accent_colour);
-        document.documentElement.style.setProperty('--leader', org.accent_colour);
-      }
+      if (org.primary_colour) document.documentElement.style.setProperty('--brand', org.primary_colour);
 
       var logoEl = document.getElementById('org-logo');
-      if (logoEl && org.logo_url) { logoEl.src = org.logo_url; logoEl.style.display = ''; }
-      document.getElementById('orgName').textContent = org.name || '';
+      if (logoEl && org.logo_url) { logoEl.src = org.logo_url; logoEl.style.display = 'block'; }
+      document.getElementById('orgName').textContent = org.display_name || org.name || '';
       document.getElementById('eventTitle').textContent = ev.name || '';
 
-      var sponsorEl = document.getElementById('sponsor-logo');
-      if (sponsorEl && ev.sponsor_logo_url) { sponsorEl.src = ev.sponsor_logo_url; sponsorEl.style.display = ''; }
-
-      if (ev.headline_text) document.getElementById('headline').textContent = ev.headline_text;
-
       eventId = ev.id;
-      rowsPerPage = ev.board_rows_per_page || 15;
+      rowsPerPage = ev.board_rows_per_page || 9;
 
       await refresh();
       setInterval(refresh, 30000);
       startRotation();
     } catch (err) {
       document.getElementById('board').innerHTML =
-        '<div class="empty-state"><div class="title">Failed to load</div><div class="sub">' + esc(err.message) + '</div></div>';
+        '<div class="empty"><div class="title">That didn\u2019t work</div><div class="sub">Check the link and try again.</div></div>';
     }
   }
 
@@ -310,9 +182,7 @@ body {
     if (!eventId) return;
     try {
       data = await OOB.api('leaderboard', { query: { event: eventId, mode: 'board' } });
-      var t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      document.getElementById('updated').textContent = t;
-      document.getElementById('updated2').textContent = 'Updated ' + t;
+      updateClock();
       buildRotation();
       renderCurrentView();
     } catch (err) { console.error(err); }
@@ -355,10 +225,8 @@ body {
     if (!rotationItems.length) return;
     var item = rotationItems[rotationIndex];
     if (item.type === 'leaderboard') {
-      document.getElementById('lbHeading').textContent = 'LEADERBOARD';
       renderBoard(item, data.format, data.allowancePct);
     } else if (item.type === 'secondary') {
-      document.getElementById('lbHeading').textContent = item.title ? item.title.toUpperCase() : 'LEADERBOARD';
       renderBoard(item, data.secondary.format, data.secondary.allowancePct);
     } else if (item.type === 'slide') {
       renderSlide(item.slide);
@@ -373,40 +241,49 @@ body {
     var start = page * rowsPerPage;
     var pageEntries = entries.slice(start, start + rowsPerPage);
     var freezeHole = data ? data.freezeHole : 18;
+    var colLabel = format === 'individual_stableford' ? 'Player' : 'Team';
 
     document.getElementById('formatLine').textContent =
-      (FORMAT_LABELS[format] || format) + ', ' + pct + '% handicap allowance';
+      (FORMAT_LABELS[format] || format) + ' \u00B7 ' + pct + '% handicap allowance';
 
-    var html = '<div class="table-head">' +
-      '<div class="col-pos">Pos</div>' +
-      '<div class="col-name">Player</div>' +
-      '<div class="col-thru">Thru</div>' +
-      '<div class="col-pts">Pts</div>' +
-      '</div><div class="rows">';
+    // Leader line
+    if (entries.length > 0) {
+      var leader = entries[0];
+      document.getElementById('leadLine').style.display = '';
+      document.getElementById('leadText').textContent = leader.names + ', ' + leader.points + ' pts thru ' + leader.thru;
+    }
 
-    pageEntries.forEach(function (e, i) {
-      var rank = start + i + 1;
-      var key = e.memberIds.join(',');
-      var moved = prevRanks[key] != null && prevRanks[key] !== rank;
-      var isLeader = rank === 1;
-      var finished = e.thru >= freezeHole;
-      var posClass = rank <= 3 ? ' p' + rank : '';
+    // Split into two columns
+    var half = Math.ceil(pageEntries.length / 2);
+    var col1 = pageEntries.slice(0, half);
+    var col2 = pageEntries.slice(half);
 
-      html += '<div class="row' + (moved ? ' moved' : '') + (isLeader ? ' leader' : '') + '">';
-      html += '<div class="pos' + posClass + '">' + rank + '</div>';
-      html += '<div class="name-col"><div class="player-names">' + esc(e.names) + '</div>';
-      if (e.countback) html += '<div class="cb">' + esc(e.countback) + '</div>';
-      html += '</div>';
-      html += '<div class="thru">' + (finished ? '<span class="fin">F</span>' : e.thru) + '</div>';
-      html += '<div class="pts">' + e.points + '</div>';
-      html += '</div>';
-    });
+    function renderCol(arr, startIdx) {
+      var h = '<div><div class="hd"><span>Pos</span><span>' + colLabel + '</span><span>Thru</span><span>Pts</span></div>';
+      arr.forEach(function (e, i) {
+        var rank = startIdx + i + 1;
+        var key = e.memberIds.join(',');
+        var moved = prevRanks[key] != null && prevRanks[key] !== rank;
+        var isLeader = rank === 1;
+        var finished = e.thru >= freezeHole;
 
-    html += '</div>';
+        h += '<div class="r' + (moved ? ' arrived' : '') + (isLeader ? ' leader' : '') + '">';
+        h += '<span class="pos">' + rank + '</span>';
+        h += '<span class="nm">' + esc(e.names) + '</span>';
+        h += '<span class="th">' + (finished ? '<span class="fin">F</span>' : e.thru) + '</span>';
+        h += '<span class="pt">' + e.points + '</span>';
+        h += '</div>';
+      });
+      h += '</div>';
+      return h;
+    }
+
+    var html = renderCol(col1, start) + renderCol(col2, start + half);
     document.getElementById('board').innerHTML = html;
 
     var tp = Math.ceil(entries.length / rowsPerPage);
-    document.getElementById('pager').textContent = tp > 1 ? 'Page ' + (page + 1) + ' of ' + tp : '';
+    var t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('pager').textContent = (tp > 1 ? 'Page ' + (page + 1) + ' of ' + tp + ' \u00B7 ' : '') + 'Updated ' + t;
 
     prevRanks = {};
     entries.forEach(function (e, i) { prevRanks[e.memberIds.join(',')] = i + 1; });
@@ -414,10 +291,10 @@ body {
 
   function renderSlide(slide) {
     if (!slide) return;
-    var html = '<div class="slide active">';
-    if (slide.image_url) html += '<img src="' + esc(slide.image_url) + '" alt="">';
-    if (slide.headline) html += '<div class="slide-headline">' + esc(slide.headline) + '</div>';
-    if (slide.message) html += '<div class="slide-message">' + esc(slide.message) + '</div>';
+    var html = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">';
+    if (slide.image_url) html += '<img src="' + esc(slide.image_url) + '" alt="" style="max-width:50%;max-height:40%;margin-bottom:32px;">';
+    if (slide.headline) html += '<div style="font-size:48px;font-weight:800;color:#fff;font-family:var(--font-display);">' + esc(slide.headline) + '</div>';
+    if (slide.message) html += '<div style="font-size:28px;color:var(--dark-ink-muted);margin-top:12px;">' + esc(slide.message) + '</div>';
     html += '</div>';
     document.getElementById('board').innerHTML = html;
     document.getElementById('pager').textContent = '';
@@ -426,16 +303,17 @@ body {
   function renderEmpty() {
     if (!data || !data.entries || data.entries.length === 0) {
       document.getElementById('board').innerHTML =
-        '<div class="empty-state"><div class="title">Waiting for scores</div><div class="sub">The leaderboard will appear when play begins</div></div>';
+        '<div class="empty"><div class="title">Waiting for scores</div><div class="sub">The leaderboard will appear when play begins</div></div>';
       return;
     }
-    var html = '';
+    var html = '<div class="tees" style="grid-column:1/-1">';
     data.entries.forEach(function (e) {
       var time = e.teeTime ? e.teeTime.slice(0, 5) : '';
-      html += '<div class="tee-row"><span class="tee-time">' + esc(time) + '</span>' +
-        '<span class="tee-group">Group ' + (e.groupNumber || '') + '</span>' +
-        '<span class="tee-names">' + esc(e.names) + '</span></div>';
+      html += '<div class="tee"><span class="time">' + esc(time) + '</span>' +
+        '<span class="gn">Group ' + (e.groupNumber || '') + '</span>' +
+        '<span class="names">' + esc(e.names) + '</span></div>';
     });
+    html += '</div>';
     document.getElementById('board').innerHTML = html;
   }
 
