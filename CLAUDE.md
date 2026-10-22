@@ -130,6 +130,16 @@ No em dashes. Use a full stop, comma or "and" instead. This applies
 to emails, social posts, marketing copy and anything published
 under her name.
 
+## Working rules
+
+When Karla gives a brief with numbered steps, work through all of
+them without stopping to ask whether to continue. Only pause for
+four things: a database migration, a destructive or irreversible
+action, a conflict between two rules, or anything that costs money.
+Everything else: make the reasonable choice, note it in the report,
+carry on. Report at the checkpoints the brief names, not between
+them.
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in
