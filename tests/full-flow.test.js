@@ -1858,19 +1858,32 @@ async function stepPhase0Proofs() {
   // Call reviewer-login to get a session linked to the demo org, then test hash reload
   var browser = await chromium.launch({ headless: true });
   try {
-    // Link the reviewer to the demo org the same way reviewer-login does:
-    // generate magic link, get user ID, patch organisers.auth_user_id
-    var rlLink = await sbRest('POST', '../auth/v1/admin/generate_link', { type: 'magiclink', email: 'review@outofboundsevents.com' });
-    var reviewerId = rlLink.data ? rlLink.data.id : null;
+    // Link reviewer to demo org and get a session token
+    var http = require('https');
+    function authReq(method, path, body) {
+      return new Promise(function (resolve) {
+        var payload = body ? JSON.stringify(body) : null;
+        var headers = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+        if (payload) headers['Content-Length'] = Buffer.byteLength(payload);
+        var req = http.request({ hostname: SB_HOST, port: 443, path: path, method: method, headers: headers }, function (res) {
+          var c = []; res.on('data', function (d) { c.push(d); });
+          res.on('end', function () { try { resolve(JSON.parse(Buffer.concat(c).toString())); } catch (e) { resolve(null); } });
+        });
+        req.on('error', function () { resolve(null); });
+        if (payload) req.write(payload);
+        req.end();
+      });
+    }
+    var rlLink = await authReq('POST', '/auth/v1/admin/generate_link', { type: 'magiclink', email: 'review@outofboundsevents.com' });
+    var reviewerId = rlLink ? rlLink.id : null;
     if (reviewerId) {
       await sbRest('PATCH', 'organisers?id=eq.a0000000-0000-0000-0000-000000000099', { auth_user_id: reviewerId });
     }
-    // Verify the token to get an access_token
-    var tokenHash = rlLink.data && rlLink.data.action_link ? decodeURIComponent(rlLink.data.action_link.match(/token=([^&]+)/)[1]) : null;
+    var tokenHash = rlLink && rlLink.action_link ? decodeURIComponent(rlLink.action_link.match(/token=([^&]+)/)[1]) : null;
     var reviewerToken = null;
     if (tokenHash) {
-      var verRes = await sbRest('POST', '../auth/v1/verify', { type: 'magiclink', token_hash: tokenHash });
-      reviewerToken = verRes.data ? verRes.data.access_token : null;
+      var verRes = await authReq('POST', '/auth/v1/verify', { type: 'magiclink', token_hash: tokenHash });
+      reviewerToken = verRes ? verRes.access_token : null;
     }
 
     // Find an event belonging to the demo org
@@ -1917,8 +1930,6 @@ async function stepPhase0Proofs() {
       step('P0-3: Reload on #event-<id> lands on event', false,
         'reviewer-login failed or no demo event (token=' + !!reviewerToken + ' event=' + demoEventId + ')');
     }
-
-    await ctx.close();
   } finally {
     await browser.close();
   }
