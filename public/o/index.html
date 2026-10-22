@@ -1009,36 +1009,46 @@ a { color: inherit; text-decoration: none; }
     <!-- GROUPS TAB -->
     <div class="tab-panel" id="tab-groups">
       <!-- Starting mode -->
-      <div class="form-row" style="margin-bottom:16px;">
-        <label>Starting mode</label>
-        <div class="radio-group" id="starting-mode-group" style="flex-direction:row;gap:10px;">
-          <label class="radio-opt selected" data-value="tee_times" style="flex:1;">
-            <input type="radio" name="starting-mode" value="tee_times" checked>
-            <span class="radio-dot"></span>
-            <span>Tee times</span>
-          </label>
-          <label class="radio-opt" data-value="shotgun" style="flex:1;">
-            <input type="radio" name="starting-mode" value="shotgun">
-            <span class="radio-dot"></span>
-            <span>Shotgun</span>
-          </label>
+      <section class="card">
+        <div class="field"><label>How does play start?</label>
+          <div class="seg" id="starting-mode-group">
+            <button class="on" data-value="tee_times" onclick="setStartingMode('tee_times',this)">Tee times</button>
+            <button data-value="shotgun" onclick="setStartingMode('shotgun',this)">Shotgun</button>
+          </div>
         </div>
+        <div class="two" id="tee-time-fields" style="margin-bottom:0">
+          <div class="field" style="margin:0"><label for="first-tee-time">First tee time</label><input id="first-tee-time" class="input" type="time" value="09:00" onchange="fillGroupTimes()"></div>
+          <div class="field" style="margin:0"><label for="tee-gap">Gap between groups</label><div class="select-wrap"><select id="tee-gap" class="select" onchange="fillGroupTimes()"><option value="8">8 minutes</option><option value="10" selected>10 minutes</option><option value="12">12 minutes</option></select></div></div>
+        </div>
+        <div class="hint">Fills every group's time in order. You can still change any one of them.</div>
+      </section>
+
+      <div id="unassigned-section" class="unplaced" style="display:none;margin-top:var(--s-3)">
+        <span id="unassigned-info"></span>
+        <button class="btn btn-sm btn-secondary" onclick="placeUnassigned()">Place</button>
       </div>
 
-      <div id="unassigned-section" style="display:none;margin-bottom:16px;background:#FFF8E1;border:1px solid var(--amber);border-radius:var(--radius);padding:12px 16px;">
-        <div style="font-size:14px;font-weight:600;color:#7A5A00;margin-bottom:8px;" id="unassigned-count"></div>
-        <div id="unassigned-players" style="font-size:13px;color:#7A5A00;"></div>
+      <div id="groups-empty-state" class="empty" style="display:none;">
+        <h3>No groups yet</h3>
+        <p id="groups-empty-text"></p>
       </div>
-      <div id="groups-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
-        <p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your players into fours, then move anyone you like.</p>
+
+      <div id="groups-header" class="row between" style="margin:var(--s-5) 0 var(--s-2);display:none">
+        <h2 class="section-title" id="groups-count-title" style="margin:0"></h2>
+        <span class="small muted">Tap a player to move or swap them.</span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-        <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill unassigned</button>
-        <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ New group</button>
-        <button class="btn btn-outline btn-sm" onclick="startAgainGroups()" style="color:var(--red);border-color:var(--red);">Start again</button>
+
+      <div class="stack" id="groups-list"></div>
+
+      <div class="btn-row" id="groups-actions" style="margin-top:var(--s-5)">
+        <button class="btn btn-secondary" onclick="addGroupManual()"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New group</button>
+        <button class="btn btn-secondary" onclick="autoFillGroups()">Sort players into groups</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Tap a player to move them between groups.</p>
-      <div id="groups-list"></div>
+      <div id="groups-clear-wrap" style="text-align:center;margin-top:var(--s-5);display:none"><button class="link muted" onclick="startAgainGroups()">Clear all groups</button></div>
+
+      <div class="sticky-action" id="groups-sticky">
+        <button class="btn btn-primary btn-lg" onclick="switchTab(document.querySelector('.step[data-tab=&quot;golive&quot;]'))">Next: go live</button>
+      </div>
     </div>
 
     <!-- PRIZES TAB -->
@@ -2890,14 +2900,55 @@ Bob Wilson"></textarea>
 
   function selectStartingMode(mode) {
     var group = $('starting-mode-group');
-    group.querySelectorAll('.radio-opt').forEach(function(opt) {
-      opt.classList.remove('selected');
-      if (opt.dataset.value === mode) {
-        opt.classList.add('selected');
-        opt.querySelector('input').checked = true;
+    group.querySelectorAll('button').forEach(function(btn) {
+      btn.classList.toggle('on', btn.dataset.value === mode);
+    });
+    var teeFields = $('tee-time-fields');
+    if (teeFields) teeFields.style.display = mode === 'shotgun' ? 'none' : '';
+  }
+
+  window.setStartingMode = function(mode, btn) {
+    selectStartingMode(mode);
+    if (state.currentEventData) state.currentEventData.starting_mode = mode;
+    renderGroupsList();
+  };
+
+  window.fillGroupTimes = function() {
+    if (!state.groups || state.groups.length === 0) return;
+    var firstTee = $('first-tee-time').value || '09:00';
+    var gap = parseInt($('tee-gap').value) || 10;
+    var parts = firstTee.split(':');
+    var h = parseInt(parts[0]); var m = parseInt(parts[1]);
+    state.groups.forEach(function(g, i) {
+      var totalMin = h * 60 + m + (i * gap);
+      var hh = Math.floor(totalMin / 60);
+      var mm = totalMin % 60;
+      g.tee_time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+      updateGroup(g.id, { tee_time: g.tee_time });
+    });
+    renderGroupsList();
+  };
+
+  window.placeUnassigned = function() {
+    autoFillGroups();
+  };
+
+  window.promptGroupTime = function(groupId, currentTime) {
+    oobPrompt('Tee time for this group', currentTime || '09:00').then(function(val) {
+      if (val !== null && val !== undefined) {
+        updateGroup(groupId, { tee_time: val || null });
       }
     });
-  }
+  };
+
+  window.promptGroupHole = function(groupId, currentHole) {
+    oobPrompt('Starting hole for this group', String(currentHole || 1)).then(function(val) {
+      if (val !== null && val !== undefined) {
+        var h = parseInt(val);
+        if (h >= 1 && h <= 18) updateGroup(groupId, { starting_hole: h });
+      }
+    });
+  };
 
   // ── Tab switching ─────────────────────────────────────────────
   window.switchTab = function(btn) {
@@ -3225,7 +3276,7 @@ Bob Wilson"></textarea>
     btn.classList.add('is-loading');
     btn.disabled = true;
 
-    var modeEl = document.querySelector('#starting-mode-group .radio-opt.selected');
+    var modeEl = document.querySelector('#starting-mode-group button.on');
     var mode = modeEl ? modeEl.dataset.value : 'tee_times';
 
     var teeId = $('course-tee-select').value || null;
@@ -3659,33 +3710,47 @@ Bob Wilson"></textarea>
     var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
     var isShotgun = startingMode === 'shotgun';
 
+    // Update seg toggle
+    var segBtns = document.querySelectorAll('#starting-mode-group button');
+    segBtns.forEach(function(b) { b.classList.toggle('on', b.dataset.value === startingMode); });
+
+    // Show/hide tee time fields vs shotgun
+    var teeFields = $('tee-time-fields');
+    if (teeFields) teeFields.style.display = isShotgun ? 'none' : '';
+
     // Unassigned section at top
     var unassigned = state.players.filter(function(p) { return !p.group_id; });
     var unEl = $('unassigned-section');
     if (unassigned.length > 0) {
       unEl.style.display = '';
-      $('unassigned-count').textContent = unassigned.length + ' not in a group';
-      $('unassigned-players').innerHTML = unassigned.map(function (p) {
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">' +
-          '<span>' + esc(p.display_name) + '</span>' +
-          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">Add to group</button>' +
-        '</div>';
-      }).join('');
+      var names = unassigned.map(function(p) { return esc(p.display_name); }).join(', ');
+      $('unassigned-info').innerHTML = unassigned.length + ' player' + (unassigned.length !== 1 ? 's' : '') + ' not placed yet: ' + names;
     } else {
       unEl.style.display = 'none';
     }
 
+    // Groups header and clear link
+    var hdr = $('groups-header');
+    var clearWrap = $('groups-clear-wrap');
     var groupsEmpty = $('groups-empty-state');
+
     if (state.groups.length === 0) {
       el.innerHTML = '';
+      if (hdr) hdr.style.display = 'none';
+      if (clearWrap) clearWrap.style.display = 'none';
       if (groupsEmpty) {
         var pCount = state.players ? state.players.length : 0;
-        groupsEmpty.innerHTML = '<p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your ' + pCount + ' player' + (pCount !== 1 ? 's' : '') + ' into fours, then move anyone you like.</p>';
+        $('groups-empty-text').textContent = 'We\u2019ll sort your ' + pCount + ' player' + (pCount !== 1 ? 's' : '') + ' into fours, then you can move anyone.';
         groupsEmpty.style.display = '';
       }
       return;
     }
     if (groupsEmpty) groupsEmpty.style.display = 'none';
+    if (hdr) {
+      hdr.style.display = '';
+      $('groups-count-title').textContent = state.groups.length + ' group' + (state.groups.length !== 1 ? 's' : '');
+    }
+    if (clearWrap) clearWrap.style.display = '';
 
     // Compute PH for display
     var tee = state.teeData;
@@ -3693,49 +3758,52 @@ Bob Wilson"></textarea>
     var allowance = parseFloat(evd.handicap_allowance) || 0.95;
     var cap = parseInt(evd.max_handicap) || 54;
 
+    // SVG icons
+    var gripSvg = '<svg viewBox="0 0 24 24"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"/></svg>';
+    var upSvg = '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    var downSvg = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+
     el.innerHTML = state.groups.map(function(g, idx) {
       var members = state.players.filter(function(p) { return p.group_id === g.id; });
-      var membersHtml = members.map(function(p) {
-        var ph = '-';
+
+      // Members markup
+      var membersHtml = members.length > 0 ? members.map(function(p) {
+        var ph = '';
         if (p.handicap_index != null && tee) {
           ph = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
         }
-        return '<div class="gc-player" style="cursor:pointer;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')" title="Tap to move">' +
-          '<span class="gcp-name">' + esc(p.display_name) + '</span>' +
-          '<span class="gcp-ph">' + ph + '</span>' +
-        '</div>';
-      }).join('');
+        return '<button onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">' +
+          '<span class="grip">' + gripSvg + '</span>' +
+          '<span>' + esc(p.display_name) + '</span>' +
+          '<span class="off num">' + (ph !== '' ? ph : '') + '</span>' +
+        '</button>';
+      }).join('') : '<div class="none">No players yet</div>';
 
-      var timeInput = '';
+      // Time button or shotgun hole
+      var timeBtn = '';
       if (isShotgun) {
-        timeInput = '<input type="number" min="1" max="18" value="' + (g.starting_hole || 1) + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{starting_hole:parseInt(this.value)})" ' +
-          'style="width:50px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;text-align:center;" title="Start hole">';
+        timeBtn = '<button class="time" onclick="promptGroupHole(\'' + g.id + '\',' + (g.starting_hole || 1) + ')">Hole ' + (g.starting_hole || 1) + '<small>change</small></button>';
       } else {
-        timeInput = '<input type="time" value="' + (g.tee_time || '') + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{tee_time:this.value||null})" ' +
-          'style="width:90px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;" title="Tee time">';
+        timeBtn = '<button class="time" onclick="promptGroupTime(\'' + g.id + '\',\'' + (g.tee_time || '') + '\')">' + (g.tee_time || '--:--') + '<small>change</small></button>';
       }
 
       // Reorder arrows
-      var arrows = '<div style="display:flex;gap:2px;">';
-      if (idx > 0) arrows += '<button onclick="moveGroupUp(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move up">&uarr;</button>';
-      if (idx < state.groups.length - 1) arrows += '<button onclick="moveGroupDown(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move down">&darr;</button>';
+      var arrows = '<div class="tools">';
+      arrows += '<button aria-label="Move group up"' + (idx === 0 ? ' disabled style="opacity:.3"' : '') + ' onclick="moveGroupUp(\'' + g.id + '\')">' + upSvg + '</button>';
+      arrows += '<button aria-label="Move group down"' + (idx === state.groups.length - 1 ? ' disabled style="opacity:.3"' : '') + ' onclick="moveGroupDown(\'' + g.id + '\')">' + downSvg + '</button>';
       arrows += '</div>';
 
-      var emptyBtn = members.length === 0
-        ? '<button onclick="deleteGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--red);">Delete</button>'
-        : '<button onclick="emptyGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--muted);">Empty</button>';
-
-      return '<div class="group-card">' +
-        '<div class="gc-header">' +
-          arrows +
-          '<span class="gc-num">Group ' + g.group_number + '</span>' +
-          timeInput +
-          emptyBtn +
-        '</div>' +
-        '<div class="gc-members">' + (membersHtml || '<span style="font-size:13px;color:var(--muted);">Empty</span>') + '</div>' +
+      // Footer
+      var footer = '<div class="gf">' +
+        '<button class="btn btn-quiet neutral btn-sm" onclick="emptyGroup(\'' + g.id + '\')">Remove all</button>' +
+        '<button class="btn btn-danger-quiet btn-sm" onclick="deleteGroup(\'' + g.id + '\')">Delete group</button>' +
       '</div>';
+
+      return '<article class="gcard">' +
+        '<div class="gh"><span class="pill">Group ' + g.group_number + '</span>' + timeBtn + arrows + '</div>' +
+        '<div class="gm">' + membersHtml + '</div>' +
+        footer +
+      '</article>';
     }).join('');
   }
 
