@@ -1165,6 +1165,7 @@ a { color: inherit; text-decoration: none; }
               <a id="board-open-link" href="#" target="_blank" class="btn btn-primary"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Open big screen</a>
               <button class="btn btn-secondary" onclick="copyBoardLink()"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> Copy link for the telly</button>
             </div>
+            <div class="field" style="margin:var(--s-4) 0 0"><label for="board-show">Showing on the telly</label><div class="seg" id="board-show-seg"><button class="on" data-value="leaderboard" onclick="setBoardShow('leaderboard',this)">Leaderboard</button><button data-value="sponsor" onclick="setBoardShow('sponsor',this)">Sponsor</button><button data-value="teetimes" onclick="setBoardShow('teetimes',this)">Tee times</button></div></div>
           </section>
 
           <!-- Share with players -->
@@ -4327,6 +4328,7 @@ Bob Wilson"></textarea>
     try {
     await loadPlayers();
     await loadGroups();
+    await loadPrizes();
 
     // Show paid info
     var paidEl = $('live-paid-info');
@@ -4345,7 +4347,10 @@ Bob Wilson"></textarea>
 
     // Prizes sub line
     var prizesSub = $('live-prizes-sub');
-    if (prizesSub) prizesSub.textContent = 'Winners fill in when you finish.';
+    if (prizesSub) {
+      var prizeNames = (state.prizeData && state.prizeData.prizes) ? state.prizeData.prizes.map(function(p) { return p.category; }).join(', ') : '';
+      prizesSub.textContent = prizeNames ? prizeNames + '. Winners fill in when you finish.' : 'Winners fill in when you finish.';
+    }
 
     // "Score my round" -- find the organiser's player by email or name match
     var orgEmail = (state.organiser && state.organiser.contact_email ? state.organiser.contact_email : '').toLowerCase();
@@ -5155,9 +5160,7 @@ Bob Wilson"></textarea>
 
   // ── Invite link / QR ─────────────────────────────────────────
   window.editLivePrizes = function() {
-    // Switch to prizes editing (reuse existing prize setup)
-    loadPrizes();
-    switchTab(document.querySelector('.step[data-tab="details"]'));
+    openPrizesSheet();
   };
 
   window.shareWhatsApp = function() {
@@ -5260,6 +5263,18 @@ Bob Wilson"></textarea>
     var evSlug = state.currentEventData ? state.currentEventData.slug : '';
     var url = window.location.origin + '/board/#/' + orgSlug + '/' + evSlug;
     navigator.clipboard.writeText(url).then(function () { toast('Big screen link copied'); });
+  };
+
+  window.setBoardShow = function(mode, btn) {
+    var seg = $('board-show-seg');
+    if (seg) {
+      var btns = seg.querySelectorAll('button');
+      btns.forEach(function(b) { b.classList.toggle('on', b === btn); });
+    }
+    // Store the board display mode for the big screen
+    if (state.currentEventData) {
+      state.currentEventData.board_display = mode;
+    }
   };
 
   window.openInviteLink = function() {
