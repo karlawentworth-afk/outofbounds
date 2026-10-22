@@ -1858,25 +1858,25 @@ async function stepPhase0Proofs() {
   // Call reviewer-login to get a session linked to the demo org, then test hash reload
   var browser = await chromium.launch({ headless: true });
   try {
-    // Get a session via reviewer-login (this also links the auth user to the demo org)
-    var rlHost = LIVE_URL.replace('https://', '');
-    var reviewerToken = await new Promise(function (resolve) {
-      var req = https.request({ hostname: rlHost, port: 443, path: '/.netlify/functions/reviewer-login', method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      }, function (res) {
-        var c = []; res.on('data', function (d) { c.push(d); });
-        res.on('end', function () {
-          try { var j = JSON.parse(Buffer.concat(c).toString()); resolve(j.access_token || null); }
-          catch (e) { resolve(null); }
-        });
-      });
-      req.on('error', function () { resolve(null); });
-      req.end();
-    });
+    // Link the reviewer to the demo org the same way reviewer-login does:
+    // generate magic link, get user ID, patch organisers.auth_user_id
+    var rlLink = await sbRest('POST', '../auth/v1/admin/generate_link', { type: 'magiclink', email: 'review@outofboundsevents.com' });
+    var reviewerId = rlLink.data ? rlLink.data.id : null;
+    if (reviewerId) {
+      await sbRest('PATCH', 'organisers?id=eq.a0000000-0000-0000-0000-000000000099', { auth_user_id: reviewerId });
+    }
+    // Verify the token to get an access_token
+    var tokenHash = rlLink.data && rlLink.data.action_link ? decodeURIComponent(rlLink.data.action_link.match(/token=([^&]+)/)[1]) : null;
+    var reviewerToken = null;
+    if (tokenHash) {
+      var verRes = await sbRest('POST', '../auth/v1/verify', { type: 'magiclink', token_hash: tokenHash });
+      reviewerToken = verRes.data ? verRes.data.access_token : null;
+    }
 
     // Find an event belonging to the demo org
-    var demoEvRes = await sbRest('GET', '/rest/v1/events?organiser_id=eq.a0000000-0000-0000-0000-000000000099&status=in.(draft,live,finished)&select=id&limit=1&order=created_at.desc');
-    var demoEventId = demoEvRes && demoEvRes.length > 0 ? demoEvRes[0].id : null;
+    var demoEvRes = await sbRest('GET', 'events?organiser_id=eq.a0000000-0000-0000-0000-000000000099&status=in.(draft,live,finished)&select=id&limit=1&order=created_at.desc');
+    var demoEvData = demoEvRes && demoEvRes.data ? demoEvRes.data : [];
+    var demoEventId = Array.isArray(demoEvData) && demoEvData.length > 0 ? demoEvData[0].id : null;
 
     if (reviewerToken && demoEventId) {
       var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
