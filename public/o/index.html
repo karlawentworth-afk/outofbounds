@@ -4127,7 +4127,7 @@ Bob Wilson"></textarea>
   window.moveGroupDown = function(groupId) { reorderGroups(groupId, 'down'); };
 
   window.startAgainGroups = async function() {
-    if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Start again'))) return;
+    if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Clear all'))) return;
     for (var i = 0; i < state.players.length; i++) {
       if (state.players[i].group_id) {
         await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: state.players[i].id, group_id: null } });
