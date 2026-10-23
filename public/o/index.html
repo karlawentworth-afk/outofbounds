@@ -1478,6 +1478,7 @@ Bob Wilson"></textarea>
       }
       if (res.organiser) {
         state.organiser = res.organiser;
+        setupAppbar(res.organiser, res.organiser.name || '');
         if (!handleHashRoutes()) goToDashboard();
       } else {
         showScreen('screen-onboard');
@@ -1681,6 +1682,30 @@ Bob Wilson"></textarea>
     });
   }
 
+  function setupAppbar(org, fullName) {
+    var brandName = org.display_name || org.name || '';
+    var markEl = $('appbar-mark');
+    var nameEl = $('appbar-name');
+    // Never show the OB mark. Logo if set, else name as text.
+    markEl.style.display = 'none';
+    if (org.logo_url) {
+      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
+    } else {
+      nameEl.textContent = brandName;
+    }
+    if (org.primary_colour) {
+      document.documentElement.style.setProperty('--brand', org.primary_colour);
+    }
+    // Avatar initials from the org name
+    var parts = fullName.split(' ').filter(Boolean);
+    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (parts[0] || '?')[0].toUpperCase();
+    $('appbar-avatar').textContent = initials;
+    $('appbar-who').textContent = fullName;
+    // Show the shell
+    $('oob-appbar').style.display = '';
+    $('oob-tabbar').style.display = '';
+  }
+
   window.goToDashboard = async function() {
     var org = state.organiser || {};
     var fullName = org.name || '';
@@ -1703,27 +1728,7 @@ Bob Wilson"></textarea>
     var greetEl = $('dash-greeting');
     if (greetEl) greetEl.textContent = firstName ? (greeting + ', ' + esc(firstName)) : greeting;
 
-    // Appbar brand — OB mark only for OOB's superadmin organiser viewing as themselves.
-    // Every other organiser shows their logo if set, otherwise their name as text.
-    var brandName = org.display_name || org.name || '';
-    var markEl = $('appbar-mark');
-    var nameEl = $('appbar-name');
-    // Appbar brand: logo if set, otherwise name as text. Never the OB mark.
-    markEl.style.display = 'none';
-    if (org.logo_url) {
-      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
-    } else {
-      nameEl.textContent = brandName;
-    }
-    if (org.primary_colour) {
-      document.documentElement.style.setProperty('--brand', org.primary_colour);
-    }
-
-    // Avatar initials
-    var parts = fullName.split(' ').filter(Boolean);
-    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (parts[0] || '?')[0].toUpperCase();
-    $('appbar-avatar').textContent = initials;
-    $('appbar-who').textContent = fullName;
+    setupAppbar(org, fullName);
 
     // Update old user pills for other screens
     var pill2 = $('user-pill-ev');
