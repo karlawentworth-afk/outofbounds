@@ -72,10 +72,10 @@ img, svg { display: block; max-width: 100%; }
 }
 
 /* ---------- Bottom tab bar (phone, web and native) ---------- */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: var(--safe-b); display: grid; grid-template-columns: repeat(3, 1fr); }
+.tabbar { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 40; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: var(--safe-b); display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; max-width: var(--col); }
 .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: var(--tabbar-h); color: var(--ink-muted); font-size: var(--fs-micro); font-weight: 600; letter-spacing: .02em; text-transform: none; }
 .tabbar a svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tabbar a.on { color: var(--brand); }
+.tabbar a.on { color: var(--accent); }
 .tabbar a.on svg { stroke-width: 2.2; }
 @media (min-width: 900px) { .tabbar { display: none; } .page { padding-bottom: var(--s-12); } }
 

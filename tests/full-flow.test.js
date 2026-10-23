@@ -1925,6 +1925,64 @@ async function stepPhase0Proofs() {
       step('Appbar: no OB mark visible', !obMarkVisible,
         'obMarkVisible=' + obMarkVisible);
 
+      // Brand colour leak test: set Test Org to #c9a9a6, sign in, check no button is pink
+      var origColour = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=primary_colour');
+      var savedColour = origColour.data && origColour.data[0] ? origColour.data[0].primary_colour : null;
+      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { primary_colour: '#c9a9a6' });
+
+      var http2 = require('https');
+      var testLink = await new Promise(function (res) {
+        var rq = http2.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/admin/generate_link', method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Length': Buffer.byteLength(JSON.stringify({ type: 'magiclink', email: 'playwright-testorg@oob-test.local' })) }
+        }, function (r) { var c = []; r.on('data', function (d) { c.push(d); }); r.on('end', function () { try { res(JSON.parse(Buffer.concat(c).toString())); } catch (e) { res(null); } }); });
+        rq.on('error', function () { res(null); });
+        rq.write(JSON.stringify({ type: 'magiclink', email: 'playwright-testorg@oob-test.local' }));
+        rq.end();
+      });
+      if (testLink && testLink.action_link) {
+        var tth = decodeURIComponent(testLink.action_link.match(/token=([^&]+)/)[1]);
+        var tvr = await new Promise(function (res) {
+          var rq = http2.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/verify', method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Length': Buffer.byteLength(JSON.stringify({ type: 'magiclink', token_hash: tth })) }
+          }, function (r) { var c = []; r.on('data', function (d) { c.push(d); }); r.on('end', function () { try { res(JSON.parse(Buffer.concat(c).toString())); } catch (e) { res(null); } }); });
+          rq.on('error', function () { res(null); });
+          rq.write(JSON.stringify({ type: 'magiclink', token_hash: tth }));
+          rq.end();
+        });
+        await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: testLink.id });
+        if (tvr && tvr.access_token) {
+          var bCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          await bCtx.addInitScript(function (d) {
+            try { localStorage.setItem('sb-ahutmswadskdkqhnrhhh-auth-token', JSON.stringify({
+              access_token: d.token, refresh_token: '', token_type: 'bearer',
+              expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600
+            })); } catch (e) {}
+          }, { token: tvr.access_token });
+          var bPage = await bCtx.newPage();
+          await bPage.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 30000 });
+          await sleep(10000);
+          var colourCheck = await bPage.evaluate(function () {
+            function rgb(el) { return el ? getComputedStyle(el).backgroundColor : ''; }
+            var btn = document.querySelector('.btn-primary');
+            var label = document.querySelector('.section-title');
+            var brandRgb = 'rgb(201, 169, 166)'; // #c9a9a6
+            return {
+              btn: rgb(btn),
+              label: label ? getComputedStyle(label).color : '',
+              btnIsBrand: rgb(btn) === brandRgb,
+              labelIsBrand: label ? getComputedStyle(label).color === brandRgb : false
+            };
+          });
+          step('Brand colour does not leak into buttons', !colourCheck.btnIsBrand,
+            'btn=' + colourCheck.btn + ' isBrand=' + colourCheck.btnIsBrand);
+          step('Brand colour does not leak into section labels', !colourCheck.labelIsBrand,
+            'label=' + colourCheck.label + ' isBrand=' + colourCheck.labelIsBrand);
+          await bCtx.close();
+        }
+      }
+      // Restore original colour
+      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { primary_colour: savedColour || '#1B2A4A' });
+
       await ctx.close();
     } else {
       step('P0-3: Reload on #event-<id> lands on event', false,

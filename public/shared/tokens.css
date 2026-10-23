@@ -92,7 +92,7 @@
   --s-16: 64px;
 
   --gutter:           16px;      /* page side gutter on phone                */
-  --col:              720px;     /* content column on desktop                */
+  --col:              640px;     /* content column on desktop                */
   --tap:              44px;      /* minimum tap target                       */
   --control-h:        52px;      /* buttons and inputs                       */
 

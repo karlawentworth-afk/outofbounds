@@ -53,7 +53,7 @@ a { color: inherit; text-decoration: none; }
 /* Layout */
 .screen { display: none; }
 .screen.active { display: block; }
-.container { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+.container { width: min(640px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
 
 /* Card */
 .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); transition: box-shadow var(--transition); }
@@ -1677,12 +1677,8 @@ Bob Wilson"></textarea>
   // ── Dashboard ─────────────────────────────────────────────────
   function applyBranding() {
     var org = state.organiser || {};
-    if (org.primary_colour) {
-      var s = document.documentElement.style;
-      s.setProperty('--brand', org.primary_colour);
-      // --accent stays green (#2F7A45) always. --brand paints the frame only.
-      if (org.text_on_primary) s.setProperty('--text-on-brand', org.text_on_primary);
-    }
+    // Org colour paints the appbar and old top-bars only. Never override --brand.
+    // --brand stays as the default navy for chips, steps, pills, and focus rings.
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
         el.style.background = org.primary_colour;
@@ -1722,8 +1718,14 @@ Bob Wilson"></textarea>
     } else {
       nameEl.textContent = brandName;
     }
+    // Org colour paints the appbar only, never --brand (which stays navy for chips/steps/pills)
+    var appbarEl = $('oob-appbar');
     if (org.primary_colour) {
-      document.documentElement.style.setProperty('--brand', org.primary_colour);
+      appbarEl.style.background = org.primary_colour;
+      if (org.text_on_primary) appbarEl.style.color = org.text_on_primary;
+    } else {
+      appbarEl.style.background = '';
+      appbarEl.style.color = '';
     }
     // Avatar initials from the org name
     var parts = fullName.split(' ').filter(Boolean);
@@ -1859,18 +1861,26 @@ Bob Wilson"></textarea>
         btnLabel = 'Share results';
       }
 
-      // Meta: date + course + player count
-      var meta = '';
-      if (ev.event_date) meta += formatDate(ev.event_date);
-      if (ev.course_name) meta += (meta ? ' \u00B7 ' : '') + esc(ev.course_name);
-      if (pc > 0) meta += (meta ? ' \u00B7 ' : '') + pc + ' players';
+      // Meta: date + course + player count — always show what exists
+      var metaParts = [];
+      if (ev.event_date) metaParts.push(formatDate(ev.event_date));
+      if (ev.course_name) metaParts.push(esc(ev.course_name));
+      if (pc > 0) metaParts.push(pc + ' player' + (pc !== 1 ? 's' : ''));
+      var meta = metaParts.join(' \u00B7 ');
+
+      // Fallback status sentence if next is empty
+      if (!next) {
+        if (status === 'draft') next = 'Tap to continue setting up.';
+        else if (status === 'finished') next = 'Event complete.';
+        else if (status === 'live') next = 'Scoring in progress.';
+      }
 
       return '<article class="event-card ' + esc(status) + '" onclick="openEvent(\'' + ev.id + '\')">' +
         '<div class="bar"></div>' +
         '<div class="body">' +
           '<div class="top"><h3>' + esc(ev.name) + '</h3><span class="chip ' + chipClass + '">' + chipLabel + '</span></div>' +
           (meta ? '<div class="meta">' + meta + '</div>' : '') +
-          (next ? '<div class="next">' + next + '</div>' : '') +
+          '<div class="next">' + next + '</div>' +
           '<div class="act"><button class="btn ' + btnClass + '" onclick="' + btnAction + '">' + btnLabel + '</button></div>' +
         '</div>' +
       '</article>';
