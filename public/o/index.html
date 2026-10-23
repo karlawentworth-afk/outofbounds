@@ -901,8 +901,8 @@ a { color: inherit; text-decoration: none; }
 <!-- Event detail -->
 <div id="screen-event" class="screen">
   <div class="container">
-    <a class="crumb" onclick="goToDashboard();return false" href="#"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
-    <div class="page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub" id="ev-head-sub"></div></div>
+    <a class="crumb" id="ev-crumb" onclick="goToDashboard();return false" href="#"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
+    <div class="page-head" id="ev-page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub" id="ev-head-sub"></div></div>
 
     <div class="steps" role="list" aria-label="Set-up steps" id="ev-tabs">
       <a class="step on" role="listitem" data-tab="details" onclick="switchTab(this)"><span class="n">1</span><span class="t">Details</span><span class="s" id="step-state-details"></span></a>
@@ -4241,9 +4241,10 @@ Bob Wilson"></textarea>
   // ── Go Live tab ───────────────────────────────────────────────
   function updateGoLiveTab() {
     var ev = state.currentEventData;
-    // Always hide livehead and restore page-head unless we're going live
+    // Always hide livehead and restore page-head/crumb/strip unless we're going live
     var lh = $('livehead'); if (lh) lh.classList.remove('show');
-    var ph = document.querySelector('#screen-event .page-head'); if (ph) ph.style.display = '';
+    var ec = $('ev-crumb'); if (ec) ec.style.display = '';
+    var ph = $('ev-page-head'); if (ph) ph.style.display = '';
     var et = $('ev-tabs'); if (et) et.style.display = '';
 
     if (!ev) {
@@ -4453,11 +4454,10 @@ Bob Wilson"></textarea>
         '<div class="stat"><b class="num" id="livehead-leader-pts">--</b><span id="livehead-leader-label">leading</span></div>' +
         '<div class="stat"><b class="num" id="livehead-finished">0</b><span>finished</span></div>';
     }
-    // Hide the page-head (h1 + strip) for live view
-    var pageHead = document.querySelector('#screen-event .page-head');
-    if (pageHead) pageHead.style.display = 'none';
-    var evTabs = $('ev-tabs');
-    if (evTabs) evTabs.style.display = 'none';
+    // Hide the page-head, crumb and strip for live view (livehead replaces them)
+    var evCrumb = $('ev-crumb'); if (evCrumb) evCrumb.style.display = 'none';
+    var pageHead = $('ev-page-head'); if (pageHead) pageHead.style.display = 'none';
+    var evTabs = $('ev-tabs'); if (evTabs) evTabs.style.display = 'none';
 
     // Show paid info
     var paidEl = $('live-paid-info');
