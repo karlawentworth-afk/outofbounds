@@ -3943,7 +3943,8 @@ Bob Wilson"></textarea>
       if (isShotgun) {
         timeBtn = '<button class="time" onclick="promptGroupHole(\'' + g.id + '\',' + (g.starting_hole || 1) + ')">Hole ' + (g.starting_hole || 1) + '<small>change</small></button>';
       } else {
-        timeBtn = '<button class="time" onclick="promptGroupTime(\'' + g.id + '\',\'' + (g.tee_time || '') + '\')">' + (g.tee_time || '--:--') + '<small>change</small></button>';
+        var displayTime = g.tee_time ? g.tee_time.slice(0, 5) : '--:--';
+        timeBtn = '<button class="time" onclick="promptGroupTime(\'' + g.id + '\',\'' + (g.tee_time || '') + '\')">' + displayTime + '<small>change</small></button>';
       }
 
       // Reorder arrows
