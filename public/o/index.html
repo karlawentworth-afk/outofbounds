@@ -459,6 +459,25 @@ a { color: inherit; text-decoration: none; }
 .podium div { background: rgba(255,255,255,.1); border-radius: var(--r-md); padding: var(--s-3); }
 .podium b { display: block; font-family: var(--font-score); font-size: var(--fs-h2); color: #fff; }
 .podium span { font-size: var(--fs-small); color: var(--dark-ink-muted); }
+
+/* Live control room header */
+.livehead { background: var(--dark-surface); color: var(--dark-ink); padding: var(--s-5) 0; display: none; }
+.livehead.show { display: block; }
+.livehead .in { width: min(var(--col, 720px), 100%); margin: 0 auto; padding: 0 var(--gutter, 16px); }
+.livehead .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.livehead .top .crumb { color: var(--dark-ink-muted); }
+.livehead .top .crumb svg { stroke: currentColor; }
+.livehead h1 { color: #fff; font-size: var(--fs-h1); display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; font-family: var(--font-display); }
+.livehead .meta { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-1); display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+.livehead .meta a { color: var(--dark-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.livehead .stats { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
+.livehead .stat { background: var(--dark-surface-2); border: 1px solid transparent; border-radius: var(--r-md); padding: var(--s-3) var(--s-4); flex: 1; text-align: center; }
+.livehead .stat b { display: block; color: #fff; font-family: var(--font-score); font-weight: 700; font-size: var(--fs-h1); }
+.livehead .stat span { font-size: var(--fs-micro); color: var(--dark-ink-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+.livehead .chip.live { background: rgba(143,211,164,.18); color: var(--dark-accent); font-size: var(--fs-micro); }
+.livehead .chip.live::before { background: var(--dark-accent); }
+.upd { font-size: var(--fs-small); color: var(--ink-muted); display: inline-flex; align-items: center; gap: 6px; }
+.upd i { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.8s infinite; }
 </style>
 </head>
 <body>
@@ -1131,6 +1150,19 @@ a { color: inherit; text-decoration: none; }
         </div>
       </div>
 
+      <!-- Live control room header -->
+      <section class="livehead on-dark" id="livehead">
+        <div class="in">
+          <div class="top">
+            <a href="#" class="crumb" onclick="goToDashboard();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
+            <span class="upd" style="color:var(--dark-ink-muted)" id="live-updated"><i></i>Updated</span>
+          </div>
+          <h1 id="livehead-title"><span class="chip live">Live</span></h1>
+          <div class="meta" id="livehead-meta"></div>
+          <div class="stats" id="livehead-stats"></div>
+        </div>
+      </section>
+
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
        <div class="cols">
@@ -1648,10 +1680,8 @@ Bob Wilson"></textarea>
     if (org.primary_colour) {
       var s = document.documentElement.style;
       s.setProperty('--brand', org.primary_colour);
-      s.setProperty('--green', org.primary_colour);
-      s.setProperty('--green-2', org.primary_colour);
+      // --accent stays green (#2F7A45) always. --brand paints the frame only.
       if (org.text_on_primary) s.setProperty('--text-on-brand', org.text_on_primary);
-      if (org.accent_colour) s.setProperty('--accent', org.accent_colour);
     }
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
@@ -1688,7 +1718,7 @@ Bob Wilson"></textarea>
     // Never show the OB mark. Logo if set, else name as text.
     markEl.style.display = 'none';
     if (org.logo_url) {
-      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
+      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:28px;max-width:140px;object-fit:contain;display:block;">';
     } else {
       nameEl.textContent = brandName;
     }
@@ -4211,6 +4241,11 @@ Bob Wilson"></textarea>
   // ── Go Live tab ───────────────────────────────────────────────
   function updateGoLiveTab() {
     var ev = state.currentEventData;
+    // Always hide livehead and restore page-head unless we're going live
+    var lh = $('livehead'); if (lh) lh.classList.remove('show');
+    var ph = document.querySelector('#screen-event .page-head'); if (ph) ph.style.display = '';
+    var et = $('ev-tabs'); if (et) et.style.display = '';
+
     if (!ev) {
       $('golive-draft').style.display = 'block';
       $('golive-live').style.display = 'none';
@@ -4394,6 +4429,35 @@ Bob Wilson"></textarea>
     await loadPlayers();
     await loadGroups();
     await loadPrizes();
+
+    // Dark livehead control room header
+    var evd = state.currentEventData || {};
+    var lh = $('livehead');
+    if (lh) {
+      lh.classList.add('show');
+      // Title with LIVE pill
+      $('livehead-title').innerHTML = esc(evd.name || '') + ' <span class="chip live">Live</span>';
+      // Meta: course, players, format
+      var courseName = state.courseData ? state.courseData.course.name : '';
+      var playerCount = state.players ? state.players.length : 0;
+      var formatLabel = { individual_stableford: 'Individual Stableford', better_ball_pairs: 'Better ball Stableford', better_ball_2from4: 'Best 2 from 4' }[evd.format] || evd.format || '';
+      $('livehead-meta').innerHTML = '<span>' + esc(courseName) + ' \u00B7 ' + playerCount + ' players \u00B7 ' + esc(formatLabel) + '</span><a onclick="switchTab(document.querySelector(\'.step[data-tab=details]\'));return false">Edit set-up</a>';
+      // Updated time
+      var now = new Date();
+      $('live-updated').innerHTML = '<i></i>Updated ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      // Stats tiles — computed after leaderboard loads (updated in renderLiveLeaderboard)
+      var groupCount = state.groups ? state.groups.length : 0;
+      var scoringCount = state.groups ? state.groups.filter(function(g) { return g.scorer_player_id; }).length : 0;
+      $('livehead-stats').innerHTML =
+        '<div class="stat"><b class="num">' + scoringCount + '<span style="font-size:var(--fs-ui);color:var(--dark-ink-muted);font-weight:600"> of ' + groupCount + '</span></b><span>groups scoring</span></div>' +
+        '<div class="stat"><b class="num" id="livehead-leader-pts">--</b><span id="livehead-leader-label">leading</span></div>' +
+        '<div class="stat"><b class="num" id="livehead-finished">0</b><span>finished</span></div>';
+    }
+    // Hide the page-head (h1 + strip) for live view
+    var pageHead = document.querySelector('#screen-event .page-head');
+    if (pageHead) pageHead.style.display = 'none';
+    var evTabs = $('ev-tabs');
+    if (evTabs) evTabs.style.display = 'none';
 
     // Show paid info
     var paidEl = $('live-paid-info');
@@ -4630,6 +4694,22 @@ Bob Wilson"></textarea>
       });
       if (scoresRes && scoresRes.entries) {
         renderLeaderboardTable($('live-leaderboard'), scoresRes.entries);
+        // Update livehead stats
+        var leaderPts = $('livehead-leader-pts');
+        var leaderLabel = $('livehead-leader-label');
+        var finishedEl = $('livehead-finished');
+        if (leaderPts && scoresRes.entries.length > 0) {
+          var top = scoresRes.entries[0];
+          leaderPts.textContent = top.points || 0;
+          leaderLabel.textContent = 'leading, thru ' + (top.thru || 0);
+        }
+        if (finishedEl) {
+          var finCount = scoresRes.entries.filter(function(e) { return e.thru >= 18; }).length;
+          finishedEl.textContent = finCount;
+        }
+        // Update timestamp
+        var updEl = $('live-updated');
+        if (updEl) updEl.innerHTML = '<i></i>Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         return;
       }
     } catch (err) {
