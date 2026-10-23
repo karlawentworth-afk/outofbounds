@@ -434,6 +434,29 @@ async function stepA2_signInScreen() {
       step('Sign-in via magic link (token not available)', false, 'could not get session');
     }
 
+    // Bad reviewer code shows error sentence
+    await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 30000 });
+    await sleep(2000);
+    await page.locator('button[onclick="showEmailSignIn()"]').click();
+    await sleep(500);
+    await page.locator('#magic-email').fill('review@outofboundsevents.com');
+    await sleep(500);
+    var codeField2 = page.locator('#reviewer-code');
+    if (await codeField2.isVisible({ timeout: 2000 }).catch(function () { return false; })) {
+      await codeField2.fill('000000');
+      await sleep(300);
+      await page.locator('#magic-btn').click();
+      await sleep(3000);
+      var errVisible = await page.evaluate(function () {
+        var el = document.getElementById('signin-error');
+        return el ? { visible: el.offsetHeight > 0 && el.style.display !== 'none', text: el.textContent } : { visible: false, text: '' };
+      });
+      step('Bad code shows error sentence', errVisible.visible && errVisible.text.length > 10,
+        'visible=' + errVisible.visible + ' text=' + errVisible.text);
+    } else {
+      step('Bad code shows error sentence', false, 'reviewer code field not visible');
+    }
+
     await ctx.close();
   } finally {
     await browser.close();

@@ -546,6 +546,7 @@ a { color: inherit; text-decoration: none; }
           </div>
         </div>
         <button class="btn btn-primary btn-block" id="magic-btn" onclick="sendMagicLink()">Email me a sign-in link</button>
+        <p id="signin-error" style="display:none;text-align:center;color:var(--danger-ink);font-size:var(--fs-small);margin-top:var(--s-3);line-height:1.5;"></p>
         <div id="magic-sent" class="banner info" style="display:none;margin-top:var(--s-3);"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div>We've emailed you a link. Tap it on this phone to sign in. Not there in a minute? Check spam or try again.</div></div>
       </div>
       <p class="fine" style="text-align:center;color:var(--ink-muted);font-size:var(--fs-small);margin-top:var(--s-3);">No passwords. We only email you about your events.</p>
@@ -1553,7 +1554,8 @@ Bob Wilson"></textarea>
 
   window.sendMagicLink = async function() {
     var email = $('magic-email').value.trim();
-    if (!email) { toast('Enter your email'); return; }
+    $('signin-error').style.display = 'none';
+    if (!email) { $('signin-error').textContent = 'Enter your email address.'; $('signin-error').style.display = ''; return; }
 
     // Reviewer sign-in: code-based, no magic link
     if (email.toLowerCase() === 'review@outofboundsevents.com') {
@@ -1574,9 +1576,16 @@ Bob Wilson"></textarea>
           refresh_token: data.refresh_token
         });
       } catch (err) {
-        console.error('Code error:', err.message); toast('That didn’t work. Try again.');
-        $('magic-btn').disabled = false;
-        $('magic-btn').textContent = 'Sign in';
+        console.error(‘Code error:’, err.message);
+        var errEl = $(‘signin-error’);
+        if (err.message && err.message.indexOf(‘code’) !== -1) {
+          errEl.textContent = ‘That code didn\u2019t work. Check it and try again.’;
+        } else {
+          errEl.textContent = ‘We couldn\u2019t sign you in. Try again in a moment.’;
+        }
+        errEl.style.display = ‘’;
+        $(‘magic-btn’).disabled = false;
+        $(‘magic-btn’).textContent = ‘Sign in’;
       }
       return;
     }
@@ -1586,7 +1595,10 @@ Bob Wilson"></textarea>
       options: { emailRedirectTo: window.location.origin + '/o/' }
     });
     if (error) {
-      console.error(error.message); toast('That didn’t work. Try again.');
+      console.error(error.message);
+      var errEl = $(‘signin-error’);
+      errEl.textContent = ‘We couldn\u2019t sign you in. Try again in a moment.’;
+      errEl.style.display = ‘’;
     } else {
       $('magic-sent').style.display = 'block';
     }
