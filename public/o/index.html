@@ -891,7 +891,6 @@ a { color: inherit; text-decoration: none; }
       <a class="step todo" role="listitem" data-tab="groups" onclick="switchTab(this)"><span class="n">3</span><span class="t">Groups</span><span class="s" id="step-state-groups"></span></a>
       <a class="step todo" role="listitem" data-tab="golive" onclick="switchTab(this)"><span class="n">4</span><span class="t">Go live</span><span class="s" id="step-state-golive"></span></a>
     </div>
-    <div class="sub-status" id="ev-sub-status"></div>
 
     <!-- DETAILS TAB -->
     <div class="tab-panel active" id="tab-details">
@@ -3145,7 +3144,6 @@ Bob Wilson"></textarea>
     }
 
     // Sub-status line: contextual to the active tab
-    var subStatus = $('ev-sub-status');
     var headSub = $('ev-head-sub');
     var activeTab = document.querySelector('.step.on');
     var activeTabName = activeTab ? activeTab.dataset.tab : 'details';
@@ -3158,8 +3156,7 @@ Bob Wilson"></textarea>
       var firstTee = (state.groups[0] && state.groups[0].tee_time) ? state.groups[0].tee_time.slice(0, 5) : '';
       subText = groupCount + ' groups' + (firstTee ? ', first tee ' + firstTee : '') + '. Next, go live.';
     }
-    // Go live and fallback: no line
-    if (subStatus) subStatus.textContent = subText;
+    // Go live and fallback: no line. Show under h1 only.
     if (headSub) headSub.textContent = subText;
 
     // Update more-options summary
