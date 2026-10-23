@@ -883,7 +883,7 @@ a { color: inherit; text-decoration: none; }
 <div id="screen-event" class="screen">
   <div class="container">
     <a class="crumb" onclick="goToDashboard();return false" href="#"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
-    <div class="page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub">Step 1 of 4. You can change anything later.</div></div>
+    <div class="page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub" id="ev-head-sub"></div></div>
 
     <div class="steps" role="list" aria-label="Set-up steps" id="ev-tabs">
       <a class="step on" role="listitem" data-tab="details" onclick="switchTab(this)"><span class="n">1</span><span class="t">Details</span><span class="s" id="step-state-details"></span></a>
@@ -1708,12 +1708,11 @@ Bob Wilson"></textarea>
     var brandName = org.display_name || org.name || '';
     var markEl = $('appbar-mark');
     var nameEl = $('appbar-name');
-    var showOBMark = org.is_superadmin && !state.realOrganiser; // viewing as self, not impersonating
+    // Appbar brand: logo if set, otherwise name as text. Never the OB mark.
+    markEl.style.display = 'none';
     if (org.logo_url) {
-      markEl.style.display = 'none';
       nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:32px;display:block;">';
     } else {
-      markEl.style.display = showOBMark ? '' : 'none';
       nameEl.textContent = brandName;
     }
     if (org.primary_colour) {
@@ -2858,7 +2857,7 @@ Bob Wilson"></textarea>
       }
     } catch (err) { /* use cached */ }
 
-    $('ev-title').textContent = ev ? ev.name : 'Event';
+    $('ev-title').textContent = ev ? ev.name : 'New event';
     populateEventForm(state.currentEventData);
 
     // Determine which tab set to show based on status
@@ -3065,7 +3064,7 @@ Bob Wilson"></textarea>
     $('tab-' + tab).classList.add('active');
 
     if (tab === 'players') renderPlayerList();
-    if (tab === 'groups') renderGroupsList();
+    if (tab === 'groups') { cleanupGroups(); renderGroupsList(); }
     if (tab === 'golive') updateGoLiveTab();
     if (tab === 'prizes') loadPrizes();
 
@@ -3140,14 +3139,23 @@ Bob Wilson"></textarea>
       else ls.textContent = '';
     }
 
-    // Sub-status line (visible on small screens below the step strip)
+    // Sub-status line: contextual to the active tab
     var subStatus = $('ev-sub-status');
-    if (subStatus) {
-      if (!detailsDone) subStatus.textContent = '';
-      else if (!playersDone) subStatus.textContent = detailsSub + '. Next, add players.';
-      else if (!groupsDone) subStatus.textContent = playerCount + ' players. Next, make groups.';
-      else subStatus.textContent = groupCount + ' groups. Next, go live.';
+    var headSub = $('ev-head-sub');
+    var activeTab = document.querySelector('.step.on');
+    var activeTabName = activeTab ? activeTab.dataset.tab : 'details';
+    var subText = '';
+    if (activeTabName === 'details' && detailsDone) {
+      subText = detailsSub + '. Next, add players.';
+    } else if (activeTabName === 'players' && playerCount > 0) {
+      subText = playerCount + ' players. Next, make groups.';
+    } else if (activeTabName === 'groups' && groupCount > 0) {
+      var firstTee = (state.groups[0] && state.groups[0].tee_time) ? state.groups[0].tee_time.slice(0, 5) : '';
+      subText = groupCount + ' groups' + (firstTee ? ', first tee ' + firstTee : '') + '. Next, go live.';
     }
+    // Go live and fallback: no line
+    if (subStatus) subStatus.textContent = subText;
+    if (headSub) headSub.textContent = subText;
 
     // Update more-options summary
     updateMoreOptsSummary();
@@ -3807,6 +3815,45 @@ Bob Wilson"></textarea>
       if (res.players) state.players = res.players;
     } catch (err) {
       console.error('Load groups error:', err);
+    }
+  }
+
+  function cleanupGroups() {
+    if (!state.groups || state.groups.length === 0) return;
+    // 1. Delete empty groups (no members)
+    var playerGroupIds = {};
+    (state.players || []).forEach(function(p) { if (p.group_id) playerGroupIds[p.group_id] = true; });
+    var before = state.groups.length;
+    state.groups = state.groups.filter(function(g) { return playerGroupIds[g.id]; });
+    // Delete removed groups on server
+    if (state.groups.length < before) {
+      var allGroupIds = state.groups.map(function(g) { return g.id; });
+      // Server-side cleanup will happen on next save
+    }
+
+    // 2. Renumber 1..N
+    state.groups.sort(function(a, b) { return (a.group_number || 0) - (b.group_number || 0); });
+    state.groups.forEach(function(g, i) { g.group_number = i + 1; });
+
+    // 3. Fill tee times from first tee + gap for groups without one
+    var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+    if (startingMode !== 'shotgun') {
+      var firstTee = $('first-tee-time') ? $('first-tee-time').value : '09:00';
+      var gap = $('tee-gap') ? parseInt($('tee-gap').value) : 10;
+      var parts = firstTee.split(':');
+      var baseH = parseInt(parts[0]); var baseM = parseInt(parts[1]);
+      var needsFill = state.groups.some(function(g) { return !g.tee_time; });
+      if (needsFill) {
+        state.groups.forEach(function(g, i) {
+          if (!g.tee_time) {
+            var totalMin = baseH * 60 + baseM + (i * gap);
+            var hh = Math.floor(totalMin / 60);
+            var mm = totalMin % 60;
+            g.tee_time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+            updateGroup(g.id, { tee_time: g.tee_time });
+          }
+        });
+      }
     }
   }
 
