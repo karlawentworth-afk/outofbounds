@@ -183,13 +183,6 @@ button.link { min-height: var(--tap); display: inline-flex; align-items: center;
 .event-card .act { margin-top: var(--s-2); }
 .event-card .act .btn { width: 100%; }
 .event-card { container-type: inline-size; }
-@container (min-width: 560px) {
-  .event-card .body { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-1) var(--s-5); }
-  .event-card .top { grid-column: 1; }
-  .event-card .next, .event-card .meta { grid-column: 1; }
-  .event-card .act { grid-column: 2; grid-row: 1 / span 3; margin: 0; }
-  .event-card .act .btn { width: auto; }
-}
 
 /* ---------- Step strip ---------- */
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-2); margin: var(--s-4) 0 var(--s-5); }
