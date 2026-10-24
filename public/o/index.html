@@ -1818,7 +1818,7 @@ Bob Wilson"></textarea>
       state.events = res.events || [];
       renderEventList();
     } catch (err) {
-      console.error('Events load:', err.message); toast('Couldn't load your events. Try again.');
+      console.error('Events load:', err.message); toast('Couldn\u2019t load your events. Try again.');
     }
   }
 
@@ -3442,7 +3442,7 @@ Bob Wilson"></textarea>
       $('course-inline-form').style.display = 'none';
       await loadCourseForEvent(res.course.id, res.tee.id);
     } catch (err) {
-      console.error('Course save:', err.message); toast('Couldn't save the course. Try again.');
+      console.error('Course save:', err.message); toast('Couldn\u2019t save the course. Try again.');
     }
   };
 
@@ -5878,7 +5878,7 @@ Bob Wilson"></textarea>
     } catch (err) {
       $('help-send-btn').disabled = false;
       $('help-send-btn').textContent = 'Send';
-      console.error('Help send:', err.message); toast('Couldn't send. Email hello@outofboundsevents.com instead.');
+      console.error('Help send:', err.message); toast('Couldn\u2019t send. Email hello@outofboundsevents.com instead.');
     }
   };
 
