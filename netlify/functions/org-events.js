@@ -124,7 +124,7 @@ exports.handler = async function (event) {
           });
           var entries = engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes || [], players: lAllPlayers || [], groups: lAllGroups || [], format: lev.format, maxHole: 18 });
           var leader = entries && entries.length > 0 && entries[0].points > 0 ? entries[0] : null;
-          var status_text = numScoring + ' of ' + totalGroups + ' groups scoring';
+          var status_text = numScoring + ' of ' + totalGroups + ' ' + (totalGroups === 1 ? 'group' : 'groups') + ' scoring';
           if (leader) status_text += ' \u00B7 leader ' + leader.points + ' pts thru ' + leader.thru;
           liveStatusMap[lev.id] = status_text;
         } catch (e) { console.error('Live status for ' + liveEvents[li].id + ':', e.message); }

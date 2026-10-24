@@ -59,11 +59,11 @@ img, svg { display: block; max-width: 100%; }
 .appbar .in { height: 56px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: 0 var(--gutter); width: min(var(--col), 100%); margin: 0 auto; }
 .appbar.wide .in { width: min(1120px, 100%); }
 .appbar .brand { display: flex; white-space: nowrap; align-items: center; gap: var(--s-3); font-family: var(--font-display); font-weight: 700; font-size: var(--fs-ui); letter-spacing: .01em; min-height: var(--tap); }
-.appbar .brand .ob-mark { background-color: rgba(255,255,255,.14); }
+.appbar .brand .ob-mark { background-color: var(--brand-overlay, rgba(255,255,255,.14)); }
 .appbar .nav { display: none; gap: var(--s-1); }
 .appbar .nav a { display: inline-flex; align-items: center; height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); color: var(--brand-ink); opacity: .78; font-weight: 500; font-size: var(--fs-ui); }
-.appbar .nav a.on { opacity: 1; background: rgba(255,255,255,.14); }
-.avatar { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.18); color: var(--brand-ink); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-small); letter-spacing: .02em; border: 1.5px solid rgba(255,255,255,.35); }
+.appbar .nav a.on { opacity: 1; background: var(--brand-overlay, rgba(255,255,255,.14)); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--brand-overlay, rgba(255,255,255,.18)); color: var(--brand-ink); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-small); letter-spacing: .02em; border: 1.5px solid var(--brand-border, rgba(255,255,255,.35)); }
 .appbar .acct { display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap); }
 .appbar .acct .who { display: none; font-size: var(--fs-small); opacity: .85; white-space: nowrap; }
 @media (min-width: 900px) {

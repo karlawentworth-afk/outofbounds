@@ -1422,6 +1422,7 @@ Bob Wilson"></textarea>
   };
 
   // ── Helpers ───────────────────────────────────────────────────
+  function pluralise(n, singular, plural) { return n + ' ' + (n === 1 ? singular : (plural || singular + 's')); }
   function $(id) { return document.getElementById(id); }
   function show(id) { $(id).classList.add('active'); }
   function hide(id) { $(id).classList.remove('active'); }
@@ -1693,9 +1694,11 @@ Bob Wilson"></textarea>
     // --brand stays as the default navy for chips, steps, pills, and focus rings.
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
+        var tbInk = OOBContrast.textColour(org.primary_colour);
+        var tbColour = tbInk.colour === '#000000' ? '#1B2430' : '#FFFFFF';
         el.style.background = org.primary_colour;
-        el.style.color = org.text_on_primary || '#FFFFFF';
-        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = org.text_on_primary || '#FFFFFF'; });
+        el.style.color = tbColour;
+        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = tbColour; });
       } else {
         el.style.background = '';
         el.style.color = '';
@@ -1731,13 +1734,21 @@ Bob Wilson"></textarea>
       nameEl.textContent = brandName;
     }
     // Org colour paints the appbar only, never --brand (which stays navy for chips/steps/pills)
+    // Compute --brand-ink from contrast.js: white or ink, whichever clears 4.5:1
     var appbarEl = $('oob-appbar');
     if (org.primary_colour) {
+      var ink = OOBContrast.textColour(org.primary_colour);
+      var isDark = ink.colour === '#FFFFFF';
+      var brandInk = isDark ? '#FFFFFF' : '#1B2430';
       appbarEl.style.background = org.primary_colour;
-      if (org.text_on_primary) appbarEl.style.color = org.text_on_primary;
+      appbarEl.style.setProperty('--brand-ink', brandInk);
+      appbarEl.style.setProperty('--brand-overlay', isDark ? 'rgba(255,255,255,.14)' : 'rgba(27,36,48,.10)');
+      appbarEl.style.setProperty('--brand-border', isDark ? 'rgba(255,255,255,.35)' : 'rgba(27,36,48,.25)');
     } else {
       appbarEl.style.background = '';
-      appbarEl.style.color = '';
+      appbarEl.style.removeProperty('--brand-ink');
+      appbarEl.style.removeProperty('--brand-overlay');
+      appbarEl.style.removeProperty('--brand-border');
     }
     // Avatar initials from the org name
     var parts = fullName.split(' ').filter(Boolean);
@@ -1848,7 +1859,7 @@ Bob Wilson"></textarea>
       var pc = ev.player_count || 0;
       var gc = ev.group_count || 0;
       if (status === 'live') {
-        next = ev.live_status || (gc > 0 ? gc + ' groups scoring' : 'Scoring in progress');
+        next = ev.live_status || (gc > 0 ? pluralise(gc, 'group') + ' scoring' : 'Scoring in progress');
         btnLabel = 'Open';
         btnClass = 'btn-primary';
       } else if (status === 'draft') {
@@ -1856,7 +1867,7 @@ Bob Wilson"></textarea>
           next = 'Add your players.';
           btnLabel = 'Add players';
         } else if (gc === 0) {
-          next = pc + ' players added. Next, make your groups.';
+          next = pluralise(pc, 'player') + ' added. Next, make your groups.';
           btnLabel = 'Make groups';
         } else {
           next = 'Everything is ready. Go live when you like.';
@@ -1877,7 +1888,7 @@ Bob Wilson"></textarea>
       var metaParts = [];
       if (ev.event_date) metaParts.push(formatDate(ev.event_date));
       if (ev.course_name) metaParts.push(esc(ev.course_name));
-      if (pc > 0) metaParts.push(pc + ' player' + (pc !== 1 ? 's' : ''));
+      if (pc > 0) metaParts.push(pluralise(pc, 'player'));
       var meta = metaParts.join(' \u00B7 ');
 
       // Fallback status sentence if next is empty
@@ -3157,8 +3168,8 @@ Bob Wilson"></textarea>
     var pb = document.querySelector('.step[data-tab="players"]');
     if (ps) {
       if (playerCount > 0) {
-        var txt = playerCount + ' player' + (playerCount !== 1 ? 's' : '');
-        if (missingHcp > 0) txt += ' \u00B7 ' + missingHcp + ' handicaps missing';
+        var txt = pluralise(playerCount, 'player');
+        if (missingHcp > 0) txt += ' \u00B7 ' + pluralise(missingHcp, 'handicap') + ' missing';
         ps.textContent = txt;
       } else {
         ps.textContent = 'Not added yet';
@@ -3174,7 +3185,7 @@ Bob Wilson"></textarea>
     var gb = document.querySelector('.step[data-tab="groups"]');
     if (gs) {
       if (groupCount > 0) {
-        var gtxt = groupCount + ' group' + (groupCount !== 1 ? 's' : '');
+        var gtxt = pluralise(groupCount, 'group');
         if (unassigned > 0) gtxt += ' \u00B7 ' + unassigned + ' not placed';
         gs.textContent = gtxt;
       } else {
@@ -3203,10 +3214,10 @@ Bob Wilson"></textarea>
     if (activeTabName === 'details' && detailsDone) {
       subText = detailsSub + '. Next, add players.';
     } else if (activeTabName === 'players' && playerCount > 0) {
-      subText = playerCount + ' players. Next, make groups.';
+      subText = pluralise(playerCount, 'player') + '. Next, make groups.';
     } else if (activeTabName === 'groups' && groupCount > 0) {
       var firstTee = (state.groups[0] && state.groups[0].tee_time) ? state.groups[0].tee_time.slice(0, 5) : '';
-      subText = groupCount + ' groups' + (firstTee ? ', first tee ' + firstTee : '') + '. Next, go live.';
+      subText = pluralise(groupCount, 'group') + (firstTee ? ', first tee ' + firstTee : '') + '. Next, go live.';
     }
     // Go live and fallback: no line. Show under h1 only.
     if (headSub) headSub.textContent = subText;
@@ -3539,9 +3550,9 @@ Bob Wilson"></textarea>
     var missing = state.players.filter(function(p) { return p.handicap_index == null; }).length;
 
     // Header: "N players · M handicaps missing"
-    var countHtml = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
+    var countHtml = pluralise(state.players.length, 'player');
     if (missing > 0) {
-      countHtml += ' <span class="muted" style="font-weight:400">&middot; ' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
+      countHtml += ' <span class="muted" style="font-weight:400">&middot; ' + pluralise(missing, 'handicap') + ' missing</span>';
     }
     countEl.innerHTML = countHtml;
 
@@ -3814,7 +3825,7 @@ Bob Wilson"></textarea>
       await loadPlayers();
       renderPlayerList();
       closePasteModal();
-      toast(res.count + ' player' + (res.count !== 1 ? 's' : '') + ' added');
+      toast(pluralise(res.count, 'player') + ' added');
     } catch (err) {
       console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
     }
@@ -3932,7 +3943,7 @@ Bob Wilson"></textarea>
     if (unassigned.length > 0) {
       unEl.style.display = '';
       var names = unassigned.map(function(p) { return esc(p.display_name); }).join(', ');
-      $('unassigned-info').innerHTML = unassigned.length + ' player' + (unassigned.length !== 1 ? 's' : '') + ' not placed yet: ' + names;
+      $('unassigned-info').innerHTML = pluralise(unassigned.length, 'player') + ' not placed yet: ' + names;
     } else {
       unEl.style.display = 'none';
     }
@@ -4472,7 +4483,7 @@ Bob Wilson"></textarea>
       var groupCount = state.groups ? state.groups.length : 0;
       var scoringCount = state.groups ? state.groups.filter(function(g) { return g.scorer_player_id; }).length : 0;
       $('livehead-stats').innerHTML =
-        '<div class="stat"><b class="num">' + scoringCount + '<span style="font-size:var(--fs-ui);color:var(--dark-ink-muted);font-weight:600"> of ' + groupCount + '</span></b><span>groups scoring</span></div>' +
+        '<div class="stat"><b class="num">' + scoringCount + '<span style="font-size:var(--fs-ui);color:var(--dark-ink-muted);font-weight:600"> of ' + groupCount + '</span></b><span>' + (groupCount === 1 ? 'group' : 'groups') + ' scoring</span></div>' +
         '<div class="stat"><b class="num" id="livehead-leader-pts">--</b><span id="livehead-leader-label">leading</span></div>' +
         '<div class="stat"><b class="num" id="livehead-finished">0</b><span>finished</span></div>';
     }
@@ -5156,7 +5167,7 @@ Bob Wilson"></textarea>
     var label = $('details-prizes-label');
     if (label) {
       if (prizes.length > 0) {
-        label.textContent = prizes.length + ' prizes: ' + prizes.map(function (p) { return p.category; }).join(', ');
+        label.textContent = pluralise(prizes.length, 'prize') + ': ' + prizes.map(function (p) { return p.category; }).join(', ');
       } else {
         label.textContent = 'None yet. Optional, add any time.';
       }
