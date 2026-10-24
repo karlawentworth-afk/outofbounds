@@ -1519,7 +1519,7 @@ Bob Wilson"></textarea>
     } catch (err) {
       console.error('Check organiser error:', err);
       showScreen('screen-signin');
-      console.error('Sign-in:', err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error('Sign-in:', err.message); toast('That didn\u2019t work. Try again.');
     }
   }
 
@@ -1528,7 +1528,7 @@ Bob Wilson"></textarea>
       provider: 'google',
       options: { redirectTo: window.location.origin + '/o/' }
     });
-    if (error) { console.error('Google sign-in:', error.message); toast(‘That didn\u2019t work. Try again.’); };
+    if (error) { console.error('Google sign-in:', error.message); toast('That didn\u2019t work. Try again.'); };
   };
 
   window.signInApple = async function() {
@@ -1536,7 +1536,7 @@ Bob Wilson"></textarea>
       provider: 'apple',
       options: { redirectTo: window.location.origin + '/o/' }
     });
-    if (error) { console.error('Apple sign-in:', error.message); toast(‘That didn\u2019t work. Try again.’); };
+    if (error) { console.error('Apple sign-in:', error.message); toast('That didn\u2019t work. Try again.'); };
   };
 
   window.showEmailSignIn = function() {
@@ -1577,16 +1577,16 @@ Bob Wilson"></textarea>
           refresh_token: data.refresh_token
         });
       } catch (err) {
-        console.error(‘Code error:’, err.message);
-        var errEl = $(‘signin-error’);
-        if (err.message && err.message.indexOf(‘code’) !== -1) {
-          errEl.textContent = ‘That code didn\u2019t work. Check it and try again.’;
+        console.error('Code error:', err.message);
+        var errEl = $('signin-error');
+        if (err.message && err.message.indexOf('code') !== -1) {
+          errEl.textContent = 'That code didn\u2019t work. Check it and try again.';
         } else {
-          errEl.textContent = ‘We couldn\u2019t sign you in. Try again in a moment.’;
+          errEl.textContent = 'We couldn\u2019t sign you in. Try again in a moment.';
         }
-        errEl.style.display = ‘’;
-        $(‘magic-btn’).disabled = false;
-        $(‘magic-btn’).textContent = ‘Sign in’;
+        errEl.style.display = '';
+        $('magic-btn').disabled = false;
+        $('magic-btn').textContent = 'Sign in';
       }
       return;
     }
@@ -1597,9 +1597,9 @@ Bob Wilson"></textarea>
     });
     if (error) {
       console.error(error.message);
-      var errEl = $(‘signin-error’);
-      errEl.textContent = ‘We couldn\u2019t sign you in. Try again in a moment.’;
-      errEl.style.display = ‘’;
+      var errEl = $('signin-error');
+      errEl.textContent = 'We couldn\u2019t sign you in. Try again in a moment.';
+      errEl.style.display = '';
     } else {
       $('magic-sent').style.display = 'block';
     }
@@ -1681,7 +1681,7 @@ Bob Wilson"></textarea>
       state.organiser = res.organiser;
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('ob-go').disabled = false;
       $('ob-go').textContent = "Let's go";
     }
@@ -1818,7 +1818,7 @@ Bob Wilson"></textarea>
       state.events = res.events || [];
       renderEventList();
     } catch (err) {
-      console.error('Events load:', err.message); toast('Couldn’t load your events. Try again.');
+      console.error('Events load:', err.message); toast('Couldn't load your events. Try again.');
     }
   }
 
@@ -2032,7 +2032,7 @@ Bob Wilson"></textarea>
         $('btn-upgrade').textContent = 'Upgrade to Pro';
       }
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('btn-upgrade').disabled = false;
       $('btn-upgrade').textContent = 'Upgrade to Pro';
     }
@@ -2046,7 +2046,7 @@ Bob Wilson"></textarea>
       });
       if (res.url) window.location.href = res.url;
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2061,7 +2061,7 @@ Bob Wilson"></textarea>
       goToBilling();
       toast('Pro will cancel at the end of your billing period');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2075,7 +2075,7 @@ Bob Wilson"></textarea>
       goToBilling();
       toast('Pro renewed');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2095,7 +2095,7 @@ Bob Wilson"></textarea>
       });
       renderAdminList(res.organisers || []);
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2167,7 +2167,7 @@ Bob Wilson"></textarea>
       toast(orgName + ' deleted');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2283,7 +2283,7 @@ Bob Wilson"></textarea>
 
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2333,7 +2333,7 @@ Bob Wilson"></textarea>
       toast('Free Pro access enabled');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2352,7 +2352,7 @@ Bob Wilson"></textarea>
       toast('Free Pro access removed');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2382,7 +2382,7 @@ Bob Wilson"></textarea>
       toast('Demo rebranded');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2396,7 +2396,7 @@ Bob Wilson"></textarea>
       toast('Demo reset complete');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2437,7 +2437,7 @@ Bob Wilson"></textarea>
         toast('Branding is a Pro feature');
         goToDashboard();
       } else {
-        console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+        console.error(err.message); toast('That didn\u2019t work. Try again.');
       }
     }
   };
@@ -2564,7 +2564,7 @@ Bob Wilson"></textarea>
       // Reload branding page to show version history
       await goToBranding();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('brand-save-btn').disabled = false;
       $('brand-save-btn').textContent = 'Save branding';
     }
@@ -2602,7 +2602,7 @@ Bob Wilson"></textarea>
       }).join('');
       $('team-list').innerHTML = html || '<div class="empty-state"><h3>No team members</h3><p>Invite organisers and helpers to manage events with you.</p></div>';
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2619,7 +2619,7 @@ Bob Wilson"></textarea>
       toast('Invite sent');
       goToTeam();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2633,7 +2633,7 @@ Bob Wilson"></textarea>
       toast('Removed');
       goToTeam();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2657,7 +2657,7 @@ Bob Wilson"></textarea>
       state.people = res.people || [];
       renderPeopleList();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   }
 
@@ -2720,7 +2720,7 @@ Bob Wilson"></textarea>
       toast(first + ' added');
       await loadPeople();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3442,7 +3442,7 @@ Bob Wilson"></textarea>
       $('course-inline-form').style.display = 'none';
       await loadCourseForEvent(res.course.id, res.tee.id);
     } catch (err) {
-      console.error('Course save:', err.message); toast('Couldn’t save the course. Try again.');
+      console.error('Course save:', err.message); toast('Couldn't save the course. Try again.');
     }
   };
 
@@ -3732,7 +3732,7 @@ Bob Wilson"></textarea>
         toast('Player added');
       }
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3757,7 +3757,7 @@ Bob Wilson"></textarea>
       loadPlayers().then(renderPlayerList);
       toast('Updated');
     }).catch(function (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     });
   };
 
@@ -3793,7 +3793,7 @@ Bob Wilson"></textarea>
       renderPlayerList();
       toast('Player removed');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3827,7 +3827,7 @@ Bob Wilson"></textarea>
       closePasteModal();
       toast(pluralise(res.count, 'player') + ' added');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3864,7 +3864,7 @@ Bob Wilson"></textarea>
       renderPlayerList();
       toast('You have been added');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4047,7 +4047,7 @@ Bob Wilson"></textarea>
       renderGroupsList();
       toast(res.message || 'Groups filled');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4065,7 +4065,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4085,7 +4085,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4157,7 +4157,7 @@ Bob Wilson"></textarea>
       }
       await loadGroups();
       renderGroupsList();
-    } catch (err) { console.error(err.message); toast(‘That didn\u2019t work. Try again.’); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.swapPlayers = async function(playerAId, playerBId) {
@@ -4177,7 +4177,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
       toast('Swapped ' + playerA.first_name + ' and ' + playerB.first_name);
-    } catch (err) { console.error(err.message); toast(‘That didn\u2019t work. Try again.’); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.emptyGroup = async function(groupId) {
@@ -4197,7 +4197,7 @@ Bob Wilson"></textarea>
       // For now, we can't delete groups via the API easily. Empty groups are harmless.
       // TODO: add delete_group action to org-groups
       toast('Empty groups are removed on auto-fill');
-    } catch (err) { console.error(err.message); toast(‘That didn\u2019t work. Try again.’); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   async function reorderGroups(groupId, direction) {
@@ -4267,7 +4267,7 @@ Bob Wilson"></textarea>
       await api('org-groups', { method: 'PATCH', body: updates });
       toast('Group updated');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4914,7 +4914,7 @@ Bob Wilson"></textarea>
       await renderLiveLeaderboard();
       toast('Scores saved');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4985,7 +4985,7 @@ Bob Wilson"></textarea>
         toast('Event finished — results published');
       }
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -5085,7 +5085,7 @@ Bob Wilson"></textarea>
       });
       await loadPrizes();
       openPrizesSheet();
-    } catch (err) { console.error(err.message); toast(‘That didn\u2019t work. Try again.’); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.addCustomPrize = async function() {
@@ -5119,7 +5119,7 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, player_id: playerId || null }
       });
-    } catch (err) { console.error(err.message); toast(‘That didn\u2019t work. Try again.’); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.openPrizesSheet = async function() {
@@ -5227,7 +5227,7 @@ Bob Wilson"></textarea>
       toast(isArchived ? 'Back in your events' : 'Moved to archive');
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -5247,7 +5247,7 @@ Bob Wilson"></textarea>
       updateGoLiveTab();
       toast('Event abandoned');
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -5365,7 +5365,7 @@ Bob Wilson"></textarea>
       await loadEvents();
       openEvent(res.event.id);
     } catch (err) {
-      console.error(err.message); toast(‘That didn\u2019t work. Try again.’);
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -5878,7 +5878,7 @@ Bob Wilson"></textarea>
     } catch (err) {
       $('help-send-btn').disabled = false;
       $('help-send-btn').textContent = 'Send';
-      console.error('Help send:', err.message); toast('Couldn’t send. Email hello@outofboundsevents.com instead.');
+      console.error('Help send:', err.message); toast('Couldn't send. Email hello@outofboundsevents.com instead.');
     }
   };
 
