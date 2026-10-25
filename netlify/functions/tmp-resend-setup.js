@@ -1,10 +1,19 @@
-// Temporary function to create Resend webhook using production RESEND_API_KEY
+// Temporary function to create Resend webhook
 // DELETE THIS FILE after use
 const https = require('https');
 
 exports.handler = async (event) => {
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
   const action = event.queryStringParameters?.action || 'list';
+
+  // Diagnostic: show key shape without revealing it
+  const keyInfo = {
+    length: RESEND_API_KEY?.length,
+    starts: RESEND_API_KEY?.substring(0, 3),
+    ends: RESEND_API_KEY?.slice(-4),
+    hasStars: RESEND_API_KEY?.includes('*'),
+    context: process.env.CONTEXT || 'unknown'
+  };
 
   function apiCall(method, path, body) {
     return new Promise((resolve, reject) => {
@@ -21,9 +30,13 @@ exports.handler = async (event) => {
     });
   }
 
+  if (action === 'diag') {
+    return { statusCode: 200, body: JSON.stringify(keyInfo) };
+  }
+
   if (action === 'list') {
     const res = await apiCall('GET', '/webhooks');
-    return { statusCode: 200, body: JSON.stringify({ action: 'list', keyLen: RESEND_API_KEY?.length, apiStatus: res.status, data: JSON.parse(res.body) }) };
+    return { statusCode: 200, body: JSON.stringify({ action: 'list', keyInfo, apiStatus: res.status, data: JSON.parse(res.body) }) };
   }
 
   if (action === 'create') {
