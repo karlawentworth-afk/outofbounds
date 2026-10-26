@@ -87,7 +87,8 @@ exports.handler = async function (event) {
     body: JSON.stringify({
       ok: result.status < 300,
       origin: origin,
-      redirectTo: redirectTo
+      redirectTo: redirectTo,
+      _debug: result.status >= 300 ? result.body.substring(0, 200) : undefined
     })
   };
 };
