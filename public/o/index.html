@@ -394,8 +394,8 @@ a { color: inherit; text-decoration: none; }
 .loading-screen .spinner { border-color: var(--line); border-top-color: var(--green); width: 32px; height: 32px; }
 
 /* ── Sign-in (design system) ─────────────────────────────────── */
-.auth { min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: var(--dark-gradient); color: var(--dark-ink); }
-.auth .hero { padding: calc(var(--s-12) + var(--safe-t)) var(--gutter) var(--s-6); display: flex; flex-direction: column; justify-content: flex-end; gap: var(--s-3); }
+.auth { min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: var(--navy); color: var(--dark-ink); }
+.auth .hero { padding: calc(var(--s-12) + var(--safe-t)) var(--gutter) var(--s-6); display: flex; flex-direction: column; justify-content: flex-end; gap: var(--s-3); background: linear-gradient(rgba(16,52,78,0.72), rgba(16,52,78,0.72)), url('/img/photos/course-wide.jpg') center/cover no-repeat; }
 .auth .hero .ob-mark { width: 72px; height: 50px; }
 .auth .hero h1 { font-size: var(--fs-display); color: #fff; }
 .auth .hero p { color: var(--dark-ink-muted); font-size: var(--fs-body); }
@@ -545,9 +545,17 @@ a { color: inherit; text-decoration: none; }
             <input id="reviewer-code" class="input" type="text" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off">
           </div>
         </div>
-        <button class="btn btn-primary btn-block" id="magic-btn" onclick="sendMagicLink()">Email me a sign-in link</button>
+        <button class="btn btn-primary btn-block" id="magic-btn" onclick="sendMagicLink()">Send me a code</button>
         <p id="signin-error" style="display:none;text-align:center;color:var(--danger-ink);font-size:var(--fs-small);margin-top:var(--s-3);line-height:1.5;"></p>
-        <div id="magic-sent" class="banner info" style="display:none;margin-top:var(--s-3);"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div>We've emailed you a link. Tap it on this phone to sign in. Not there in a minute? Check spam or try again.</div></div>
+        <div id="magic-sent" style="display:none;margin-top:var(--s-3);">
+          <p style="text-align:center;color:var(--ink-muted);font-size:var(--fs-small);margin-bottom:var(--s-3);">We sent a 6-digit code to your email. Enter it below.</p>
+          <div class="field" style="margin:0 0 var(--s-4);">
+            <label for="otp-code">Code</label>
+            <input id="otp-code" class="input" type="text" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" style="text-align:center;font-size:var(--fs-h2);letter-spacing:0.15em;font-family:var(--font-display);font-weight:700;">
+          </div>
+          <button class="btn btn-primary btn-block" id="otp-verify-btn" onclick="verifyOtp()">Sign in</button>
+          <p style="text-align:center;margin-top:var(--s-3);"><button class="btn-link" onclick="sendMagicLink()" style="font-size:var(--fs-small);color:var(--ink-muted);background:none;border:none;cursor:pointer;text-decoration:underline;">Resend code</button></p>
+        </div>
       </div>
       <p class="fine" style="text-align:center;color:var(--ink-muted);font-size:var(--fs-small);margin-top:var(--s-3);">No passwords. We only email you about your events.</p>
     </section>
@@ -1549,7 +1557,7 @@ Bob Wilson"></textarea>
   $('magic-email').addEventListener('input', function() {
     var isReviewer = this.value.trim().toLowerCase() === 'review@outofboundsevents.com';
     $('reviewer-code-row').style.display = isReviewer ? 'block' : 'none';
-    $('magic-btn').textContent = isReviewer ? 'Sign in' : 'Send magic link';
+    $('magic-btn').textContent = isReviewer ? 'Sign in' : 'Send me a code';
     if (isReviewer) $('reviewer-code').focus();
   });
 
@@ -1591,17 +1599,50 @@ Bob Wilson"></textarea>
       return;
     }
 
-    var { error } = await sb.auth.signInWithOtp({
-      email: email,
-      options: { emailRedirectTo: window.location.origin + '/o/' }
-    });
-    if (error) {
-      console.error(error.message);
-      var errEl = $('signin-error');
-      errEl.textContent = 'We couldn\u2019t sign you in. Try again in a moment.';
-      errEl.style.display = '';
-    } else {
+    $('magic-btn').disabled = true;
+    $('magic-btn').textContent = 'Sending\u2026';
+    try {
+      var res = await fetch('/.netlify/functions/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await res.json();
+      if (!data.ok) throw new Error('Could not send code');
+      state._otpEmail = email;
       $('magic-sent').style.display = 'block';
+      $('magic-btn').style.display = 'none';
+      $('magic-email').readOnly = true;
+      $('otp-code').focus();
+    } catch (err) {
+      console.error(err.message);
+      var errEl = $('signin-error');
+      errEl.textContent = 'We couldn\u2019t send the code. Try again in a moment.';
+      errEl.style.display = '';
+    }
+    $('magic-btn').disabled = false;
+    $('magic-btn').textContent = 'Send me a code';
+  };
+
+  window.verifyOtp = async function() {
+    var code = $('otp-code').value.trim();
+    if (!code || code.length !== 6) { $('signin-error').textContent = 'Enter the 6-digit code from your email.'; $('signin-error').style.display = ''; return; }
+    $('otp-verify-btn').disabled = true;
+    $('otp-verify-btn').textContent = 'Signing in\u2026';
+    $('signin-error').style.display = 'none';
+    try {
+      var { data, error } = await sb.auth.verifyOtp({
+        email: state._otpEmail,
+        token: code,
+        type: 'email'
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('OTP verify error:', err.message);
+      $('signin-error').textContent = 'That code didn\u2019t work. Check it and try again.';
+      $('signin-error').style.display = '';
+      $('otp-verify-btn').disabled = false;
+      $('otp-verify-btn').textContent = 'Sign in';
     }
   };
 
@@ -1614,6 +1655,10 @@ Bob Wilson"></textarea>
     $('auth-buttons').style.display = 'flex';
     $('magic-link-form').style.display = 'none';
     $('magic-sent').style.display = 'none';
+    $('magic-btn').style.display = '';
+    $('magic-email').readOnly = false;
+    $('magic-email').value = '';
+    $('otp-code').value = '';
   };
 
   // ── Delete account ─────────────────────────────────────────────
