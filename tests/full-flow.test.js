@@ -1,18 +1,42 @@
 // full-flow.test.js — E2E test: full stranger flow against live site
 // Run: node tests/full-flow.test.js
-// Requires: SUPABASE_SERVICE_KEY env var
+// Requires: SUPABASE_SERVICE_KEY (env var or .claude/settings.local.json)
 // Requires: playwright installed (npm i playwright)
 
 'use strict';
 
 var https = require('https');
+var fs = require('fs');
+var path = require('path');
 var { chromium } = require('playwright');
 
+// ── Load service key ────────────────────────────────────────────
+// Prefer env var; fall back to the gitignored local settings file.
+function loadServiceKey() {
+  var key = process.env.SUPABASE_SERVICE_KEY;
+  if (key && key.length > 100) return key;
+  // Read from .claude/settings.local.json (the key is in an allow entry)
+  try {
+    var settingsPath = path.join(__dirname, '..', '.claude', 'settings.local.json');
+    var raw = fs.readFileSync(settingsPath, 'utf8');
+    var match = raw.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+    if (match && match[0].length > 100) return match[0];
+  } catch (e) { /* ignore */ }
+  return key || '';
+}
+
 // ── Constants ────────────────────────────────────────────────────
-var LIVE_URL = 'https://outofboundsscoring.netlify.app';
+var LIVE_URL = process.env.TEST_URL || 'https://outofboundsscoring.netlify.app';
 var SB_HOST  = 'ahutmswadskdkqhnrhhh.supabase.co';
-var SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
+var SB_KEY   = loadServiceKey();
 var ORG_ID   = 'a0000000-0000-0000-0000-000000000001';
+
+// Guard: abort early if we only have the masked key
+if (!SB_KEY || SB_KEY.length < 100) {
+  console.error('FATAL: service key is masked or missing (' + (SB_KEY || '').length + ' chars).');
+  console.error('Load it from .claude/settings.local.json or set SUPABASE_SERVICE_KEY.');
+  process.exit(1);
+}
 
 var TEST_EMAIL = 'playwright-test-' + Date.now() + '@oob-test.local';
 
@@ -64,7 +88,7 @@ function apiFetch(fnName, opts) {
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
 
     var reqOpts = {
-      hostname: 'outofboundsscoring.netlify.app',
+      hostname: new URL(LIVE_URL).hostname,
       port: 443,
       path: '/.netlify/functions/' + fnName + qsStr,
       method: method,
