@@ -2,9 +2,9 @@
 
 var https = require('https');
 
-var PROD_URL = 'https://outofboundsevents.com';
-var SB_HOST  = 'ahutmswadskdkqhnrhhh.supabase.co';
-var SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
+var PROD_URL  = 'https://outofboundsevents.com';
+var SB_HOST   = 'ahutmswadskdkqhnrhhh.supabase.co';
+var SB_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXRtc3dhZHNrZGtxaG5yaGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjk2NTEsImV4cCI6MjEwNTY0NTY1MX0.sV9wHdMfiEwIdErw9ISwELf68e00_UEXv3SmWkSdoQc';
 
 // Only allow origins that belong to us
 function isAllowedOrigin(origin) {
@@ -19,7 +19,6 @@ function isAllowedOrigin(origin) {
 function resolveOrigin(event) {
   var origin = event.headers['origin'] || event.headers['Origin'] || '';
   if (isAllowedOrigin(origin)) return origin;
-  // Fall back to Netlify's DEPLOY_PRIME_URL (set on every deploy)
   var deploy = process.env.DEPLOY_PRIME_URL || '';
   if (isAllowedOrigin(deploy)) return deploy;
   return PROD_URL;
@@ -34,8 +33,8 @@ function callGoTrue(path, body) {
       path: path,
       method: 'POST',
       headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
+        'apikey': SB_ANON,
+        'Authorization': 'Bearer ' + SB_ANON,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(payload)
       }
@@ -70,14 +69,13 @@ exports.handler = async function (event) {
   var origin = resolveOrigin(event);
   var redirectTo = origin + '/o/';
 
-  // Call Supabase GoTrue OTP endpoint with service key (bypasses redirect whitelist)
+  // Call Supabase GoTrue OTP endpoint with the anon key
   // The redirect_to goes in the query string so GoTrue uses it in the magic link
   var result = await callGoTrue(
     '/auth/v1/otp?redirect_to=' + encodeURIComponent(redirectTo),
     { email: email, create_user: true, gotrue_meta_security: {} }
   );
 
-  // Return the resolved origin so the client knows where links point
   return {
     statusCode: result.status < 300 ? 200 : result.status,
     headers: {
@@ -88,7 +86,7 @@ exports.handler = async function (event) {
       ok: result.status < 300,
       origin: origin,
       redirectTo: redirectTo,
-      _debug: result.status >= 300 ? result.body.substring(0, 200) : undefined
+      _debug: result.status >= 300 ? result.body.substring(0, 300) : undefined
     })
   };
 };
