@@ -3,7 +3,7 @@
 var https = require('https');
 
 var PROD_URL = 'https://outofboundsevents.com';
-var SB_URL   = process.env.SUPABASE_URL;   // https://ahutmswadskdkqhnrhhh.supabase.co
+var SB_HOST  = 'ahutmswadskdkqhnrhhh.supabase.co';
 var SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
 
 // Only allow origins that belong to us
@@ -28,9 +28,8 @@ function resolveOrigin(event) {
 function callGoTrue(path, body) {
   return new Promise(function (resolve, reject) {
     var payload = JSON.stringify(body);
-    var url = new URL(SB_URL);
     var req = https.request({
-      hostname: url.hostname,
+      hostname: SB_HOST,
       port: 443,
       path: path,
       method: 'POST',
