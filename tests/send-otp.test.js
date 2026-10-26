@@ -96,6 +96,19 @@ async function main() {
 
   await browser.close();
 
+  // Test: SMTP canary — non-member address via send-otp
+  // Supabase built-in email only delivers to known users.
+  // This test PASSes when the request is accepted (custom SMTP configured)
+  // and FAILs with a message when Supabase rejects it (built-in SMTP only).
+  var canaryEmail = 'oob-test-nonmember@mailinator.com';
+  var canaryRes = await callSendOtp(BRANCH_URL, canaryEmail, BRANCH_URL);
+  if (canaryRes.status === 200 && canaryRes.data.ok === true) {
+    step('SMTP canary: non-member OTP accepted', true, 'custom SMTP is working');
+  } else {
+    step('SMTP canary: non-member OTP accepted', false,
+      'Built-in Supabase email in use, custom SMTP not configured (status=' + canaryRes.status + ')');
+  }
+
   console.log('\n' + passed + '/' + total + ' passed, ' + failed + ' failed');
   process.exit(failed > 0 ? 1 : 0);
 }
