@@ -1183,7 +1183,7 @@ async function stepL_runItAgain() {
       '&select=display_name,player_token,group_id'
     );
 
-    if (clonedPlayers.data) {
+    if (Array.isArray(clonedPlayers.data)) {
       var noGroups = clonedPlayers.data.every(function (p) { return !p.group_id; });
       var hasTokens = clonedPlayers.data.every(function (p) { return !!p.player_token; });
       step('Clone: players have fresh tokens, no groups', noGroups && hasTokens,
