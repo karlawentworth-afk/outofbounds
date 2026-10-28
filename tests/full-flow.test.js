@@ -86,6 +86,12 @@ function apiFetch(fnName, opts) {
   return new Promise(function (resolve, reject) {
     var headers = { 'Content-Type': 'application/json' };
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
+    // Send auth token if available (required by auth-protected functions)
+    if (opts.token) {
+      headers['Authorization'] = 'Bearer ' + opts.token;
+    } else if (state.authToken && state.authToken !== 'skipped') {
+      headers['Authorization'] = 'Bearer ' + state.authToken;
+    }
 
     var reqOpts = {
       hostname: new URL(LIVE_URL).hostname,
