@@ -236,7 +236,7 @@ async function createUserAndSignIn(email) {
     name: 'Auth Test Event',
     slug: 'auth-test-event-' + TS,
     status: 'draft',
-    format: 'stableford'
+    format: 'individual_stableford'
   });
   var eventAId = Array.isArray(eventA) ? eventA[0].id : eventA.id;
   assert('Event A created', !!eventAId, eventAId);
