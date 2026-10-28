@@ -4,7 +4,7 @@
   command = "true"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 [functions]
   # Default 10s is too tight for vision API calls
