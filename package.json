@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "echo 'No build step'"
+  },
   "dependencies": {
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
