@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
+var auth = require('./_auth');
 
 function genToken() {
   return crypto.randomBytes(16).toString('hex');
@@ -32,7 +33,18 @@ exports.handler = async function (event) {
     return sb.respond(204, '');
   }
 
+  // Auth: require org membership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authOrgId = qs.organiser_id || peekBody.organiser_id;
+  if (authOrgId) {
+    try { await auth.requireOrgMember(event, authOrgId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: list events for organiser
   if (event.httpMethod === 'GET') {

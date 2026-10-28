@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./_auth');
 
 // Seeded categories with types
 var SEED_CATEGORIES = [
@@ -21,7 +22,18 @@ async function verifyOwnership(eventId, organiserId) {
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
 
+  // Auth: require event ownership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authEventId = qs.event_id || peekBody.event_id;
+  if (authEventId) {
+    try { await auth.requireEventOwner(event, authEventId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: list prizes for event
   if (event.httpMethod === 'GET') {

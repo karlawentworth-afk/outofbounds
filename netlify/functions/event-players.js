@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./_auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -19,6 +20,12 @@ exports.handler = async function (event) {
 
   if (!/^[0-9a-f-]{36}$/i.test(eventId)) {
     return sb.respond(400, { error: 'Invalid event id format' });
+  }
+
+  try {
+    await auth.requireEventOwner(event, eventId);
+  } catch (err) {
+    return auth.authError(err);
   }
 
   try {

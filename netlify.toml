@@ -1,6 +1,11 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
+  command = "echo 'No build step needed'"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--omit=dev"
 
 [functions]
   # Default 10s is too tight for vision API calls

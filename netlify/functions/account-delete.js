@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var https = require('https');
+var auth = require('./_auth');
 
 var SB_HOST = 'ahutmswadskdkqhnrhhh.supabase.co';
 
@@ -110,6 +111,7 @@ exports.handler = async function (event) {
     return sb.respond(405, { error: 'Method not allowed' });
   }
 
+  // Auth: prefer Authorization header, fall back to body.auth_token
   var body;
   try {
     body = JSON.parse(event.body || '{}');
@@ -117,14 +119,21 @@ exports.handler = async function (event) {
     return sb.respond(400, { error: 'Invalid JSON' });
   }
 
-  if (!body.auth_token) {
-    return sb.respond(400, { error: 'Missing auth_token' });
-  }
-
   try {
-    var user = await verifyAuthToken(body.auth_token);
-    if (!user || !user.id) {
-      return sb.respond(401, { error: 'Invalid or expired token' });
+    var user;
+    var headerToken = auth.extractToken(event);
+    if (headerToken) {
+      // Use header-based auth (preferred)
+      var authed = await auth.requireUser(event);
+      user = { id: authed.user_id, email: authed.email };
+    } else if (body.auth_token) {
+      // Legacy: token in body
+      user = await verifyAuthToken(body.auth_token);
+      if (!user || !user.id) {
+        return sb.respond(401, { error: 'Invalid or expired token' });
+      }
+    } else {
+      return sb.respond(401, { error: 'Missing Authorization header' });
     }
 
     // Look up the organiser

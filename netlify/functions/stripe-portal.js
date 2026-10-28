@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var stripe = require('./shared/stripe');
+var auth = require('./_auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
@@ -11,6 +12,12 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
 
   if (!body.organiser_id) return sb.respond(400, { error: 'Missing organiser_id' });
+
+  try {
+    await auth.requireOrgMember(event, body.organiser_id);
+  } catch (err) {
+    return auth.authError(err);
+  }
 
   try {
     var orgs = await sb.sbGet(

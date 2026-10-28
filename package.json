@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "qrcode-generator": "^2.0.4",
+    "resend": "^6.28.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/assets": "^3.0.5",
     "@capacitor/browser": "^8.0.5",
@@ -13,11 +20,6 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4",
     "@capgo/capacitor-native-biometric": "^8.7.2",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.0",
-    "playwright": "^1.63.0",
-    "qrcode-generator": "^2.0.4",
-    "resend": "^6.28.1",
-    "xlsx": "^0.18.5"
+    "playwright": "^1.63.0"
   }
 }

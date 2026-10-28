@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./_auth');
 
 /**
  * Verify organiser owns the event. Returns event row or null.
@@ -38,6 +39,12 @@ exports.handler = async function (event) {
 
   if (!organiserId || !eventId || !playerId) {
     return sb.respond(400, { error: 'Missing organiser_id, event_id, or player_id' });
+  }
+
+  try {
+    await auth.requireEventOwner(event, eventId);
+  } catch (err) {
+    return auth.authError(err);
   }
   if (typeof holeNumber !== 'number' || holeNumber < 1 || holeNumber > 18) {
     return sb.respond(400, { error: 'hole_number must be 1-18' });

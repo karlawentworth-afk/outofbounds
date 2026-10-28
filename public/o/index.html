@@ -1451,6 +1451,10 @@ Bob Wilson"></textarea>
   }
 
   function api(fn, opts) {
+    opts = opts || {};
+    if (state.authToken && !opts.token) {
+      opts.token = state.authToken;
+    }
     return window.OOB.api(fn, opts);
   }
 

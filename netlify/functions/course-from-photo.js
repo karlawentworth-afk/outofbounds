@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var https = require('https');
+var auth = require('./_auth');
 
 var ANTHROPIC_HOST = 'api.anthropic.com';
 
@@ -171,6 +172,17 @@ function validate(card) {
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
   if (event.httpMethod !== 'POST') return sb.respond(405, { error: 'Method not allowed' });
+
+  // Auth: require org membership
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  if (peekBody.organiser_id) {
+    try { await auth.requireOrgMember(event, peekBody.organiser_id); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   var body;
   try { body = JSON.parse(event.body || '{}'); }

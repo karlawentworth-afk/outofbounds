@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var audit = require('./shared/audit');
+var auth = require('./_auth');
 
 /**
  * Verify organiser owns the event.
@@ -66,7 +67,24 @@ exports.handler = async function (event) {
     return sb.respond(204, '');
   }
 
+  // Auth: require event ownership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authEventId = qs.event_id || peekBody.event_id;
+  if (authEventId) {
+    try { await auth.requireEventOwner(event, authEventId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    var authOrgId = qs.organiser_id || peekBody.organiser_id;
+    if (authOrgId) {
+      try { await auth.requireOrgMember(event, authOrgId); }
+      catch (err) { return auth.authError(err); }
+    } else {
+      try { await auth.requireUser(event); }
+      catch (err) { return auth.authError(err); }
+    }
+  }
 
   // GET: list groups with members
   if (event.httpMethod === 'GET') {

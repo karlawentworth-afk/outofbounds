@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
+var auth = require('./_auth');
 
 function makeSlug(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
@@ -10,7 +11,18 @@ function makeSlug(name) {
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
 
+  // Auth: require org membership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authOrgId = qs.organiser_id || peekBody.organiser_id;
+  if (authOrgId) {
+    try { await auth.requireOrgMember(event, authOrgId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: list series or get one with standings
   if (event.httpMethod === 'GET') {
