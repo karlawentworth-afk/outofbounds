@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var audit = require('./shared/audit');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 /**
  * Verify organiser owns the event.

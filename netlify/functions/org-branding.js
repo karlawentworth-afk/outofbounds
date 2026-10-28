@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 // WCAG contrast — same logic as public/shared/contrast.js
 function linearize(c) {

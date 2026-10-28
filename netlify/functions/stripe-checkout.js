@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var https = require('https');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 /**
  * Create a Stripe Checkout session via the Stripe API.

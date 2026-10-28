@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 /**
  * Team management: invite, list, revoke team members.

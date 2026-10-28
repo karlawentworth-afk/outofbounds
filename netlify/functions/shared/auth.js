@@ -1,7 +1,7 @@
 'use strict';
 
 var https = require('https');
-var sb = require('./shared/supabase');
+var sb = require('./supabase');
 
 var SB_HOST = 'ahutmswadskdkqhnrhhh.supabase.co';
 

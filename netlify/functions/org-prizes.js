@@ -1,7 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 // Seeded categories with types
 var SEED_CATEGORIES = [

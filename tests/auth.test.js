@@ -154,31 +154,32 @@ function assert(label, ok, detail) {
 
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
+var TEST_PASSWORD = 'OobAuthTest_' + Date.now() + '!';
+
 /**
- * Get a real Supabase access_token for an email via admin generateLink + verify.
+ * Create a Supabase user with a password, sign in, return { userId, accessToken }.
  */
-async function getAccessToken(email) {
-  var linkRes = await sbAuth('POST', 'admin/generate_link', {
-    type: 'magiclink',
-    email: email
+async function createUserAndSignIn(email) {
+  var create = await sbAuth('POST', 'admin/users', {
+    email: email,
+    password: TEST_PASSWORD,
+    email_confirm: true
   });
-  if (linkRes.status !== 200 || !linkRes.data) return null;
-
-  var actionLink = linkRes.data.action_link || '';
-  var otp = null;
-  var urlMatch = actionLink.match(/[?&]token=([^&#]+)/);
-  if (urlMatch) otp = decodeURIComponent(urlMatch[1]);
-  var hashedToken = linkRes.data.hashed_token || (linkRes.data.properties && linkRes.data.properties.hashed_token);
-
-  if (otp) {
-    var v = await sbAuth('POST', 'verify', { type: 'magiclink', token_hash: otp });
-    if (v.status === 200 && v.data && v.data.access_token) return v.data.access_token;
+  if (create.status !== 200 || !create.data || !create.data.id) {
+    console.error('  Failed to create user:', email, create.status, JSON.stringify(create.data).slice(0, 200));
+    return null;
   }
-  if (hashedToken) {
-    var v2 = await sbAuth('POST', 'verify', { type: 'magiclink', token_hash: hashedToken });
-    if (v2.status === 200 && v2.data && v2.data.access_token) return v2.data.access_token;
+
+  var signin = await sbAuth('POST', 'token?grant_type=password', {
+    email: email,
+    password: TEST_PASSWORD
+  });
+  if (signin.status !== 200 || !signin.data || !signin.data.access_token) {
+    console.error('  Failed to sign in:', email, signin.status, JSON.stringify(signin.data).slice(0, 200));
+    return null;
   }
-  return linkRes.data.access_token || null;
+
+  return { userId: create.data.id, accessToken: signin.data.access_token };
 }
 
 // ── MAIN ───────────────────────────────────────────────────────
@@ -195,23 +196,17 @@ async function getAccessToken(email) {
 
   console.log('--- Setup: creating test users and orgs ---');
 
-  var tokenA = await getAccessToken(emailA);
-  assert('User A token', !!tokenA, tokenA ? 'got token' : 'FAILED');
-  if (!tokenA) { console.error('Cannot continue without tokenA'); process.exit(1); }
+  var userA = await createUserAndSignIn(emailA);
+  assert('User A created + signed in', !!userA, userA ? 'id=' + userA.userId : 'FAILED');
+  if (!userA) { console.error('Cannot continue without User A'); process.exit(1); }
+  var tokenA = userA.accessToken;
+  var userAId = userA.userId;
 
-  var tokenB = await getAccessToken(emailB);
-  assert('User B token', !!tokenB, tokenB ? 'got token' : 'FAILED');
-  if (!tokenB) { console.error('Cannot continue without tokenB'); process.exit(1); }
-
-  // Look up user IDs
-  var userARes = await sbAuth('GET', 'admin/users?filter=' + encodeURIComponent(emailA));
-  var userAId = userARes.data && userARes.data.users && userARes.data.users[0] && userARes.data.users[0].id;
-
-  var userBRes = await sbAuth('GET', 'admin/users?filter=' + encodeURIComponent(emailB));
-  var userBId = userBRes.data && userBRes.data.users && userBRes.data.users[0] && userBRes.data.users[0].id;
-
-  assert('User A ID', !!userAId, userAId);
-  assert('User B ID', !!userBId, userBId);
+  var userB = await createUserAndSignIn(emailB);
+  assert('User B created + signed in', !!userB, userB ? 'id=' + userB.userId : 'FAILED');
+  if (!userB) { console.error('Cannot continue without User B'); process.exit(1); }
+  var tokenB = userB.accessToken;
+  var userBId = userB.userId;
 
   // Create Org A owned by User A
   var orgASlug = 'auth-test-a-' + TS;

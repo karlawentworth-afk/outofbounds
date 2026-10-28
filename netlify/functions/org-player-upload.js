@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 var XLSX = require('xlsx');
 var crypto = require('crypto');
 

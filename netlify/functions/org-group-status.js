@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var engine = require('../../public/shared/engine.js');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 /**
  * Verify organiser owns the event. Returns event row or null.

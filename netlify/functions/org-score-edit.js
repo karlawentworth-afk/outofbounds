@@ -1,7 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 /**
  * Verify organiser owns the event. Returns event row or null.

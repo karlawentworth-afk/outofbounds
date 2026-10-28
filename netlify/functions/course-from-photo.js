@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var https = require('https');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 var ANTHROPIC_HOST = 'api.anthropic.com';
 

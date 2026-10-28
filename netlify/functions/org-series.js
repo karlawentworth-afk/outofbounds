@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 function makeSlug(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);

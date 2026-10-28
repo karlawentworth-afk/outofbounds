@@ -2,7 +2,7 @@
 
 var sb = require('./shared/supabase');
 var stripe = require('./shared/stripe');
-var auth = require('./_auth');
+var auth = require('./shared/auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
