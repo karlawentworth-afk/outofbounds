@@ -214,75 +214,40 @@ function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 async function stepA_signIn() {
   console.log('\n--- Step a: Sign-in / Auth ---');
 
-  // Use Supabase admin generateLink to get a magic link with the OTP token.
-  // Then verify the OTP to get a real session with access_token.
-  var orgEmail = 'karla.wentworth@thatsclevermx.com';
+  // Create a test user with password and sign in for a real JWT.
+  // Link the user to the test org (ORG_ID).
+  var testPassword = 'OobFlow_' + Date.now() + '!';
 
-  var linkRes = await sbAuth('POST', 'admin/generate_link', {
-    type: 'magiclink',
-    email: orgEmail
+  var createRes = await sbAuth('POST', 'admin/users', {
+    email: TEST_EMAIL,
+    password: testPassword,
+    email_confirm: true
   });
-
-  if (linkRes.status !== 200 || !linkRes.data) {
-    step('Generate magic link', false, 'status=' + linkRes.status + ' ' + JSON.stringify(linkRes.data).slice(0, 200));
-    return;
-  }
-
-  // generate_link returns properties.hashed_token and action_link
-  // We need to extract the OTP token from the response.
-  // The response has: { ..., properties: { hashed_token, ... }, action_link, ... }
-  var actionLink = linkRes.data.action_link || linkRes.data.properties && linkRes.data.properties.action_link || '';
-
-  // The action_link has the format: ...?token=TOKEN&type=magiclink or token_hash in newer versions
-  // In newer Supabase, generate_link returns the token directly in properties
-  var otp = null;
-
-  // Try to extract from action_link query params
-  var urlMatch = actionLink.match(/[?&]token=([^&#]+)/);
-  if (urlMatch) otp = decodeURIComponent(urlMatch[1]);
-
-  // Also check if there's a hashed_token we can use
-  var hashedToken = linkRes.data.hashed_token || (linkRes.data.properties && linkRes.data.properties.hashed_token);
-
-  var accessToken = null;
-
-  if (otp) {
-    // Verify OTP via token_hash endpoint
-    var verifyRes = await sbAuth('POST', 'verify', {
-      type: 'magiclink',
-      token_hash: otp
-    });
-    if (verifyRes.status === 200 && verifyRes.data && verifyRes.data.access_token) {
-      accessToken = verifyRes.data.access_token;
-    }
-  }
-
-  if (!accessToken && hashedToken) {
-    // Try with hashed_token
-    var verifyRes2 = await sbAuth('POST', 'verify', {
-      type: 'magiclink',
-      token_hash: hashedToken
-    });
-    if (verifyRes2.status === 200 && verifyRes2.data && verifyRes2.data.access_token) {
-      accessToken = verifyRes2.data.access_token;
-    }
-  }
-
-  if (!accessToken) {
-    // Last resort: the generate_link response itself may contain the access_token
-    accessToken = linkRes.data.access_token;
-  }
-
-  if (!accessToken) {
-    // Final fallback: skip auth, use service key to test everything else
-    // Create the user if needed and link to organiser
-    step('Auth (magic link)', false, 'Could not get access_token. action_link=' + actionLink.slice(0, 80) + ' hashed_token=' + (hashedToken || 'none'));
-    // Don't return — let subsequent steps work via service key
+  if (createRes.status !== 200 || !createRes.data || !createRes.data.id) {
+    step('Create test user', false, 'status=' + createRes.status + ' ' + JSON.stringify(createRes.data).slice(0, 200));
     state.authToken = 'skipped';
     state.authSkipped = true;
   } else {
-    state.authToken = accessToken;
+    state.userId = createRes.data.id;
+
+    // Link to test org
+    await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: state.userId });
+
+    // Sign in with password
+    var signinRes = await sbAuth('POST', 'token?grant_type=password', {
+      email: TEST_EMAIL,
+      password: testPassword
+    });
+    if (signinRes.status === 200 && signinRes.data && signinRes.data.access_token) {
+      state.authToken = signinRes.data.access_token;
+    } else {
+      step('Sign in', false, 'status=' + signinRes.status);
+      state.authToken = 'skipped';
+      state.authSkipped = true;
+    }
   }
+
+  var accessToken = state.authToken;
 
   if (state.authToken && state.authToken !== 'skipped') {
     var authRes = await apiFetch('org-auth', {
@@ -1844,6 +1809,12 @@ async function cleanup() {
       await sbRest('DELETE', 'players?event_id=eq.' + state.clonedEventId);
       await sbRest('DELETE', 'groups?event_id=eq.' + state.clonedEventId);
       await sbRest('DELETE', 'events?id=eq.' + state.clonedEventId);
+    }
+
+    // Unlink and delete test user
+    if (state.userId) {
+      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: null });
+      await sbAuth('DELETE', 'admin/users/' + state.userId);
     }
 
     console.log('  Cleanup complete.');
