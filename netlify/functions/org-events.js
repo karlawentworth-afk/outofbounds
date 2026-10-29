@@ -76,7 +76,7 @@ exports.handler = async function (event) {
       }
 
       // For finished events, compute winner using the scoring engine
-      var engine = require('./shared/engine');
+      var engine = require('../../public/shared/engine');
       var finishedEvents = (events || []).filter(function (e) { return e.status === 'finished' && e.course_id; });
       var winnerMap = {};
       for (var fi = 0; fi < finishedEvents.length; fi++) {
