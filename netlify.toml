@@ -1,10 +1,7 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  command = "node -v > public/build-diag.txt && npm -v >> public/build-diag.txt && ls -la netlify/functions/shared/ >> public/build-diag.txt && cat package.json >> public/build-diag.txt && echo OK >> public/build-diag.txt"
-
-[build.environment]
-  NODE_VERSION = "22"
+  command = "echo 'static site'"
 
 [functions]
   # Default 10s is too tight for vision API calls
