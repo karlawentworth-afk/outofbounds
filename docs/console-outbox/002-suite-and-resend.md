@@ -58,16 +58,16 @@ Deployed `tmp-resend-check.js` to the branch deploy and called `GET /domains` vi
 {
   "keyLength": 20,
   "keyStarts": "****",
-  "keyEnds": "GQr7",
+  "keyEnds": "[redacted]",
   "hasStars": true,
   "resendStatus": 400,
   "resendBody": "{\"statusCode\":400,\"message\":\"API key is invalid\",\"name\":\"validation_error\"}"
 }
 ```
 
-The key stored in Netlify is the masked string `****************GQr7` (20 chars, literal asterisks). A real Resend API key starts with `re_` and is ~40 chars. This was corrupted during the 18 Oct env wipe when masked values were stored back.
+The key stored in Netlify is a masked string (20 chars, literal asterisks). A real Resend API key starts with `re_` and is ~40 chars. This was corrupted during the 18 Oct env wipe when masked values were stored back.
 
-The production context key ends `muh5` and is the same length (20 chars, masked). Both are invalid.
+The production context key is the same length (20 chars, masked). Both are invalid.
 
 **Karla needs to get a new API key from [resend.com/api-keys](https://resend.com/api-keys)** and update `RESEND_API_KEY` in Netlify for both production and branch-deploy contexts. I cannot retrieve or generate one.
 

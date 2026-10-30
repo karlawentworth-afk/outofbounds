@@ -80,7 +80,7 @@ Uses password-based auth (admin user creation + password sign-in) for reliable J
 
 Set for branch-deploy context:
 ```
-netlify env:set STRIPE_SECRET_KEY "sk_test_51UITh..." --context branch-deploy
+netlify env:set STRIPE_SECRET_KEY "[redacted]" --context branch-deploy
 ```
 Stripe checkout test returns a real Stripe URL, confirming the key works.
 
