@@ -1,0 +1,21 @@
+# Brief 006: fix the GitHub build for real, then prove auth on the deployed branch
+
+Brief 005 is NOT accepted. Checked at 2026-10-28 on https://design-system--outofboundsscoring.netlify.app with no Authorization header:
+- GET /.netlify/functions/org-events?organiser_id=<any> returned 200 {"events":[]}
+- GET /.netlify/functions/event-players?event=<any> returned 200 {"players":[]}
+- POST /.netlify/functions/org-team action=invite reached Supabase (409 foreign key error)
+The deployed functions are the old ones. The repo code is right; the deploy is stale because GitHub-triggered builds fail and no CLI deploy was made after the auth commits.
+
+1. The GitHub build. Stop guessing at lock files. Get the actual failing build's log: `netlify api listSiteDeploys --data '{"site_id":"54abf0ad-3579-4aba-86a1-1e625facfccb"}'` to find the latest failed deploy for branch design-system, then `netlify api getSiteDeploy` / the deploy log URL, and paste the exact error lines from the function bundling step (the first "Error" through to the end of that step). Diagnose from the error text. Common causes on this repo: a function requiring a module that is not in package.json dependencies (esbuild "Could not resolve"), a file added under netlify/functions that is not a function (shared/ helpers are fine only if excluded or required relatively), a syntax error in a function file, or a function importing from outside the functions directory. Fix the real cause. The gate is: a `git push` to design-system produces a successful Netlify build with no manual deploy. Paste the successful deploy id and its commit hash.
+
+2. Confirm production is not at risk: `git diff master..design-system -- package.json package-lock.json netlify.toml` and state in plain words whether merging would change the build on master. If package-lock.json changed, regenerate it with the Node version netlify.toml pins and commit it; the build in step 1 proves it.
+
+3. Prove auth on the deployed branch, after the step 1 build. Run these with curl against the branch URL and paste the full responses:
+   - GET org-events with organiser_id, no header: must be 401
+   - GET event-players?event=<real Test Org event id>, no header: must be 401
+   - POST org-team action=invite, no header: must be 401 and nothing written
+   - Same three with a valid Test Org token: 200
+   - GET event-players for a Fairway event with a Test Org token: 404
+   Then run tests/auth.test.js with TEST_URL set to the branch URL and paste the tail. If the auth tests were previously run against a local netlify dev, say so.
+
+4. Tag design-system-rc10 only when 1 and 3 are proven. Report to docs/console-outbox/006-deploy-and-prove-auth.md. Commit, push, wait-inbox.
