@@ -140,6 +140,15 @@ Everything else: make the reasonable choice, note it in the report,
 carry on. Report at the checkpoints the brief names, not between
 them.
 
+## No secrets in reports
+
+Report files (docs/console-outbox/, docs/qa/) never contain secret
+values, API keys, tokens or key fragments. Use the variable name
+only (e.g. "RESEND_API_KEY was invalid"). Before every commit, grep
+the staged diff for secret patterns: `re_`, `sk_test_`, `sk_live_`,
+`whsec_`, `sk-ant-`, `sbp_`, `eyJhbGci`, and runs of asterisks
+followed by alphanumerics. Redact any hit before committing.
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in
