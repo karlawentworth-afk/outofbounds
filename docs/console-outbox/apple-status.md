@@ -1,7 +1,13 @@
 # Apple App Store status
 
-## 2026-10-31 12:30 UTC
+## 2026-10-30 22:40 UTC
 
-ASC API returns 401 with both key G8T7MQZNXP and 75935PB75U using issuer ID 4dea4042-16ea-4655-924e-485942eb9ce7. Keys may be revoked or issuer ID may be wrong. Cannot poll version state until auth is fixed.
+ASC API auth fixed (was https.get vs https.request issue on Windows).
 
-Karla: check App Store Connect > Users and Access > Integrations > Keys. Confirm the key G8T7MQZNXP is active and the issuer ID matches.
+**Version 1.0: REJECTED**
+
+Submitted 2026-10-18, build 8. Release type: AFTER_APPROVAL.
+
+Resolution Center messages not available via ASC API. Karla should check App Store Connect for the rejection reason.
+
+Per brief 010: REJECTED means do not resubmit or retry. Polling stopped until new brief.

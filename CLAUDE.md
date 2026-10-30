@@ -130,6 +130,12 @@ No em dashes. Use a full stop, comma or "and" instead. This applies
 to emails, social posts, marketing copy and anything published
 under her name.
 
+## Shell rules
+
+Never prefix a command with `cd && ...`; the shell is already in
+the repo root, use relative paths. Compound cd commands trigger a
+permission prompt on every call.
+
 ## Working rules
 
 When Karla gives a brief with numbered steps, work through all of
