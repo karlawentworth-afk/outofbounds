@@ -46,8 +46,7 @@ exports.handler = async function (event) {
         (scores || []).filter(function (sc) { return sc.player_id === p.id; }).forEach(function (sc) {
           var hole = (courseHoles || []).find(function (h) { return h.hole_number === sc.hole_number; });
           if (!hole) return;
-          var strokes = hole.stroke_index <= ph ? 1 : 0;
-          if (ph > 18 && hole.stroke_index <= (ph - 18)) strokes = 2;
+          var strokes = Math.floor(ph / 18) + (hole.stroke_index <= (ph % 18) ? 1 : 0);
           var nett = sc.gross_score - strokes;
           pts += Math.max(0, 2 - (nett - hole.par));
         });

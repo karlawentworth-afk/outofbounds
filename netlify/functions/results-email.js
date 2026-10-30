@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./shared/auth');
 
 /**
  * Send results email to all players with an email address.
@@ -15,6 +16,9 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
 
   if (!body.event_id || !body.organiser_id) return sb.respond(400, { error: 'Missing event_id or organiser_id' });
+
+  try { await auth.requireEventOwner(event, body.event_id); }
+  catch (e) { return sb.respond(e.status || 401, { error: e.message }); }
 
   try {
     // Verify ownership

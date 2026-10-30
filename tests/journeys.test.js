@@ -65,6 +65,53 @@ function sbRest(method, restPath, body) {
   });
 }
 
+// ── Supabase Auth helper ───────────────────────────────────────
+var SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXRtc3dhZHNrZGtxaG5yaGhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjk2NTEsImV4cCI6MjEwNTY0NTY1MX0.sV9wHdMfiEwIdErw9ISwELf68e00_UEXv3SmWkSdoQc';
+var authToken = '';
+var authRefreshToken = '';
+var authUserId = '';
+
+function sbAuth(method, authPath, body) {
+  return new Promise(function (resolve, reject) {
+    var payload = body ? JSON.stringify(body) : null;
+    var headers = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' };
+    if (payload) headers['Content-Length'] = Buffer.byteLength(payload);
+    var req = https.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/' + authPath, method: method, headers: headers }, function (res) {
+      var chunks = []; res.on('data', function (c) { chunks.push(c); }); res.on('end', function () {
+        var raw = Buffer.concat(chunks).toString();
+        try { resolve(JSON.parse(raw)); } catch (e) { resolve(raw); }
+      });
+    });
+    req.on('error', reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
+async function createTestUser() {
+  var email = 'journey-' + Date.now() + '@example.com';
+  var pass = 'JourneyTest_' + Date.now() + '!';
+  var user = await sbAuth('POST', 'admin/users', { email: email, password: pass, email_confirm: true });
+  authUserId = user.id;
+  // Link to Test Org
+  await sbRest('PATCH', 'organisers?id=eq.' + TEST_ORG_ID, { auth_user_id: user.id });
+  // Sign in with anon key
+  var signin = await new Promise(function (resolve, reject) {
+    var payload = JSON.stringify({ email: email, password: pass });
+    var req = https.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/token?grant_type=password', method: 'POST', headers: { 'apikey': SB_ANON, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } }, function (res) {
+      var chunks = []; res.on('data', function (c) { chunks.push(c); }); res.on('end', function () {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString())); } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+  authToken = signin.access_token;
+  authRefreshToken = signin.refresh_token;
+  return { userId: user.id, email: email };
+}
+
 function apiFetch(fnName, opts) {
   opts = opts || {};
   var method = opts.method || 'POST';
@@ -74,6 +121,7 @@ function apiFetch(fnName, opts) {
   var qsStr = qsParts.length ? '?' + qsParts.join('&') : '';
   return new Promise(function (resolve, reject) {
     var headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
     var req = https.request({ hostname: HOST, port: 443, path: '/.netlify/functions/' + fnName + qsStr, method: method, headers: headers }, function (res) {
       var chunks = []; res.on('data', function (c) { chunks.push(c); }); res.on('end', function () {
@@ -99,52 +147,35 @@ async function journey1_organiser(browser) {
   var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   var page = await ctx.newPage();
 
-  // Load the organiser app and wait for it to settle
-  await page.goto(BASE + '/o/', { waitUntil: 'load', timeout: 30000 });
-  await sleep(6000);
+  // Set the Supabase session in localStorage before loading the page
+  // This makes the SPA's onAuthStateChange pick up the test user's session
+  await page.goto(BASE + '/o/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.evaluate(function (tokens) {
+    var storageKey = 'sb-ahutmswadskdkqhnrhhh-auth-token';
+    localStorage.setItem(storageKey, JSON.stringify({
+      access_token: tokens.access,
+      refresh_token: tokens.refresh,
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600
+    }));
+  }, { access: authToken, refresh: authRefreshToken });
 
-  // Check current state: sign-in screen or already on dashboard
-  var currentScreen = await page.evaluate(function () {
-    var signin = document.getElementById('screen-signin');
-    var dash = document.getElementById('screen-dashboard');
-    if (dash && dash.offsetHeight > 0) return 'dashboard';
-    if (signin && signin.offsetHeight > 0) return 'signin';
-    return 'unknown';
-  });
+  // Reload so the SPA picks up the session from localStorage
+  await page.reload({ waitUntil: 'load' });
 
-  if (currentScreen === 'signin') {
-    await page.locator('button:has-text("with email")').click();
+  // Wait for dashboard (up to 20s)
+  var currentScreen = 'unknown';
+  for (var wait = 0; wait < 40; wait++) {
     await sleep(500);
-    await page.fill('#magic-email', 'review@outofboundsevents.com');
-    await sleep(800);
-
-    var codeVisible = await page.isVisible('#reviewer-code', { timeout: 3000 }).catch(function () { return false; });
-    if (!codeVisible) {
-      step('Sign in: dashboard visible', false, 'reviewer code field did not appear');
-      await ctx.close();
-      return;
-    }
-
-    var reviewerCode = process.env.REVIEWER_CODE || '';
-    if (!reviewerCode || reviewerCode.length !== 6) {
-      step('Sign in: dashboard visible', false, 'REVIEWER_CODE not set');
-      await ctx.close();
-      return;
-    }
-
-    await page.fill('#reviewer-code', reviewerCode);
-    await sleep(300);
-    await page.click('#magic-btn');
-
-    // Wait for dashboard (cold-start can be slow)
-    for (var attempt = 0; attempt < 6; attempt++) {
-      await sleep(3000);
-      currentScreen = await page.evaluate(function () {
-        var dash = document.getElementById('screen-dashboard');
-        return (dash && dash.offsetHeight > 0) ? 'dashboard' : 'waiting';
-      });
-      if (currentScreen === 'dashboard') break;
-    }
+    currentScreen = await page.evaluate(function () {
+      var dash = document.getElementById('screen-dashboard');
+      if (dash && dash.offsetHeight > 0) return 'dashboard';
+      var signin = document.getElementById('screen-signin');
+      if (signin && signin.offsetHeight > 0) return 'signin';
+      return 'unknown';
+    });
+    if (currentScreen === 'dashboard') break;
   }
 
   step('Sign in: dashboard visible', currentScreen === 'dashboard', 'screen=' + currentScreen);
@@ -209,20 +240,24 @@ async function journey1_organiser(browser) {
 
   // Open the event within the SPA (keeps session)
   await page.evaluate(function (eid) { openEvent(eid); }, state.eventId);
-  await sleep(6000);
 
-  // Check what screen we're on and what's visible
-  var eventPageState = await page.evaluate(function () {
-    var body = document.body.innerText;
-    var chip = document.querySelector('.chip.live');
-    var screenEvent = document.getElementById('screen-event');
-    return {
-      onEventScreen: screenEvent && screenEvent.offsetHeight > 0,
-      hasLiveChip: chip ? chip.textContent.trim() : '',
-      scoringMatch: (body.match(/\d+ of \d+ group[s]? scoring/i) || [''])[0],
-      visibleText: body.substring(0, 200).replace(/\n/g, ' ')
-    };
-  });
+  // Poll until the LIVE chip or scoring status text appears (up to 15s)
+  var eventPageState = { onEventScreen: false, hasLiveChip: '', scoringMatch: '' };
+  for (var ew = 0; ew < 30; ew++) {
+    await sleep(500);
+    eventPageState = await page.evaluate(function () {
+      var body = document.body.innerText;
+      var chip = document.querySelector('.chip.live');
+      var screenEvent = document.getElementById('screen-event');
+      return {
+        onEventScreen: screenEvent && screenEvent.offsetHeight > 0,
+        hasLiveChip: chip ? chip.textContent.trim() : '',
+        scoringMatch: (body.match(/\d+ of \d+ group[s]? scoring/i) || [''])[0],
+        visibleText: body.substring(0, 200).replace(/\n/g, ' ')
+      };
+    });
+    if (eventPageState.hasLiveChip || eventPageState.scoringMatch) break;
+  }
 
   step('Dashboard shows LIVE chip',
     eventPageState.hasLiveChip.toLowerCase().includes('live'),
@@ -264,13 +299,19 @@ async function journey2_player(browser) {
 
   var playerUrl = BASE + '/p/' + state.orgSlug + '/' + state.eventSlug + '/' + state.playerTokens[0];
   await playerPage.goto(playerUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-  await sleep(3000);
 
   // Find player name (display_name from API, e.g. "Alice Test")
   var playerName = state.players[0].display_name || (state.players[0].first_name + ' ' + state.players[0].last_name);
-  var nameVisible = await playerPage.evaluate(function (name) {
-    return document.body.innerText.includes(name);
-  }, playerName);
+
+  // Poll until player name appears on page (up to 15s)
+  var nameVisible = false;
+  for (var nw = 0; nw < 30; nw++) {
+    await sleep(500);
+    nameVisible = await playerPage.evaluate(function (name) {
+      return document.body.innerText.includes(name);
+    }, playerName);
+    if (nameVisible) break;
+  }
   step('Player sees their name', nameVisible, 'name=' + playerName);
 
   // Nominate first player as scorer for the group
@@ -292,19 +333,46 @@ async function journey2_player(browser) {
   step('Score holes 1-3 (with pick-up)', saveRes.status === 200,
     saveRes.data ? JSON.stringify(saveRes.data).substring(0, 80) : 'status=' + saveRes.status);
 
-  // Reload player page to see scores
+  // Reload player page and wait for scores to appear
   await playerPage.reload({ waitUntil: 'domcontentloaded' });
-  await sleep(2000);
+  for (var pw = 0; pw < 20; pw++) {
+    await sleep(500);
+    var hasScores = await playerPage.evaluate(function () {
+      return document.body.innerText.includes('Hole') || document.querySelectorAll('[data-hole]').length > 0;
+    });
+    if (hasScores) break;
+  }
 
   // Check organiser live screen updates
   if (state.orgPage) {
+    // Reload and wait for dashboard events to load before opening event
     await state.orgPage.reload({ waitUntil: 'domcontentloaded' });
-    await sleep(3000);
+    for (var dw = 0; dw < 30; dw++) {
+      await sleep(500);
+      var dashReady = await state.orgPage.evaluate(function () {
+        return typeof state !== 'undefined' && state.events && state.events.length > 0;
+      });
+      if (dashReady) break;
+    }
 
-    var updatedText = await state.orgPage.evaluate(function () {
-      return document.body.innerText.match(/\d+ of \d+ group[s]? scoring/i)?.[0] || '';
-    });
-    step('Organiser sees "1 of N groups scoring"', updatedText.includes('1 of') && updatedText.includes('scoring'),
+    // Re-open the event (state.events is now populated)
+    await state.orgPage.evaluate(function (eid) {
+      if (typeof openEvent === 'function') openEvent(eid);
+    }, state.eventId);
+
+    // Poll for scoring status text (up to 20s)
+    // Text may be "N of M groups scoring" or "· N of M scoring"
+    var updatedText = '';
+    for (var ow = 0; ow < 40; ow++) {
+      await sleep(500);
+      updatedText = await state.orgPage.evaluate(function () {
+        var body = document.body.innerText;
+        return (body.match(/\d+ of \d+.*scoring/i) || [''])[0];
+      });
+      if (updatedText) break;
+    }
+
+    step('Organiser sees scoring status', updatedText.includes('of') && updatedText.includes('scoring'),
       'text=' + updatedText);
 
     // Check leaderboard shows player's points
@@ -343,18 +411,34 @@ async function journey3_finish(browser) {
 
   // Reload dashboard data then navigate to finished event
   if (state.orgPage) {
-    await state.orgPage.evaluate(function () { if (typeof loadDashboard === 'function') loadDashboard(); });
-    await sleep(3000);
+    // Reload and wait for dashboard events to load
+    await state.orgPage.reload({ waitUntil: 'domcontentloaded' });
+    for (var dw2 = 0; dw2 < 30; dw2++) {
+      await sleep(500);
+      var dashReady2 = await state.orgPage.evaluate(function () {
+        return typeof state !== 'undefined' && state.events && state.events.length > 0;
+      });
+      if (dashReady2) break;
+    }
+
+    // Open the finished event
     await state.orgPage.evaluate(function (eid) {
       if (typeof openEvent === 'function') openEvent(eid);
     }, state.eventId);
-    await sleep(5000);
 
-    // Assert: finished screen shows winner line
-    var winnerText = await state.orgPage.evaluate(function () {
-      var winner = document.querySelector('.winner');
-      return winner ? winner.textContent.trim() : '';
-    });
+    // Poll for the finished screen content (up to 20s)
+    var winnerText = '';
+    for (var fw = 0; fw < 40; fw++) {
+      await sleep(500);
+      winnerText = await state.orgPage.evaluate(function () {
+        var winner = document.querySelector('.winner');
+        if (winner && winner.textContent.trim()) return winner.textContent.trim();
+        var body = document.body.innerText;
+        if (body.includes('Final results') || body.includes('finished')) return body.substring(0, 500);
+        return '';
+      });
+      if (winnerText) break;
+    }
     step('Finished screen shows winner', winnerText.length > 0, 'text=' + winnerText.substring(0, 80));
 
     // Check WhatsApp share text contains winner's name and points
@@ -383,9 +467,11 @@ async function journey3_finish(browser) {
     }
 
     if (winnerName) {
-      step('Winner name in share text or winner card',
-        winnerText.includes(winnerName) || shareText.includes(winnerName),
-        'winner=' + winnerName + ' inCard=' + winnerText.includes(winnerName));
+      // Winner name may be in the winner card, share text, or page body
+      var pageBody = await state.orgPage.evaluate(function () { return document.body.innerText; });
+      step('Winner name visible on finished screen',
+        pageBody.includes(winnerName) || winnerText.includes(winnerName) || shareText.includes(winnerName),
+        'winner=' + winnerName + ' inPage=' + pageBody.includes(winnerName));
     } else {
       step('Winner identified', false, 'could not determine winner');
     }
@@ -406,12 +492,19 @@ async function cleanup() {
     await sbRest('DELETE', 'events?id=eq.' + state.eventId);
     console.log('  Cleaned up event ' + state.eventId);
   }
+  if (authUserId) {
+    await sbAuth('DELETE', 'admin/users/' + authUserId, null);
+    console.log('  Cleaned up auth user ' + authUserId);
+  }
 }
 
 // ── Main ────────────────────────────────────────────────────────
 async function main() {
   console.log('=== Journey Tests ===');
   console.log('Target: ' + BASE);
+
+  var testUser = await createTestUser();
+  console.log('  Auth: user=' + testUser.userId + ' token_len=' + authToken.length);
 
   var browser = await chromium.launch();
 

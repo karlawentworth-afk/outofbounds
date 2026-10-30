@@ -101,7 +101,7 @@ exports.handler = async function (event) {
       if (body.player_id !== undefined) update.player_id = body.player_id || null;
       if (body.category !== undefined) update.category = body.category;
 
-      await sb.sbPatch('prizes?id=eq.' + body.prize_id, update);
+      await sb.sbPatch('prizes?id=eq.' + body.prize_id + '&event_id=eq.' + body.event_id, update);
       return sb.respond(200, { ok: true });
     }
 
@@ -159,7 +159,7 @@ exports.handler = async function (event) {
     // Delete
     if (action === 'delete') {
       if (!body.prize_id) return sb.respond(400, { error: 'Missing prize_id' });
-      await sb.sbDelete('prizes?id=eq.' + body.prize_id);
+      await sb.sbDelete('prizes?id=eq.' + body.prize_id + '&event_id=eq.' + body.event_id);
       return sb.respond(200, { ok: true });
     }
 

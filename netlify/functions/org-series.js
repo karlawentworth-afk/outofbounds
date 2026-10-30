@@ -72,8 +72,7 @@ exports.handler = async function (event) {
             (scores || []).filter(function (sc) { return sc.player_id === p.id; }).forEach(function (sc) {
               var hole = (courseHoles || []).find(function (h) { return h.hole_number === sc.hole_number; });
               if (!hole) return;
-              var strokes = hole.stroke_index <= ph ? 1 : 0;
-              if (ph > 18 && hole.stroke_index <= (ph - 18)) strokes = 2;
+              var strokes = Math.floor(ph / 18) + (hole.stroke_index <= (ph % 18) ? 1 : 0);
               var nett = sc.gross_score - strokes;
               var stab = Math.max(0, 2 - (nett - hole.par));
               pts += stab;
@@ -136,14 +135,17 @@ exports.handler = async function (event) {
     // Add event to series
     if (action === 'add_event') {
       if (!body.event_id || !body.series_id) return sb.respond(400, { error: 'Missing event_id or series_id' });
-      await sb.sbPatch('events?id=eq.' + body.event_id, { series_id: body.series_id });
+      // Verify event belongs to this org
+      var evCheck = await sb.sbGet('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id + '&select=id&limit=1');
+      if (!evCheck || !evCheck.length) return sb.respond(404, { error: 'Event not found' });
+      await sb.sbPatch('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id, { series_id: body.series_id });
       return sb.respond(200, { ok: true });
     }
 
     // Remove event from series
     if (action === 'remove_event') {
       if (!body.event_id) return sb.respond(400, { error: 'Missing event_id' });
-      await sb.sbPatch('events?id=eq.' + body.event_id, { series_id: null });
+      await sb.sbPatch('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id, { series_id: null });
       return sb.respond(200, { ok: true });
     }
 
