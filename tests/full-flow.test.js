@@ -29,7 +29,7 @@ function loadServiceKey() {
 var LIVE_URL = process.env.TEST_URL || 'https://outofboundsscoring.netlify.app';
 var SB_HOST  = 'ahutmswadskdkqhnrhhh.supabase.co';
 var SB_KEY   = loadServiceKey();
-var ORG_ID   = 'a0000000-0000-0000-0000-000000000001';
+var ORG_ID   = null; // Created per run; never shares the static Test Org
 
 // Guard: abort early if we only have the masked key
 if (!SB_KEY || SB_KEY.length < 100) {
@@ -230,8 +230,21 @@ async function stepA_signIn() {
   } else {
     state.userId = createRes.data.id;
 
-    // Link to test org
-    await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: state.userId });
+    // Create a throwaway org for this run (never shares the static Test Org)
+    var orgSlug = 'flow-test-' + Date.now().toString(36);
+    var orgRes = await sbRest('POST', 'organisers', {
+      name: 'Flow Test Org',
+      slug: orgSlug,
+      auth_user_id: state.userId
+    });
+    if (Array.isArray(orgRes.data) && orgRes.data[0]) {
+      ORG_ID = orgRes.data[0].id;
+      state.orgId = ORG_ID;
+    } else {
+      step('Create test org', false, JSON.stringify(orgRes.data).slice(0, 200));
+      state.authToken = 'skipped';
+      state.authSkipped = true;
+    }
 
     // Sign in with password
     var signinRes = await sbAuth('POST', 'token?grant_type=password', {
@@ -1811,9 +1824,25 @@ async function cleanup() {
       await sbRest('DELETE', 'events?id=eq.' + state.clonedEventId);
     }
 
-    // Unlink and delete test user
+    // Delete all events under the throwaway org, then the org itself
+    if (state.orgId) {
+      var orgEvents = await sbRest('GET', 'events?organiser_id=eq.' + state.orgId + '&select=id');
+      if (Array.isArray(orgEvents.data)) {
+        for (var oe = 0; oe < orgEvents.data.length; oe++) {
+          var oeid = orgEvents.data[oe].id;
+          await sbRest('DELETE', 'hole_scores?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'score_edits?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'payments?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'prizes?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'players?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'groups?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'events?id=eq.' + oeid);
+        }
+      }
+      await sbRest('DELETE', 'organiser_users?organiser_id=eq.' + state.orgId);
+      await sbRest('DELETE', 'organisers?id=eq.' + state.orgId);
+    }
     if (state.userId) {
-      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: null });
       await sbAuth('DELETE', 'admin/users/' + state.userId);
     }
 
