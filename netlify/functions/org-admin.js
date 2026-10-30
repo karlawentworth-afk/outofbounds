@@ -1,36 +1,26 @@
 'use strict';
 
 var sb = require('./shared/supabase');
-
-/**
- * Verify the caller is a superadmin. Returns organiser row or null.
- */
-async function verifySuperadmin(organiserId) {
-  var orgs = await sb.sbGet(
-    'organisers?id=eq.' + organiserId +
-    '&select=id,is_superadmin' +
-    '&limit=1'
-  );
-  if (!orgs || !orgs.length || !orgs[0].is_superadmin) return null;
-  return orgs[0];
-}
+var auth = require('./shared/auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
 
   var qs = event.queryStringParameters || {};
 
-  // All requests need organiser_id for superadmin check
+  // All requests need superadmin check via JWT
+  var adminResult;
+  try {
+    adminResult = await auth.requireSuperadmin(event);
+  } catch (err) {
+    return auth.authError(err);
+  }
+  var adminId = adminResult.organiser.id;
+
   var body = {};
   if (event.httpMethod === 'POST' || event.httpMethod === 'PATCH') {
     try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
   }
-
-  var adminId = body.organiser_id || qs.organiser_id;
-  if (!adminId) return sb.respond(400, { error: 'Missing organiser_id' });
-
-  var admin = await verifySuperadmin(adminId);
-  if (!admin) return sb.respond(403, { error: 'Not authorised' });
 
   try {
     // GET: list all organisers

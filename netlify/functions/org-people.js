@@ -2,11 +2,23 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
+var auth = require('./shared/auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
 
+  // Auth: require org membership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authOrgId = qs.organiser_id || peekBody.organiser_id;
+  if (authOrgId) {
+    try { await auth.requireOrgMember(event, authOrgId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: search people
   if (event.httpMethod === 'GET') {

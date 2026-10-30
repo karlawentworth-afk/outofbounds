@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
+var auth = require('./shared/auth');
 
 function makeSlug(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
@@ -10,7 +11,18 @@ function makeSlug(name) {
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
 
+  // Auth: require org membership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authOrgId = qs.organiser_id || peekBody.organiser_id;
+  if (authOrgId) {
+    try { await auth.requireOrgMember(event, authOrgId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: list series or get one with standings
   if (event.httpMethod === 'GET') {
@@ -60,8 +72,7 @@ exports.handler = async function (event) {
             (scores || []).filter(function (sc) { return sc.player_id === p.id; }).forEach(function (sc) {
               var hole = (courseHoles || []).find(function (h) { return h.hole_number === sc.hole_number; });
               if (!hole) return;
-              var strokes = hole.stroke_index <= ph ? 1 : 0;
-              if (ph > 18 && hole.stroke_index <= (ph - 18)) strokes = 2;
+              var strokes = Math.floor(ph / 18) + (hole.stroke_index <= (ph % 18) ? 1 : 0);
               var nett = sc.gross_score - strokes;
               var stab = Math.max(0, 2 - (nett - hole.par));
               pts += stab;
@@ -124,14 +135,17 @@ exports.handler = async function (event) {
     // Add event to series
     if (action === 'add_event') {
       if (!body.event_id || !body.series_id) return sb.respond(400, { error: 'Missing event_id or series_id' });
-      await sb.sbPatch('events?id=eq.' + body.event_id, { series_id: body.series_id });
+      // Verify event belongs to this org
+      var evCheck = await sb.sbGet('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id + '&select=id&limit=1');
+      if (!evCheck || !evCheck.length) return sb.respond(404, { error: 'Event not found' });
+      await sb.sbPatch('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id, { series_id: body.series_id });
       return sb.respond(200, { ok: true });
     }
 
     // Remove event from series
     if (action === 'remove_event') {
       if (!body.event_id) return sb.respond(400, { error: 'Missing event_id' });
-      await sb.sbPatch('events?id=eq.' + body.event_id, { series_id: null });
+      await sb.sbPatch('events?id=eq.' + body.event_id + '&organiser_id=eq.' + body.organiser_id, { series_id: null });
       return sb.respond(200, { ok: true });
     }
 

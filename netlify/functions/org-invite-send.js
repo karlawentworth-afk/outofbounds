@@ -3,6 +3,7 @@
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
 var https = require('https');
+var auth = require('./shared/auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
@@ -13,6 +14,12 @@ exports.handler = async function (event) {
 
   if (!body.organiser_id || !body.event_id) {
     return sb.respond(400, { error: 'Missing organiser_id or event_id' });
+  }
+
+  try {
+    await auth.requireOrgMember(event, body.organiser_id);
+  } catch (err) {
+    return auth.authError(err);
   }
 
   try { await planGate.assertPro(body.organiser_id); }

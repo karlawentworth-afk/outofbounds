@@ -12,9 +12,11 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
 <style>
-:root { --navy:#10344E; --green:#2F7A45; --ink:#1B2430; --muted:#7A8694; --line:#E8ECF0; --off-white:#F5F7FA; --white:#FFFFFF; --green-light:#E8F5E9; }
+:root { --navy:var(--brand); --green:var(--accent); --muted:var(--ink-muted); --off-white:var(--surface-paper); --white:var(--surface); --green-light:var(--accent-soft); }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--off-white);-webkit-font-smoothing:antialiased;line-height:1.6}
 .top{background:var(--navy);color:#fff;padding:18px 20px;display:flex;align-items:center;gap:12px}
@@ -80,7 +82,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
   var FORMAT_LABELS = {
     'individual_stableford': 'Individual Stableford',
     'better_ball_pairs': 'Better ball pairs Stableford',
-    'better_ball_2from4': 'Better ball Stableford \u2014 best 2 from 4'
+    'better_ball_2from4': 'Better ball Stableford, best 2 from 4'
   };
 
   var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -228,7 +230,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
         return;
       }
 
-      document.title = (ev.name || 'Results') + ' \u2014 Out of Bounds';
+      document.title = (ev.name || 'Results') + ', Out of Bounds';
       var ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.content = ev.name + ' Results';
 
@@ -277,7 +279,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
 
       // Primary leaderboard
       var colLabel = data.format === 'individual_stableford' ? 'Player' : 'Team';
-      html += renderTable(entries, 'Final Results', colLabel);
+      html += renderTable(entries, 'Final results', colLabel);
 
       // Secondary format
       if (data.secondary && data.secondary.entries) {
@@ -298,7 +300,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
       if (copyBtn) {
         copyBtn.onclick = function () {
           navigator.clipboard.writeText(shareUrl).then(function () {
-            copyBtn.textContent = 'Copied!';
+            copyBtn.textContent = 'Copied';
             setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 2000);
           });
         };
@@ -317,7 +319,8 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
       }
 
     } catch (err) {
-      document.getElementById('content').innerHTML = '<div class="loading">Failed to load results: ' + esc(err.message) + '</div>';
+      console.error('Results load error:', err.message);
+      document.getElementById('content').innerHTML = '<div class="loading">Couldn\u2019t load results. Try again.</div>';
     }
   }
 

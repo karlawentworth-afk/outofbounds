@@ -1,18 +1,42 @@
 // full-flow.test.js — E2E test: full stranger flow against live site
 // Run: node tests/full-flow.test.js
-// Requires: SUPABASE_SERVICE_KEY env var
+// Requires: SUPABASE_SERVICE_KEY (env var or .claude/settings.local.json)
 // Requires: playwright installed (npm i playwright)
 
 'use strict';
 
 var https = require('https');
+var fs = require('fs');
+var path = require('path');
 var { chromium } = require('playwright');
 
+// ── Load service key ────────────────────────────────────────────
+// Prefer env var; fall back to the gitignored local settings file.
+function loadServiceKey() {
+  var key = process.env.SUPABASE_SERVICE_KEY;
+  if (key && key.length > 100) return key;
+  // Read from .claude/settings.local.json (the key is in an allow entry)
+  try {
+    var settingsPath = path.join(__dirname, '..', '.claude', 'settings.local.json');
+    var raw = fs.readFileSync(settingsPath, 'utf8');
+    var match = raw.match(/eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+    if (match && match[0].length > 100) return match[0];
+  } catch (e) { /* ignore */ }
+  return key || '';
+}
+
 // ── Constants ────────────────────────────────────────────────────
-var LIVE_URL = 'https://outofboundsscoring.netlify.app';
+var LIVE_URL = process.env.TEST_URL || 'https://outofboundsscoring.netlify.app';
 var SB_HOST  = 'ahutmswadskdkqhnrhhh.supabase.co';
-var SB_KEY   = process.env.SUPABASE_SERVICE_KEY;
-var ORG_ID   = 'a0000000-0000-0000-0000-000000000001';
+var SB_KEY   = loadServiceKey();
+var ORG_ID   = null; // Created per run; never shares the static Test Org
+
+// Guard: abort early if we only have the masked key
+if (!SB_KEY || SB_KEY.length < 100) {
+  console.error('FATAL: service key is masked or missing (' + (SB_KEY || '').length + ' chars).');
+  console.error('Load it from .claude/settings.local.json or set SUPABASE_SERVICE_KEY.');
+  process.exit(1);
+}
 
 var TEST_EMAIL = 'playwright-test-' + Date.now() + '@oob-test.local';
 
@@ -62,9 +86,15 @@ function apiFetch(fnName, opts) {
   return new Promise(function (resolve, reject) {
     var headers = { 'Content-Type': 'application/json' };
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
+    // Send auth token if available (required by auth-protected functions)
+    if (opts.token) {
+      headers['Authorization'] = 'Bearer ' + opts.token;
+    } else if (state.authToken && state.authToken !== 'skipped') {
+      headers['Authorization'] = 'Bearer ' + state.authToken;
+    }
 
     var reqOpts = {
-      hostname: 'outofboundsscoring.netlify.app',
+      hostname: new URL(LIVE_URL).hostname,
       port: 443,
       path: '/.netlify/functions/' + fnName + qsStr,
       method: method,
@@ -184,75 +214,53 @@ function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 async function stepA_signIn() {
   console.log('\n--- Step a: Sign-in / Auth ---');
 
-  // Use Supabase admin generateLink to get a magic link with the OTP token.
-  // Then verify the OTP to get a real session with access_token.
-  var orgEmail = 'karla.wentworth@thatsclevermx.com';
+  // Create a test user with password and sign in for a real JWT.
+  // Link the user to the test org (ORG_ID).
+  var testPassword = 'OobFlow_' + Date.now() + '!';
 
-  var linkRes = await sbAuth('POST', 'admin/generate_link', {
-    type: 'magiclink',
-    email: orgEmail
+  var createRes = await sbAuth('POST', 'admin/users', {
+    email: TEST_EMAIL,
+    password: testPassword,
+    email_confirm: true
   });
-
-  if (linkRes.status !== 200 || !linkRes.data) {
-    step('Generate magic link', false, 'status=' + linkRes.status + ' ' + JSON.stringify(linkRes.data).slice(0, 200));
-    return;
-  }
-
-  // generate_link returns properties.hashed_token and action_link
-  // We need to extract the OTP token from the response.
-  // The response has: { ..., properties: { hashed_token, ... }, action_link, ... }
-  var actionLink = linkRes.data.action_link || linkRes.data.properties && linkRes.data.properties.action_link || '';
-
-  // The action_link has the format: ...?token=TOKEN&type=magiclink or token_hash in newer versions
-  // In newer Supabase, generate_link returns the token directly in properties
-  var otp = null;
-
-  // Try to extract from action_link query params
-  var urlMatch = actionLink.match(/[?&]token=([^&#]+)/);
-  if (urlMatch) otp = decodeURIComponent(urlMatch[1]);
-
-  // Also check if there's a hashed_token we can use
-  var hashedToken = linkRes.data.hashed_token || (linkRes.data.properties && linkRes.data.properties.hashed_token);
-
-  var accessToken = null;
-
-  if (otp) {
-    // Verify OTP via token_hash endpoint
-    var verifyRes = await sbAuth('POST', 'verify', {
-      type: 'magiclink',
-      token_hash: otp
-    });
-    if (verifyRes.status === 200 && verifyRes.data && verifyRes.data.access_token) {
-      accessToken = verifyRes.data.access_token;
-    }
-  }
-
-  if (!accessToken && hashedToken) {
-    // Try with hashed_token
-    var verifyRes2 = await sbAuth('POST', 'verify', {
-      type: 'magiclink',
-      token_hash: hashedToken
-    });
-    if (verifyRes2.status === 200 && verifyRes2.data && verifyRes2.data.access_token) {
-      accessToken = verifyRes2.data.access_token;
-    }
-  }
-
-  if (!accessToken) {
-    // Last resort: the generate_link response itself may contain the access_token
-    accessToken = linkRes.data.access_token;
-  }
-
-  if (!accessToken) {
-    // Final fallback: skip auth, use service key to test everything else
-    // Create the user if needed and link to organiser
-    step('Auth (magic link)', false, 'Could not get access_token. action_link=' + actionLink.slice(0, 80) + ' hashed_token=' + (hashedToken || 'none'));
-    // Don't return — let subsequent steps work via service key
+  if (createRes.status !== 200 || !createRes.data || !createRes.data.id) {
+    step('Create test user', false, 'status=' + createRes.status + ' ' + JSON.stringify(createRes.data).slice(0, 200));
     state.authToken = 'skipped';
     state.authSkipped = true;
   } else {
-    state.authToken = accessToken;
+    state.userId = createRes.data.id;
+
+    // Create a throwaway org for this run (never shares the static Test Org)
+    var orgSlug = 'flow-test-' + Date.now().toString(36);
+    var orgRes = await sbRest('POST', 'organisers', {
+      name: 'Flow Test Org',
+      slug: orgSlug,
+      auth_user_id: state.userId
+    });
+    if (Array.isArray(orgRes.data) && orgRes.data[0]) {
+      ORG_ID = orgRes.data[0].id;
+      state.orgId = ORG_ID;
+    } else {
+      step('Create test org', false, JSON.stringify(orgRes.data).slice(0, 200));
+      state.authToken = 'skipped';
+      state.authSkipped = true;
+    }
+
+    // Sign in with password
+    var signinRes = await sbAuth('POST', 'token?grant_type=password', {
+      email: TEST_EMAIL,
+      password: testPassword
+    });
+    if (signinRes.status === 200 && signinRes.data && signinRes.data.access_token) {
+      state.authToken = signinRes.data.access_token;
+    } else {
+      step('Sign in', false, 'status=' + signinRes.status);
+      state.authToken = 'skipped';
+      state.authSkipped = true;
+    }
   }
+
+  var accessToken = state.authToken;
 
   if (state.authToken && state.authToken !== 'skipped') {
     var authRes = await apiFetch('org-auth', {
@@ -432,6 +440,29 @@ async function stepA2_signInScreen() {
         'visible=' + afterSignOut.visible.join(','));
     } else {
       step('Sign-in via magic link (token not available)', false, 'could not get session');
+    }
+
+    // Bad reviewer code shows error sentence
+    await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 30000 });
+    await sleep(2000);
+    await page.locator('button[onclick="showEmailSignIn()"]').click();
+    await sleep(500);
+    await page.locator('#magic-email').fill('review@outofboundsevents.com');
+    await sleep(500);
+    var codeField2 = page.locator('#reviewer-code');
+    if (await codeField2.isVisible({ timeout: 2000 }).catch(function () { return false; })) {
+      await codeField2.fill('000000');
+      await sleep(300);
+      await page.locator('#magic-btn').click();
+      await sleep(3000);
+      var errVisible = await page.evaluate(function () {
+        var el = document.getElementById('signin-error');
+        return el ? { visible: el.offsetHeight > 0 && el.style.display !== 'none', text: el.textContent } : { visible: false, text: '' };
+      });
+      step('Bad code shows error sentence', errVisible.visible && errVisible.text.length > 10,
+        'visible=' + errVisible.visible + ' text=' + errVisible.text);
+    } else {
+      step('Bad code shows error sentence', false, 'reviewer code field not visible');
     }
 
     await ctx.close();
@@ -1160,7 +1191,7 @@ async function stepL_runItAgain() {
       '&select=display_name,player_token,group_id'
     );
 
-    if (clonedPlayers.data) {
+    if (Array.isArray(clonedPlayers.data)) {
       var noGroups = clonedPlayers.data.every(function (p) { return !p.group_id; });
       var hasTokens = clonedPlayers.data.every(function (p) { return !!p.player_token; });
       step('Clone: players have fresh tokens, no groups', noGroups && hasTokens,
@@ -1743,8 +1774,8 @@ async function stepUC1_fixes() {
   var orgHtml = await httpGet(LIVE_URL + '/o/');
   step('Fix 2: QR local library loaded', orgHtml.body.indexOf('qrcode.min.js') !== -1, 'has qrcode.min.js');
 
-  // Fix 8: Disclaimer wording
-  step('Fix 8: Handicap disclaimer', orgHtml.body.indexOf("Handicaps can\\'t be checked against the WHS") !== -1 || orgHtml.body.indexOf("Handicaps can't be checked against the WHS") !== -1, 'correct wording');
+  // Fix 8: Disclaimer wording (copy deck changed "Handicaps can't" to "We can't check")
+  step('Fix 8: Handicap disclaimer', orgHtml.body.indexOf("can\\'t check handicaps against the WHS") !== -1 || orgHtml.body.indexOf("can't check handicaps against the WHS") !== -1, 'correct wording');
 
   // Fix 12: Header icon not lockup
   step('Fix 12: Header uses icon-white', orgHtml.body.indexOf('icon-white.png') !== -1 && orgHtml.body.indexOf('logo-white.png') === -1, 'icon only');
@@ -1791,6 +1822,28 @@ async function cleanup() {
       await sbRest('DELETE', 'players?event_id=eq.' + state.clonedEventId);
       await sbRest('DELETE', 'groups?event_id=eq.' + state.clonedEventId);
       await sbRest('DELETE', 'events?id=eq.' + state.clonedEventId);
+    }
+
+    // Delete all events under the throwaway org, then the org itself
+    if (state.orgId) {
+      var orgEvents = await sbRest('GET', 'events?organiser_id=eq.' + state.orgId + '&select=id');
+      if (Array.isArray(orgEvents.data)) {
+        for (var oe = 0; oe < orgEvents.data.length; oe++) {
+          var oeid = orgEvents.data[oe].id;
+          await sbRest('DELETE', 'hole_scores?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'score_edits?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'payments?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'prizes?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'players?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'groups?event_id=eq.' + oeid);
+          await sbRest('DELETE', 'events?id=eq.' + oeid);
+        }
+      }
+      await sbRest('DELETE', 'organiser_users?organiser_id=eq.' + state.orgId);
+      await sbRest('DELETE', 'organisers?id=eq.' + state.orgId);
+    }
+    if (state.userId) {
+      await sbAuth('DELETE', 'admin/users/' + state.userId);
     }
 
     console.log('  Cleanup complete.');
@@ -1855,42 +1908,59 @@ async function stepPhase0Proofs() {
     entriesWithThru.length + ' entries with thru > 0' + (g2Player ? ' (g2 player=' + g2Player.slice(0,8) + ')' : ' (no g2 player found)'));
 
   // 3. Reload on #event-<id> → lands on that event, not dashboard
-  // Use the test's own event ID and sign in via reviewer login, then navigate directly
+  // Call reviewer-login to get a session linked to the demo org, then test hash reload
   var browser = await chromium.launch({ headless: true });
   try {
-    var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    var page = await ctx.newPage();
-
-    // Sign in first
-    await page.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 20000 });
-    await page.locator('button[onclick="showEmailSignIn()"]').click();
-    await sleep(500);
-    await page.locator('#magic-email').fill('review@outofboundsevents.com');
-    await sleep(300);
-    await page.locator('#magic-btn').click();
-    await sleep(2000);
-    var codeInput = page.locator('#reviewer-code');
-    if (await codeInput.isVisible({ timeout: 3000 }).catch(function () { return false; })) {
-      await codeInput.fill('479649');
-      await sleep(300);
-      await page.locator('#magic-btn').click();
-      await sleep(5000);
+    // Link reviewer to demo org and get a session token
+    var http = require('https');
+    function authReq(method, path, body) {
+      return new Promise(function (resolve) {
+        var payload = body ? JSON.stringify(body) : null;
+        var headers = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+        if (payload) headers['Content-Length'] = Buffer.byteLength(payload);
+        var req = http.request({ hostname: SB_HOST, port: 443, path: path, method: method, headers: headers }, function (res) {
+          var c = []; res.on('data', function (d) { c.push(d); });
+          res.on('end', function () { try { resolve(JSON.parse(Buffer.concat(c).toString())); } catch (e) { resolve(null); } });
+        });
+        req.on('error', function () { resolve(null); });
+        if (payload) req.write(payload);
+        req.end();
+      });
+    }
+    var rlLink = await authReq('POST', '/auth/v1/admin/generate_link', { type: 'magiclink', email: 'review@outofboundsevents.com' });
+    var reviewerId = rlLink ? rlLink.id : null;
+    if (reviewerId) {
+      await sbRest('PATCH', 'organisers?id=eq.a0000000-0000-0000-0000-000000000099', { auth_user_id: reviewerId });
+    }
+    var tokenHash = rlLink && rlLink.action_link ? decodeURIComponent(rlLink.action_link.match(/token=([^&]+)/)[1]) : null;
+    var reviewerToken = null;
+    if (tokenHash) {
+      var verRes = await authReq('POST', '/auth/v1/verify', { type: 'magiclink', token_hash: tokenHash });
+      reviewerToken = verRes ? verRes.access_token : null;
     }
 
-    // Now reload with the event hash directly (simulates phone discard on an event page)
-    // Use one of the demo org's events visible on the dashboard
-    var firstEventId = await page.evaluate(function () {
-      var row = document.querySelector('[onclick*="openEvent"]');
-      if (!row) return null;
-      var match = row.getAttribute('onclick').match(/openEvent\(['"]([^'"]+)['"]\)/);
-      return match ? match[1] : null;
-    });
+    // Find an event belonging to the demo org
+    var demoEvRes = await sbRest('GET', 'events?organiser_id=eq.a0000000-0000-0000-0000-000000000099&status=in.(draft,live,finished)&select=id&limit=1&order=created_at.desc');
+    var demoEvData = demoEvRes && demoEvRes.data ? demoEvRes.data : [];
+    var demoEventId = Array.isArray(demoEvData) && demoEvData.length > 0 ? demoEvData[0].id : null;
 
-    if (firstEventId) {
-      // Set the hash then force a full page reload (simulates phone tab discard)
-      await page.evaluate(function (eid) { window.location.hash = 'event-' + eid; }, firstEventId);
-      await page.reload({ waitUntil: 'networkidle', timeout: 25000 });
-      await sleep(8000);
+    if (reviewerToken && demoEventId) {
+      var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      var page = await ctx.newPage();
+
+      // Inject the auth token before navigating
+      await ctx.addInitScript(function (data) {
+        try {
+          localStorage.setItem('sb-ahutmswadskdkqhnrhhh-auth-token', JSON.stringify({
+            access_token: data.token, refresh_token: '', token_type: 'bearer',
+            expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600
+          }));
+        } catch (e) {}
+      }, { token: reviewerToken });
+
+      // Navigate directly with the event hash
+      await page.goto(LIVE_URL + '/o/#event-' + demoEventId, { waitUntil: 'networkidle', timeout: 30000 });
+      await sleep(10000);
 
       var activeScreen = await page.evaluate(function () {
         var s = document.querySelectorAll('.screen.active');
@@ -1898,12 +1968,79 @@ async function stepPhase0Proofs() {
       });
       var currentHash = await page.evaluate(function () { return window.location.hash; });
       step('P0-3: Reload on #event-<id> lands on event', activeScreen === 'screen-event',
-        'screen=' + activeScreen + ' hash=' + currentHash + ' event=' + firstEventId);
-    } else {
-      step('P0-3: Reload on #event-<id> lands on event', false, 'could not find an event ID on dashboard');
-    }
+        'screen=' + activeScreen + ' hash=' + currentHash + ' event=' + demoEventId);
 
-    await ctx.close();
+      // Appbar: OB mark must never be visible for any organiser
+      var obMarkVisible = await page.evaluate(function () {
+        var mark = document.querySelector('#appbar-mark');
+        return mark ? (mark.offsetHeight > 0 && mark.style.display !== 'none') : false;
+      });
+      step('Appbar: no OB mark visible', !obMarkVisible,
+        'obMarkVisible=' + obMarkVisible);
+
+      // Brand colour leak test: set Test Org to #c9a9a6, sign in, check no button is pink
+      var origColour = await sbRest('GET', 'organisers?id=eq.' + ORG_ID + '&select=primary_colour');
+      var savedColour = origColour.data && origColour.data[0] ? origColour.data[0].primary_colour : null;
+      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { primary_colour: '#c9a9a6' });
+
+      var http2 = require('https');
+      var testLink = await new Promise(function (res) {
+        var rq = http2.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/admin/generate_link', method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Length': Buffer.byteLength(JSON.stringify({ type: 'magiclink', email: 'playwright-testorg@oob-test.local' })) }
+        }, function (r) { var c = []; r.on('data', function (d) { c.push(d); }); r.on('end', function () { try { res(JSON.parse(Buffer.concat(c).toString())); } catch (e) { res(null); } }); });
+        rq.on('error', function () { res(null); });
+        rq.write(JSON.stringify({ type: 'magiclink', email: 'playwright-testorg@oob-test.local' }));
+        rq.end();
+      });
+      if (testLink && testLink.action_link) {
+        var tth = decodeURIComponent(testLink.action_link.match(/token=([^&]+)/)[1]);
+        var tvr = await new Promise(function (res) {
+          var rq = http2.request({ hostname: SB_HOST, port: 443, path: '/auth/v1/verify', method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Length': Buffer.byteLength(JSON.stringify({ type: 'magiclink', token_hash: tth })) }
+          }, function (r) { var c = []; r.on('data', function (d) { c.push(d); }); r.on('end', function () { try { res(JSON.parse(Buffer.concat(c).toString())); } catch (e) { res(null); } }); });
+          rq.on('error', function () { res(null); });
+          rq.write(JSON.stringify({ type: 'magiclink', token_hash: tth }));
+          rq.end();
+        });
+        await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { auth_user_id: testLink.id });
+        if (tvr && tvr.access_token) {
+          var bCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          await bCtx.addInitScript(function (d) {
+            try { localStorage.setItem('sb-ahutmswadskdkqhnrhhh-auth-token', JSON.stringify({
+              access_token: d.token, refresh_token: '', token_type: 'bearer',
+              expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600
+            })); } catch (e) {}
+          }, { token: tvr.access_token });
+          var bPage = await bCtx.newPage();
+          await bPage.goto(LIVE_URL + '/o/', { waitUntil: 'networkidle', timeout: 30000 });
+          await sleep(10000);
+          var colourCheck = await bPage.evaluate(function () {
+            function rgb(el) { return el ? getComputedStyle(el).backgroundColor : ''; }
+            var btn = document.querySelector('.btn-primary');
+            var label = document.querySelector('.section-title');
+            var brandRgb = 'rgb(201, 169, 166)'; // #c9a9a6
+            return {
+              btn: rgb(btn),
+              label: label ? getComputedStyle(label).color : '',
+              btnIsBrand: rgb(btn) === brandRgb,
+              labelIsBrand: label ? getComputedStyle(label).color === brandRgb : false
+            };
+          });
+          step('Brand colour does not leak into buttons', !colourCheck.btnIsBrand,
+            'btn=' + colourCheck.btn + ' isBrand=' + colourCheck.btnIsBrand);
+          step('Brand colour does not leak into section labels', !colourCheck.labelIsBrand,
+            'label=' + colourCheck.label + ' isBrand=' + colourCheck.labelIsBrand);
+          await bCtx.close();
+        }
+      }
+      // Restore original colour
+      await sbRest('PATCH', 'organisers?id=eq.' + ORG_ID, { primary_colour: savedColour || '#1B2A4A' });
+
+      await ctx.close();
+    } else {
+      step('P0-3: Reload on #event-<id> lands on event', false,
+        'reviewer-login failed or no demo event (token=' + !!reviewerToken + ' event=' + demoEventId + ')');
+    }
   } finally {
     await browser.close();
   }

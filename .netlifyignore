@@ -1,0 +1,12 @@
+docs/
+tests/
+test-results/
+ios/
+android/
+Pictures/
+icons/
+resources/
+scripts/
+.claude/
+Claude outputs/
+*.p8

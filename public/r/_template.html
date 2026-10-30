@@ -19,42 +19,43 @@
 <meta name="twitter:image" content="{{OG_IMAGE}}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
 <style>
-:root { --navy:#10344E; --green:#2F7A45; --ink:#1B2430; --muted:#5B6672; --line:#E3E7EB; --off-white:#F7F5F0; --white:#FFFFFF; --green-light:#E8F5E9; }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--off-white);-webkit-font-smoothing:antialiased;line-height:1.5}
-.top{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+body{font-family:var(--font-body);color:var(--ink);background:var(--surface-paper);-webkit-font-smoothing:antialiased;line-height:1.5}
+.top{background:var(--brand);color:#fff;padding:var(--s-4) var(--s-5);display:flex;align-items:center;gap:var(--s-3)}
 .top img{height:28px}
-.top span{font-family:Poppins,sans-serif;font-weight:700;font-size:15px}
-.wrap{max-width:600px;margin:0 auto;padding:0 16px}
-.event-header{padding:24px 0 16px;text-align:center;border-bottom:1px solid var(--line)}
-.event-header h1{font-family:Poppins,sans-serif;font-weight:800;font-size:24px;letter-spacing:-0.02em;margin-bottom:4px}
-.event-header .date{font-size:14px;color:var(--muted)}
-.format-line{text-align:center;padding:10px 0;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
-.lb-heading{padding:16px 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)}
-.lb-table{width:100%;border-collapse:collapse;font-size:14px}
-.lb-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 4px;border-bottom:2px solid var(--line)}
+.top span{font-family:var(--font-display);font-weight:700;font-size:15px}
+.wrap{max-width:600px;margin:0 auto;padding:0 var(--s-4)}
+.event-header{padding:var(--s-6) 0 var(--s-4);text-align:center;border-bottom:1px solid var(--line)}
+.event-header h1{font-family:var(--font-display);font-weight:800;font-size:var(--fs-h1);letter-spacing:-0.02em;margin-bottom:var(--s-1)}
+.event-header .date{font-size:var(--fs-small);color:var(--ink-muted)}
+.format-line{text-align:center;padding:10px 0;font-size:var(--fs-micro);color:var(--ink-muted);border-bottom:1px solid var(--line)}
+.lb-heading{padding:var(--s-4) 0 var(--s-2);font-size:var(--fs-micro);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-muted)}
+.lb-table{width:100%;border-collapse:collapse;font-size:var(--fs-small)}
+.lb-table th{text-align:left;font-size:var(--fs-micro);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-muted);padding:var(--s-2) var(--s-1);border-bottom:2px solid var(--line)}
 .lb-table th.r{text-align:right}
 .lb-table th.c{text-align:center}
-.lb-table td{padding:10px 4px;border-bottom:1px solid var(--line);vertical-align:top}
-.lb-table td.pos{font-weight:800;color:var(--muted);width:36px}
-.lb-table td.pos.p1{color:var(--green)}
+.lb-table td{padding:10px var(--s-1);border-bottom:1px solid var(--line);vertical-align:top}
+.lb-table td.pos{font-weight:800;color:var(--ink-muted);width:36px}
+.lb-table td.pos.p1{color:var(--accent)}
 .lb-table td.name{font-weight:600}
-.lb-table td.thru{text-align:center;color:var(--muted);width:44px}
-.lb-table td.pts{text-align:right;font-family:Poppins,sans-serif;font-weight:700;font-size:16px;width:44px}
-.lb-table td.pts.p1{color:var(--green)}
-.tied-note{font-size:11px;color:var(--muted);padding:4px 4px 4px 40px;border-bottom:1px solid var(--line)}
-.share-bar{padding:20px 0;display:flex;flex-direction:column;gap:10px}
-.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:12px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:inherit;width:100%}
-.share-whatsapp{background:#25D366;color:#fff}
-.share-copy{background:var(--white);color:var(--ink);border:1px solid var(--line)}
-.share-generic{background:var(--navy);color:#fff}
-.promo{text-align:center;padding:24px 0 32px;border-top:1px solid var(--line);margin-top:12px}
-.promo p{font-size:14px;color:var(--muted)}
-.promo a{color:var(--green);font-weight:600;text-decoration:none}
-.footer{background:var(--navy);color:rgba(255,255,255,0.5);padding:16px;text-align:center;font-size:12px}
-.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
+.lb-table td.thru{text-align:center;color:var(--ink-muted);width:44px}
+.lb-table td.pts{text-align:right;font-family:var(--font-score);font-weight:700;font-size:var(--fs-ui);width:44px}
+.lb-table td.pts.p1{color:var(--accent)}
+.tied-note{font-size:11px;color:var(--ink-muted);padding:4px 4px 4px 40px;border-bottom:1px solid var(--line)}
+.share-bar{padding:var(--s-5) 0;display:flex;flex-direction:column;gap:10px}
+.share-btn{display:flex;align-items:center;justify-content:center;gap:var(--s-2);padding:14px var(--s-5);border-radius:999px;font-size:var(--fs-ui);font-weight:700;border:none;cursor:pointer;font-family:var(--font-display);width:100%}
+.share-whatsapp{background:#157536;color:#fff}
+.share-copy{background:var(--surface);color:var(--ink);border:1.5px solid var(--line-strong)}
+.share-generic{background:var(--brand);color:#fff}
+.promo{text-align:center;padding:var(--s-6) 0 var(--s-8);border-top:1px solid var(--line);margin-top:var(--s-3)}
+.promo p{font-size:var(--fs-small);color:var(--ink-muted)}
+.promo a{color:var(--accent-soft-ink);font-weight:600;text-decoration:none}
+.footer{background:var(--brand);color:rgba(255,255,255,0.5);padding:var(--s-4);text-align:center;font-size:var(--fs-micro)}
+.loading{text-align:center;padding:60px var(--s-5);color:var(--ink-muted);font-size:var(--fs-body)}
 </style>
 </head>
 <body>
@@ -87,7 +88,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
   var FORMAT_LABELS = {
     'individual_stableford': 'Individual Stableford',
     'better_ball_pairs': 'Better ball pairs Stableford',
-    'better_ball_2from4': 'Better ball Stableford \u2014 best 2 from 4'
+    'better_ball_2from4': 'Better ball Stableford, best 2 from 4'
   };
 
   var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -235,7 +236,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
         return;
       }
 
-      document.title = (ev.name || 'Results') + ' \u2014 Out of Bounds';
+      document.title = (ev.name || 'Results') + ', Out of Bounds';
       var ogTitle = document.querySelector('meta[property="og:title"]');
       if (ogTitle) ogTitle.content = ev.name + ' Results';
 
@@ -284,7 +285,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
 
       // Primary leaderboard
       var colLabel = data.format === 'individual_stableford' ? 'Player' : 'Team';
-      html += renderTable(entries, 'Final Results', colLabel);
+      html += renderTable(entries, 'Final results', colLabel);
 
       // Secondary format
       if (data.secondary && data.secondary.entries) {
@@ -305,7 +306,7 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
       if (copyBtn) {
         copyBtn.onclick = function () {
           navigator.clipboard.writeText(shareUrl).then(function () {
-            copyBtn.textContent = 'Copied!';
+            copyBtn.textContent = 'Copied';
             setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 2000);
           });
         };
@@ -324,7 +325,8 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
       }
 
     } catch (err) {
-      document.getElementById('content').innerHTML = '<div class="loading">Failed to load results: ' + esc(err.message) + '</div>';
+      console.error('Results load error:', err.message);
+      document.getElementById('content').innerHTML = '<div class="loading">Couldn\u2019t load results. Try again.</div>';
     }
   }
 

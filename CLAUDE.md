@@ -64,6 +64,11 @@ real authenticated call (e.g. reviewer-login or org-auth) and
 confirm 200 before reporting success. A 401 on that call means the
 deploy broke auth.
 
+Any migration instruction to Karla states the Supabase project ref
+(`ahutmswadskdkqhnrhhh`), the dashboard URL
+(`https://supabase.com/dashboard/project/ahutmswadskdkqhnrhhh/sql`)
+and the SQL. She has more than one project.
+
 ## Branching and extraction
 
 Any change that touches more than one screen, or more than 200 lines,
@@ -124,6 +129,25 @@ web-only leaks to native.
 No em dashes. Use a full stop, comma or "and" instead. This applies
 to emails, social posts, marketing copy and anything published
 under her name.
+
+## Working rules
+
+When Karla gives a brief with numbered steps, work through all of
+them without stopping to ask whether to continue. Only pause for
+four things: a database migration, a destructive or irreversible
+action, a conflict between two rules, or anything that costs money.
+Everything else: make the reasonable choice, note it in the report,
+carry on. Report at the checkpoints the brief names, not between
+them.
+
+## No secrets in reports
+
+Report files (docs/console-outbox/, docs/qa/) never contain secret
+values, API keys, tokens or key fragments. Use the variable name
+only (e.g. "RESEND_API_KEY was invalid"). Before every commit, grep
+the staged diff for secret patterns: `re_`, `sk_test_`, `sk_live_`,
+`whsec_`, `sk-ant-`, `sbp_`, `eyJhbGci`, and runs of asterisks
+followed by alphanumerics. Redact any hit before committing.
 
 ## Commit messages
 

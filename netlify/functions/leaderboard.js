@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var engine = require('../../public/shared/engine');
+var auth = require('./shared/auth');
 
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -14,6 +15,15 @@ exports.handler = async function (event) {
   var qs = event.queryStringParameters || {};
   var eventId = qs.event;
   var mode = qs.mode || 'player';
+
+  // mode=organiser bypasses freeze — require auth to prevent players cheating
+  if (mode === 'organiser') {
+    try {
+      await auth.requireEventOwner(event, eventId);
+    } catch (e) {
+      mode = 'player'; // fall back to freeze-limited view
+    }
+  }
 
   if (!eventId) {
     return sb.respond(400, { error: 'Missing required query param: event' });

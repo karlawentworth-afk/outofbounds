@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var engine = require('../../public/shared/engine.js');
+var auth = require('./shared/auth');
 
 /**
  * Verify organiser owns the event. Returns event row or null.
@@ -85,7 +86,17 @@ exports.handler = async function (event) {
     return sb.respond(405, { error: 'Method not allowed' });
   }
 
+  // Auth: require event ownership
   var qs = event.queryStringParameters || {};
+  var authEventId = qs.event_id;
+  if (authEventId) {
+    try { await auth.requireEventOwner(event, authEventId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
+
   var eventId = qs.event_id;
   var organiserId = qs.organiser_id;
 

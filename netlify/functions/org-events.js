@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
+var auth = require('./shared/auth');
 
 function genToken() {
   return crypto.randomBytes(16).toString('hex');
@@ -32,7 +33,18 @@ exports.handler = async function (event) {
     return sb.respond(204, '');
   }
 
+  // Auth: require org membership
   var qs = event.queryStringParameters || {};
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  var authOrgId = qs.organiser_id || peekBody.organiser_id;
+  if (authOrgId) {
+    try { await auth.requireOrgMember(event, authOrgId); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   // GET: list events for organiser
   if (event.httpMethod === 'GET') {
@@ -43,9 +55,103 @@ exports.handler = async function (event) {
     try {
       var events = await sb.sbGet(
         'events?organiser_id=eq.' + organiserId +
-        '&select=id,name,slug,event_date,format,status,starting_mode,paid,paid_at,paid_amount_pence,created_at,archived' +
+        '&select=id,name,slug,event_date,format,status,starting_mode,paid,paid_at,paid_amount_pence,created_at,archived,course_id,tee_id,courses!events_course_id_fkey(name)' +
         '&order=created_at.desc'
       );
+
+      // Enrich with player count and group count (one query each)
+      var eventIds = (events || []).map(function (e) { return e.id; });
+      var playerCounts = {};
+      var groupCounts = {};
+      if (eventIds.length > 0) {
+        var idList = eventIds.join(',');
+        var players = await sb.sbGet('players?event_id=in.(' + idList + ')&select=event_id');
+        (players || []).forEach(function (p) {
+          playerCounts[p.event_id] = (playerCounts[p.event_id] || 0) + 1;
+        });
+        var groups = await sb.sbGet('groups?event_id=in.(' + idList + ')&select=event_id');
+        (groups || []).forEach(function (g) {
+          groupCounts[g.event_id] = (groupCounts[g.event_id] || 0) + 1;
+        });
+      }
+
+      // For finished events, compute winner using the scoring engine
+      var engine = require('./shared/engine');
+      var finishedEvents = (events || []).filter(function (e) { return e.status === 'finished' && e.course_id; });
+      var winnerMap = {};
+      for (var fi = 0; fi < finishedEvents.length; fi++) {
+        try {
+          var fev = finishedEvents[fi];
+          var holes = await sb.sbGet('course_holes?course_id=eq.' + fev.course_id + '&select=hole_number,par,stroke_index&order=hole_number');
+          var fplayers = await sb.sbGet('players?event_id=eq.' + fev.id + '&select=id,display_name,playing_handicap,group_id');
+          var fgroups = await sb.sbGet('groups?event_id=eq.' + fev.id + '&select=id,group_number');
+          var fscores = await sb.sbGet('hole_scores?event_id=eq.' + fev.id + '&select=player_id,hole_number,gross_score,picked_up');
+          if (holes && holes.length > 0 && fplayers && fscores) {
+            var scoreMap = {};
+            var pickedUpMap = {};
+            (fscores || []).forEach(function (s) {
+              if (!scoreMap[s.player_id]) scoreMap[s.player_id] = {};
+              if (!pickedUpMap[s.player_id]) pickedUpMap[s.player_id] = {};
+              if (s.picked_up) pickedUpMap[s.player_id][s.hole_number] = true;
+              else if (s.gross_score != null) scoreMap[s.player_id][s.hole_number] = s.gross_score;
+            });
+            var entries = engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes, players: fplayers, groups: fgroups || [], format: fev.format, maxHole: 18 });
+            if (entries && entries.length > 0 && entries[0].points > 0) {
+              winnerMap[fev.id] = 'Won by ' + entries[0].names + ', ' + entries[0].points + ' pts';
+            }
+          }
+        } catch (e) { console.error('Winner compute for ' + finishedEvents[fi].id + ':', e.message); }
+      }
+
+      // For live events, compute scoring status (groups scoring, leader)
+      var liveEvents = (events || []).filter(function (e) { return e.status === 'live' && e.course_id; });
+      var liveStatusMap = {};
+      for (var li = 0; li < liveEvents.length; li++) {
+        try {
+          var lev = liveEvents[li];
+          var lGroups = await sb.sbGet('groups?event_id=eq.' + lev.id + '&select=id');
+          var lScores = await sb.sbGet('hole_scores?event_id=eq.' + lev.id + '&select=player_id');
+          var scoredPlayers = {};
+          (lScores || []).forEach(function (s) { scoredPlayers[s.player_id] = true; });
+          // Find which groups have at least one scored player
+          var lPlayers = await sb.sbGet('players?event_id=eq.' + lev.id + '&select=id,group_id');
+          var groupsScoring = {};
+          (lPlayers || []).forEach(function (p) {
+            if (p.group_id && scoredPlayers[p.id]) groupsScoring[p.group_id] = true;
+          });
+          var numScoring = Object.keys(groupsScoring).length;
+          var totalGroups = (lGroups || []).length;
+          // Get leader from leaderboard
+          var holes = await sb.sbGet('course_holes?course_id=eq.' + lev.course_id + '&select=hole_number,par,stroke_index&order=hole_number');
+          var lAllPlayers = await sb.sbGet('players?event_id=eq.' + lev.id + '&select=id,display_name,playing_handicap,group_id');
+          var lAllGroups = await sb.sbGet('groups?event_id=eq.' + lev.id + '&select=id,group_number');
+          var scoreMap = {};
+          var pickedUpMap = {};
+          var allScores = await sb.sbGet('hole_scores?event_id=eq.' + lev.id + '&select=player_id,hole_number,gross_score,picked_up');
+          (allScores || []).forEach(function (s) {
+            if (!scoreMap[s.player_id]) scoreMap[s.player_id] = {};
+            if (!pickedUpMap[s.player_id]) pickedUpMap[s.player_id] = {};
+            if (s.picked_up) pickedUpMap[s.player_id][s.hole_number] = true;
+            else if (s.gross_score != null) scoreMap[s.player_id][s.hole_number] = s.gross_score;
+          });
+          var entries = engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes || [], players: lAllPlayers || [], groups: lAllGroups || [], format: lev.format, maxHole: 18 });
+          var leader = entries && entries.length > 0 && entries[0].points > 0 ? entries[0] : null;
+          var status_text = numScoring + ' of ' + totalGroups + ' ' + (totalGroups === 1 ? 'group' : 'groups') + ' scoring';
+          if (leader) status_text += ' \u00B7 leader ' + leader.points + ' pts thru ' + leader.thru;
+          liveStatusMap[lev.id] = status_text;
+        } catch (e) { console.error('Live status for ' + liveEvents[li].id + ':', e.message); }
+      }
+
+      // Flatten course name and add counts
+      (events || []).forEach(function (e) {
+        e.course_name = (e.courses && e.courses.name) || null;
+        delete e.courses;
+        e.player_count = playerCounts[e.id] || 0;
+        e.group_count = groupCounts[e.id] || 0;
+        e.winner_text = winnerMap[e.id] || null;
+        e.live_status = liveStatusMap[e.id] || null;
+      });
+
       return sb.respond(200, { events: events || [] });
     } catch (err) {
       console.error('org-events GET error:', err);

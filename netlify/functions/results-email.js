@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./shared/auth');
 
 /**
  * Send results email to all players with an email address.
@@ -15,6 +16,9 @@ exports.handler = async function (event) {
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
 
   if (!body.event_id || !body.organiser_id) return sb.respond(400, { error: 'Missing event_id or organiser_id' });
+
+  try { await auth.requireEventOwner(event, body.event_id); }
+  catch (e) { return sb.respond(e.status || 401, { error: e.message }); }
 
   try {
     // Verify ownership
@@ -62,6 +66,7 @@ exports.handler = async function (event) {
     var sent = 0;
     var failed = 0;
     var errors = [];
+    var messageIds = null;
 
     for (var i = 0; i < withEmail.length; i++) {
       var p = withEmail[i];
@@ -104,6 +109,10 @@ exports.handler = async function (event) {
 
         if (res.ok) {
           sent++;
+          if (resBody.id) {
+            if (!messageIds) messageIds = [];
+            messageIds.push(resBody.id);
+          }
         } else {
           failed++;
           var errMsg = resBody.message || ('Resend ' + res.status);
@@ -123,6 +132,7 @@ exports.handler = async function (event) {
     }
 
     var result = { sent: sent, failed: failed, total: allPlayers.length, with_email: withEmail.length };
+    if (messageIds) result.message_ids = messageIds;
     if (errors.length) result.errors = errors;
     return sb.respond(200, result);
   } catch (err) {

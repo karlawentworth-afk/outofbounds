@@ -3,6 +3,7 @@
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
 var audit = require('./shared/audit');
+var auth = require('./shared/auth');
 
 function genToken() {
   return crypto.randomBytes(16).toString('hex');
@@ -106,7 +107,24 @@ exports.handler = async function (event) {
     return sb.respond(204, '');
   }
 
+  // Auth: require caller is a member of the org that owns the event
   var qs = event.queryStringParameters || {};
+  var body;
+  try { body = JSON.parse(event.body || '{}'); } catch (e) { body = {}; }
+  var earlyEventId = qs.event_id || body.event_id;
+  if (earlyEventId) {
+    try {
+      await auth.requireEventOwner(event, earlyEventId);
+    } catch (err) {
+      return auth.authError(err);
+    }
+  } else {
+    try {
+      await auth.requireUser(event);
+    } catch (err) {
+      return auth.authError(err);
+    }
+  }
 
   // GET: list players
   if (event.httpMethod === 'GET') {

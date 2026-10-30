@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var planGate = require('./shared/plan-gate');
+var auth = require('./shared/auth');
 var XLSX = require('xlsx');
 var crypto = require('crypto');
 
@@ -88,6 +89,20 @@ function parseRows(rawRows, colMap) {
 exports.handler = async function (event) {
   if (event.httpMethod === 'OPTIONS') return sb.respond(204, '');
   if (event.httpMethod !== 'POST') return sb.respond(405, { error: 'Method not allowed' });
+
+  // Auth: require event ownership
+  var peekBody;
+  try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+  if (peekBody.event_id) {
+    try { await auth.requireEventOwner(event, peekBody.event_id); }
+    catch (err) { return auth.authError(err); }
+  } else if (peekBody.organiser_id) {
+    try { await auth.requireOrgMember(event, peekBody.organiser_id); }
+    catch (err) { return auth.authError(err); }
+  } else {
+    try { await auth.requireUser(event); }
+    catch (err) { return auth.authError(err); }
+  }
 
   var body;
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }

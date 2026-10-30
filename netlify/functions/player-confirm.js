@@ -69,12 +69,13 @@ exports.handler = async function (event) {
         if (tees && tees.length) {
           var t = tees[0];
           var ev = events[0];
-          var ch = Math.round(newHI * (parseFloat(t.slope) / 113));
-          var adj = ch + (Math.round(parseFloat(t.rating)) - parseInt(t.par_total));
-          var ph = Math.max(0, Math.min(
-            parseInt(ev.max_handicap) || 54,
-            Math.round(adj * parseFloat(ev.handicap_allowance))
-          ));
+          var slope = parseFloat(t.slope) || 113;
+          var rating = parseFloat(t.rating) || parseInt(t.par_total) || 72;
+          var parTotal = parseInt(t.par_total) || 72;
+          var allowance = parseFloat(ev.handicap_allowance) || 0.95;
+          var cap = parseInt(ev.max_handicap) || 54;
+          var raw = newHI * (slope / 113) + (rating - parTotal);
+          var ph = Math.max(0, Math.min(cap, Math.round(raw * allowance)));
           update.playing_handicap = ph;
         }
       }

@@ -1,6 +1,7 @@
 'use strict';
 
 var sb = require('./shared/supabase');
+var auth = require('./shared/auth');
 
 /**
  * Saves a confirmed scorecard (from photo or manual entry).
@@ -26,6 +27,10 @@ exports.handler = async function (event) {
   var body;
   try { body = JSON.parse(event.body || '{}'); }
   catch (e) { return sb.respond(400, { error: 'Invalid JSON' }); }
+
+  // Auth: require a signed-in user (any organiser can create courses)
+  try { await auth.requireUser(event); }
+  catch (e) { return sb.respond(e.status || 401, { error: e.message }); }
 
   if (!body.club_name) return sb.respond(400, { error: 'Missing club_name' });
   if (!body.tee_sets || !body.tee_sets.length) return sb.respond(400, { error: 'No tee sets provided' });

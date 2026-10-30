@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var https = require('https');
+var auth = require('./shared/auth');
 
 /**
  * Create a Stripe Checkout session via the Stripe API.
@@ -109,6 +110,12 @@ exports.handler = async function (event) {
 
   if (!body.event_id || !body.organiser_id) {
     return sb.respond(400, { error: 'Missing event_id or organiser_id' });
+  }
+
+  try {
+    await auth.requireEventOwner(event, body.event_id);
+  } catch (err) {
+    return auth.authError(err);
   }
 
   try {

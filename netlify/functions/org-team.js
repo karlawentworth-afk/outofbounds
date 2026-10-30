@@ -2,6 +2,7 @@
 
 var sb = require('./shared/supabase');
 var crypto = require('crypto');
+var auth = require('./shared/auth');
 
 /**
  * Team management: invite, list, revoke team members.
@@ -30,10 +31,35 @@ exports.handler = async function (event) {
 
   var qs = event.queryStringParameters || {};
 
+  // Accept invite uses magic_token, no JWT needed
+  if (event.httpMethod === 'POST') {
+    var peekBody;
+    try { peekBody = JSON.parse(event.body || '{}'); } catch (e) { peekBody = {}; }
+    if (peekBody.action === 'accept') {
+      // Skip auth — handled below in the action block
+    } else {
+      // All other POST actions require org membership
+      var orgIdForAuth = peekBody.organiser_id;
+      if (orgIdForAuth) {
+        try { await auth.requireOrgMember(event, orgIdForAuth); }
+        catch (err) { return auth.authError(err); }
+      } else {
+        try { await auth.requireUser(event); }
+        catch (err) { return auth.authError(err); }
+      }
+    }
+  }
+
   // GET: list team members
   if (event.httpMethod === 'GET') {
     var orgId = qs.organiser_id;
     if (!orgId) return sb.respond(400, { error: 'Missing organiser_id' });
+
+    try {
+      await auth.requireOrgMember(event, orgId);
+    } catch (err) {
+      return auth.authError(err);
+    }
 
     try {
       var members = await sb.sbGet(

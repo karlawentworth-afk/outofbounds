@@ -13,7 +13,9 @@
 <meta name="apple-itunes-app" content="app-id=6820134986">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<link rel="stylesheet" href="/shared/components.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/api.js"></script>
 <script src="/shared/contrast.js"></script>
@@ -51,7 +53,7 @@ a { color: inherit; text-decoration: none; }
 /* Layout */
 .screen { display: none; }
 .screen.active { display: block; }
-.container { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+.container { width: min(640px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
 
 /* Card */
 .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); transition: box-shadow var(--transition); }
@@ -97,36 +99,13 @@ a { color: inherit; text-decoration: none; }
 }
 .top-bar .user-pill:hover { background: rgba(255,255,255,.2); }
 
-/* Sign-in */
-#screen-signin.active {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100vh; padding: 40px 16px; text-align: center;
-  background: linear-gradient(170deg, rgba(16,52,78,.55) 0%, rgba(16,52,78,.45) 100%),
-              url('/img/photos/aerial-course.jpg') center/cover no-repeat;
-  color: #fff;
-}
-#screen-signin .logo-big { height: 72px; margin-bottom: 48px; filter: drop-shadow(0 2px 8px rgba(16,52,78,.10)); }
-#screen-signin h2 { font-size: 28px; margin-bottom: 10px; letter-spacing: -.02em; color: #fff; }
-#screen-signin .sub { color: rgba(255,255,255,.7); font-size: 16px; margin-bottom: 40px; line-height: 1.5; }
-.auth-btns { display: flex; flex-direction: column; gap: 12px; width: min(340px, 100%); }
-.auth-btn {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; padding: 15px 20px; border-radius: 14px; border: 1px solid var(--line);
-  background: var(--white); font-family: Inter, sans-serif; font-weight: 600;
-  font-size: 15px; cursor: pointer; color: var(--ink); transition: all var(--transition);
-  box-shadow: var(--shadow-sm);
-}
-.auth-btn:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.auth-btn:active { transform: translateY(0); }
-.auth-btn svg { width: 20px; height: 20px; flex-shrink: 0; }
-
-/* Magic link input */
-.magic-link-form { width: min(340px, 100%); margin-top: 0; }
-.magic-link-form input {
-  width: 100%; padding: 14px 16px; border: 2px solid var(--line); border-radius: var(--radius);
-  font-size: 16px; font-family: inherit; margin-bottom: 12px; outline: none;
-}
-.magic-link-form input:focus { border-color: var(--green); }
+/* Sign-in — layout handled by .auth in components; override .screen defaults */
+#screen-signin.active { display: block; padding: 0; background: none; }
+/* Reset old .btn overrides inside .auth so components.css wins */
+.auth .btn { padding: 0 var(--s-6); font-size: var(--fs-ui); min-height: var(--control-h); box-shadow: none; }
+.auth .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+.auth .btn-primary { background: var(--accent); color: var(--ink-on-accent); border-color: transparent; }
+/* Old auth styles removed — handled by .auth in components */
 .magic-link-sent { color: var(--green); font-weight: 600; font-size: 15px; margin-top: 16px; }
 
 /* Onboarding */
@@ -214,48 +193,9 @@ a { color: inherit; text-decoration: none; }
 .empty-state h3 { color: var(--ink); margin-bottom: 8px; font-size: 18px; }
 .empty-state p { font-size: 15px; max-width: 38ch; margin: 0 auto 20px; line-height: 1.6; }
 
-/* Event detail — step navigation */
-.step-strip {
-  display: flex; gap: 0; margin: 0 -20px; padding: 0 20px;
-  border-bottom: 1px solid var(--line); background: #fff;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-}
-.step-btn {
-  background: none; border: none; border-bottom: 3px solid transparent;
-  padding: 14px 16px 12px; text-align: center; cursor: pointer;
-  font-family: inherit; flex-shrink: 0; transition: all var(--transition);
-  position: relative;
-}
-.step-btn .step-num {
-  display: inline-grid; place-items: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--paper); color: var(--muted);
-  font-family: Poppins, sans-serif; font-weight: 700; font-size: 11px;
-  margin-right: 6px; vertical-align: middle;
-}
-.step-btn.active { border-bottom-color: var(--green); }
-.step-btn.active .step-num { background: var(--green); color: #fff; }
-.step-btn.active .step-label { color: var(--ink); }
-.step-btn.done .step-num { background: var(--green); color: #fff; font-size: 0; }
-.step-btn.done .step-num::after { content: '\2713'; font-size: 11px; }
-.step-btn .step-label { display: inline; font-family: Inter, sans-serif; font-weight: 600; font-size: 13px; color: var(--muted); vertical-align: middle; }
-.step-btn .step-state { display: none; }
-@media (max-width: 520px) {
-  .step-strip { padding: 0 12px; }
-  .step-btn { padding: 12px 10px 10px; }
-  .step-btn .step-num { width: 20px; height: 20px; font-size: 10px; }
-  .step-btn .step-label { font-size: 12px; }
-}
+/* Tab panels */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
-
-/* Sticky next button */
-.step-next {
-  position: sticky; bottom: 0; z-index: 50;
-  background: linear-gradient(to top, var(--paper) 70%, rgba(247,245,240,0));
-  padding: 16px 0 20px; margin-top: 8px;
-}
-.step-next .btn { width: 100%; }
 
 /* Forms */
 .form-section { margin-bottom: 20px; }
@@ -271,12 +211,11 @@ a { color: inherit; text-decoration: none; }
 }
 .form-row select { background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235B6672' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 14px center; padding-right: 34px; }
 .form-row input:focus, .form-row select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(47,122,69,.08); }
-.inline-row, .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
-.disclaimer {
-  background: var(--paper); border-radius: 12px; border-left: 3px solid var(--line);
-  padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5;
-}
+.inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Course selected state */
+.course-sel { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--control-h); padding: 0 var(--s-4); border: 1.5px solid var(--accent); background: var(--accent-soft); border-radius: var(--r-md); font-weight: 600; }
+.course-sel .link { font-size: var(--fs-small); }
 
 /* Course inline form */
 .course-search-wrap { position: relative; }
@@ -298,26 +237,7 @@ a { color: inherit; text-decoration: none; }
 .holes-grid .hg-label { font-weight: 600; color: var(--muted); font-size: 12px; }
 .holes-grid select { padding: 6px 8px; font-size: 13px; border-radius: 6px; }
 
-/* Player list */
-.player-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
-.player-count { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
-.player-count .warn { color: #7A5A00; font-weight: 600; }
-.player-item {
-  display: grid; grid-template-columns: 1fr 60px 60px 36px; gap: 8px;
-  align-items: center; padding: 14px 16px; margin-bottom: 2px;
-  background: var(--white); border-radius: 10px; font-size: 15px;
-  transition: background var(--transition);
-}
-.player-item:hover { background: var(--paper); }
-.player-item .pi-name { font-weight: 600; font-size: 14px; }
-.player-item .pi-idx { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
-.player-item .pi-ph { font-family: Poppins, sans-serif; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
-.player-item .pi-del {
-  width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
-  color: var(--line); cursor: pointer; font-size: 18px; display: flex;
-  align-items: center; justify-content: center; transition: all var(--transition);
-}
-.player-item .pi-del:hover { color: var(--red); background: var(--red-soft); }
+/* Player list — now uses .plist / .prow from components.css */
 
 /* Paste modal */
 .modal-overlay {
@@ -472,9 +392,127 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center; min-height: 100vh;
 }
 .loading-screen .spinner { border-color: var(--line); border-top-color: var(--green); width: 32px; height: 32px; }
+
+/* ── Sign-in (design system) ─────────────────────────────────── */
+.auth { min-height: 100dvh; display: grid; grid-template-rows: 1fr auto; background: var(--navy); color: var(--dark-ink); }
+.auth .hero { padding: calc(var(--s-12) + var(--safe-t)) var(--gutter) var(--s-6); display: flex; flex-direction: column; justify-content: flex-end; gap: var(--s-3); background: linear-gradient(rgba(16,52,78,0.72), rgba(16,52,78,0.72)), url('/img/photos/course-wide.jpg') center/cover no-repeat; }
+.auth .hero .ob-mark { width: 72px; height: 50px; }
+.auth .hero h1 { font-size: var(--fs-display); color: #fff; }
+.auth .hero p { color: var(--dark-ink-muted); font-size: var(--fs-body); }
+.auth .panel { background: var(--surface); color: var(--ink); border-radius: var(--r-xl) var(--r-xl) 0 0; padding: var(--s-6) var(--gutter) calc(var(--s-6) + var(--safe-b)); display: flex; flex-direction: column; gap: var(--s-2); }
+.auth .panel .btn svg { width: 22px; height: 22px; }
+@media (min-width: 900px) {
+  .auth { grid-template-rows: none; grid-template-columns: 1fr 480px; }
+  .auth .hero { justify-content: center; padding: var(--s-16); }
+  .auth .panel { border-radius: 0; justify-content: center; padding: var(--s-16) var(--s-12); }
+}
+
+/* Dashboard greet */
+.greet { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-5); }
+.greet .sub { color: var(--ink-muted); font-size: var(--fs-small); }
+.greet .btn { display: none; }
+@media (min-width: 900px) { .greet .btn { display: inline-flex; } }
+@media (min-width: 900px) { #screen-dashboard .sticky-action { display: none; } }
+
+/* Go Live review fee breakdown */
+.review p { font-size: var(--fs-body); line-height: 1.6; }
+.fee { margin-top: var(--s-4); border-top: 1px solid var(--line); }
+.fee .r { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--line); font-size: var(--fs-ui); }
+.fee .r span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.fee .r.total { border-bottom: 0; padding-top: var(--s-4); }
+.fee .r.total span:first-child { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-h3); }
+.fee .r.total span:last-child { font-family: var(--font-score); font-weight: 700; font-size: var(--fs-score-lg); line-height: 1; }
+
+/* Live header */
+.livehead { background: var(--dark-surface); color: var(--dark-ink); padding: var(--s-5) 0; }
+.livehead .in { width: min(var(--col), 100%); margin: 0 auto; padding: 0 var(--gutter); }
+.livehead .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.livehead .top .crumb { color: var(--dark-ink-muted); }
+.livehead .top .crumb svg { stroke: currentColor; }
+.livehead h1 { color: #fff; font-size: var(--fs-h1); display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.livehead .meta { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-1); display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+.livehead .meta a { color: var(--dark-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.livehead .stats { margin-top: var(--s-4); }
+.livehead .stat { background: var(--dark-surface-2); border-color: transparent; }
+.livehead .stat b { color: #fff; } .livehead .stat span { color: var(--dark-ink-muted); }
+.livehead .chip.live { background: rgba(143,211,164,.18); color: var(--dark-accent); }
+.livehead .chip.live::before { background: var(--dark-accent); }
+.page.wide { padding-top: var(--s-5); }
+.upd { font-size: var(--fs-small); color: var(--ink-muted); display: inline-flex; align-items: center; gap: 6px; }
+.upd i { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.remote { display: grid; grid-template-columns: 1fr; gap: var(--s-2); }
+.remote .btn { padding: 0 var(--s-3); }
+@media (min-width: 600px) { .remote { grid-template-columns: 1fr 1fr; } }
+.playing { display: flex; align-items: center; gap: var(--s-3); }
+.playing .avatar { background: var(--brand); border: 0; flex: 0 0 auto; }
+@media (min-width: 900px) { .livehead .in { width: min(1120px, 100%); } }
+
+/* Winner card (finished) */
+.winner { background: var(--dark-gradient); color: #fff; border-radius: var(--r-lg); padding: var(--s-6) var(--s-5); text-align: center; }
+.winner .micro { color: var(--dark-accent); }
+.winner h2 { color: #fff; font-size: var(--fs-h1); margin: var(--s-2) 0 var(--s-1); }
+.winner .pts { font-family: var(--font-score); font-weight: 700; font-size: var(--fs-score-lg); line-height: 1; font-variant-numeric: tabular-nums; color: var(--dark-accent); }
+.winner .pts small { font-family: var(--font-body); font-weight: 500; font-size: var(--fs-ui); color: var(--dark-ink-muted); margin-left: 4px; }
+.winner .sub { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-2); }
+.podium { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: var(--s-5); }
+.podium div { background: rgba(255,255,255,.1); border-radius: var(--r-md); padding: var(--s-3); }
+.podium b { display: block; font-family: var(--font-score); font-size: var(--fs-h2); color: #fff; }
+.podium span { font-size: var(--fs-small); color: var(--dark-ink-muted); }
+
+/* Live control room header */
+.livehead { background: var(--dark-surface); color: var(--dark-ink); padding: var(--s-5) 0; display: none; }
+.livehead.show { display: block; }
+.livehead .in { width: min(var(--col, 720px), 100%); margin: 0 auto; padding: 0 var(--gutter, 16px); }
+.livehead .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.livehead .top .crumb { color: var(--dark-ink-muted); }
+.livehead .top .crumb svg { stroke: currentColor; }
+.livehead h1 { color: #fff; font-size: var(--fs-h1); display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; font-family: var(--font-display); }
+.livehead .meta { color: var(--dark-ink-muted); font-size: var(--fs-small); margin-top: var(--s-1); display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; }
+.livehead .meta a { color: var(--dark-accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.livehead .stats { display: flex; gap: var(--s-2); margin-top: var(--s-4); }
+.livehead .stat { background: var(--dark-surface-2); border: 1px solid transparent; border-radius: var(--r-md); padding: var(--s-3) var(--s-4); flex: 1; text-align: center; }
+.livehead .stat b { display: block; color: #fff; font-family: var(--font-score); font-weight: 700; font-size: var(--fs-h1); }
+.livehead .stat span { font-size: var(--fs-micro); color: var(--dark-ink-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+.livehead .chip.live { background: rgba(143,211,164,.18); color: var(--dark-accent); font-size: var(--fs-micro); }
+.livehead .chip.live::before { background: var(--dark-accent); }
+.upd { font-size: var(--fs-small); color: var(--ink-muted); display: inline-flex; align-items: center; gap: 6px; }
+.upd i { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.8s infinite; }
 </style>
 </head>
 <body>
+
+<!-- App bar (shown after sign-in) -->
+<header class="appbar" id="oob-appbar" style="display:none">
+  <div class="in">
+    <a class="brand" href="#" id="appbar-brand"><span class="ob-mark" id="appbar-mark"></span><span id="appbar-name"></span></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#" class="on" onclick="goToDashboard();return false">Events</a>
+      <a href="#" onclick="goToPeople();return false">People</a>
+      <a href="#" onclick="goToSettings();return false">Settings</a>
+    </nav>
+    <button class="acct" id="appbar-acct" aria-label="Account menu">
+      <span class="who" id="appbar-who"></span>
+      <span class="avatar" id="appbar-avatar"></span>
+    </button>
+  </div>
+</header>
+
+<!-- Tab bar (shown after sign-in, hidden at 900px+ by CSS) -->
+<nav class="tabbar" id="oob-tabbar" style="display:none" aria-label="Sections">
+  <a href="#" class="on" id="tab-events" onclick="goToDashboard();return false">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span>Events</span>
+  </a>
+  <a href="#" id="tab-people" onclick="goToPeople();return false">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.5a5 5 0 0 1 6 5"/></svg>
+    <span>People</span>
+  </a>
+  <a href="#" id="tab-settings" onclick="goToSettings();return false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span>Settings</span>
+  </a>
+</nav>
 
 <!-- Loading -->
 <div id="screen-loading" class="screen active">
@@ -483,32 +521,45 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Sign-in -->
 <div id="screen-signin" class="screen">
-  <img src="/img/icon-white.png" alt="Out of Bounds" class="logo-big">
-  <h2>Log in or create your account</h2>
-  <p class="sub">Set up and run your golf event</p>
-  <div class="auth-btns" id="auth-buttons">
-    <button class="auth-btn" onclick="signInGoogle()">
-      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Sign in with Google
-    </button>
-    <button class="auth-btn" onclick="signInApple()">
-      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-      Sign in with Apple
-    </button>
-    <button class="auth-btn" onclick="showEmailSignIn()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/></svg>
-      Sign in with email
-    </button>
-  </div>
-  <div class="magic-link-form" id="magic-link-form" style="display:none;">
-    <input type="email" id="magic-email" placeholder="you@example.com" autocomplete="email">
-    <div id="reviewer-code-row" style="display:none;margin-top:8px;">
-      <input type="text" id="reviewer-code" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off" style="width:100%;padding:14px 16px;border:1px solid rgba(255,255,255,.3);border-radius:var(--radius);font-size:16px;font-family:inherit;background:rgba(255,255,255,.12);color:#fff;">
-    </div>
-    <button class="btn btn-green" id="magic-btn" onclick="sendMagicLink()">Send magic link</button>
-    <div class="magic-link-sent" id="magic-sent" style="display:none;">Check your inbox for the sign-in link.</div>
-  </div>
-  <p style="color:rgba(255,255,255,.5);font-size:13px;margin-top:20px;max-width:300px;">No passwords. We'll never email you unless it's about your event.</p>
+  <main class="auth" id="auth-main">
+    <section class="hero">
+      <span class="ob-mark bare" aria-label="Out of Bounds"></span>
+      <h1 id="auth-heading">Sign in</h1>
+      <p>Set up and run your golf day.</p>
+    </section>
+    <section class="panel">
+      <div id="auth-buttons">
+        <button class="btn btn-secondary btn-block" onclick="signInGoogle()"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.7h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6z"/></svg> Continue with Google</button>
+        <button class="btn btn-secondary btn-block" onclick="signInApple()"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.5 2-3.7 2.1-3.8a4.5 4.5 0 0 0-3.5-1.9c-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8A4.7 4.7 0 0 0 4.2 9.4c-1.7 2.9-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8 2.1-1.2 2.9-2.4a10 10 0 0 0 1.3-2.7 4.3 4.3 0 0 1-2.6-3.8zM14 5.3A4.2 4.2 0 0 0 15 2a4.3 4.3 0 0 0-2.8 1.5 4 4 0 0 0-1 3 3.6 3.6 0 0 0 2.8-1.2z"/></svg> Continue with Apple</button>
+        <div class="or" style="display:flex;align-items:center;gap:var(--s-3);color:var(--ink-muted);font-size:var(--fs-small);margin:var(--s-1) 0;"><span style="flex:1;border-top:1px solid var(--line);"></span>or<span style="flex:1;border-top:1px solid var(--line);"></span></div>
+        <button class="btn btn-primary btn-block" onclick="showEmailSignIn()"><svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Continue with email</button>
+      </div>
+      <div id="magic-link-form" style="display:none;">
+        <div class="field" style="margin:0 0 var(--s-4);">
+          <label for="magic-email">Email</label>
+          <input id="magic-email" class="input" type="email" placeholder="you@example.com" autocomplete="email" inputmode="email">
+        </div>
+        <div id="reviewer-code-row" style="display:none;">
+          <div class="field" style="margin:0 0 var(--s-4);">
+            <label for="reviewer-code">Code</label>
+            <input id="reviewer-code" class="input" type="text" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="off">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="magic-btn" onclick="sendMagicLink()">Send me a code</button>
+        <p id="signin-error" style="display:none;text-align:center;color:var(--danger-ink);font-size:var(--fs-small);margin-top:var(--s-3);line-height:1.5;"></p>
+        <div id="magic-sent" style="display:none;margin-top:var(--s-3);">
+          <p style="text-align:center;color:var(--ink-muted);font-size:var(--fs-small);margin-bottom:var(--s-3);">We sent a 6-digit code to your email. Enter it below.</p>
+          <div class="field" style="margin:0 0 var(--s-4);">
+            <label for="otp-code">Code</label>
+            <input id="otp-code" class="input" type="text" placeholder="6-digit code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" style="text-align:center;font-size:var(--fs-h2);letter-spacing:0.15em;font-family:var(--font-display);font-weight:700;">
+          </div>
+          <button class="btn btn-primary btn-block" id="otp-verify-btn" onclick="verifyOtp()">Sign in</button>
+          <p style="text-align:center;margin-top:var(--s-3);"><button class="btn-link" onclick="sendMagicLink()" style="font-size:var(--fs-small);color:var(--ink-muted);background:none;border:none;cursor:pointer;text-decoration:underline;">Resend code</button></p>
+        </div>
+      </div>
+      <p class="fine" style="text-align:center;color:var(--ink-muted);font-size:var(--fs-small);margin-top:var(--s-3);">No passwords. We only email you about your events.</p>
+    </section>
+  </main>
 </div>
 
 <!-- Onboarding -->
@@ -554,27 +605,16 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Dashboard -->
 <div id="screen-dashboard" class="screen">
-  <div class="top-bar">
-    <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
-    <button class="user-pill" id="user-pill" onclick="signOut()">Sign out</button>
-  </div>
-  <div class="container">
-    <div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.6),rgba(16,52,78,.45)),url(/img/photos/course-wide.jpg) center/cover;color:#fff;padding:28px 24px;margin-bottom:20px;">
-      <h2 id="dash-greeting" style="color:#fff;font-size:24px;margin-bottom:4px;">Your events</h2>
-      <p style="color:rgba(255,255,255,.7);font-size:14px;margin:0;">Set up, score, and share.</p>
-    </div>
-    <div class="dash-header" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-outline btn-sm" onclick="goToPeople()" style="padding:10px 12px;font-size:13px;">People</button>
-        <button class="btn btn-outline btn-sm" onclick="goToSettings()" style="padding:10px 12px;font-size:13px;">Settings</button>
-        <button class="btn btn-green btn-sm" onclick="newEvent()">+ New event</button>
+  <main class="page">
+    <div class="greet" id="dash-greet">
+      <div>
+        <h1 id="dash-greeting">Your events</h1>
+        <div class="sub">Set up, score, and share.</div>
       </div>
+      <a href="#" class="btn btn-primary" onclick="newEvent();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New event</a>
     </div>
-    <div id="event-list" class="event-list"></div>
-    <div style="text-align:center;padding:24px 0 8px;">
-      <button onclick="openHelp()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;">Help</button>
-    </div>
-  </div>
+    <div id="event-list"></div>
+  </main>
 </div>
 
 <!-- People -->
@@ -869,224 +909,219 @@ a { color: inherit; text-decoration: none; }
 
 <!-- Event detail -->
 <div id="screen-event" class="screen">
-  <div class="top-bar">
-    <img src="/img/icon-white.png" alt="OOB" class="logo" style="height:28px;">
-    <button class="user-pill" id="user-pill-ev" onclick="signOut()">Sign out</button>
-  </div>
   <div class="container">
-    <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
-    <h2 id="ev-title" style="font-size:20px;margin-bottom:16px;">New event</h2>
+    <a class="crumb" id="ev-crumb" onclick="goToDashboard();return false" href="#"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
+    <div class="page-head" id="ev-page-head" style="margin-top:var(--s-2)"><h1 id="ev-title">New event</h1><div class="sub" id="ev-head-sub"></div></div>
 
-    <div class="step-strip" id="ev-tabs">
-      <button class="step-btn active" data-tab="details" onclick="switchTab(this)">
-        <span class="step-num">1</span>
-        <span class="step-label">Details</span>
-        <span class="step-state" id="step-state-details"></span>
-      </button>
-      <button class="step-btn" data-tab="players" onclick="switchTab(this)">
-        <span class="step-num">2</span>
-        <span class="step-label">Players</span>
-        <span class="step-state" id="step-state-players"></span>
-      </button>
-      <button class="step-btn" data-tab="groups" onclick="switchTab(this)">
-        <span class="step-num">3</span>
-        <span class="step-label">Groups</span>
-        <span class="step-state" id="step-state-groups"></span>
-      </button>
-      <button class="step-btn" data-tab="golive" onclick="switchTab(this)">
-        <span class="step-num">4</span>
-        <span class="step-label">Go live</span>
-        <span class="step-state" id="step-state-golive"></span>
-      </button>
+    <div class="steps" role="list" aria-label="Set-up steps" id="ev-tabs">
+      <a class="step on" role="listitem" data-tab="details" onclick="switchTab(this)"><span class="n">1</span><span class="t">Details</span><span class="s" id="step-state-details"></span></a>
+      <a class="step todo" role="listitem" data-tab="players" onclick="switchTab(this)"><span class="n">2</span><span class="t">Players</span><span class="s" id="step-state-players"></span></a>
+      <a class="step todo" role="listitem" data-tab="groups" onclick="switchTab(this)"><span class="n">3</span><span class="t">Groups</span><span class="s" id="step-state-groups"></span></a>
+      <a class="step todo" role="listitem" data-tab="golive" onclick="switchTab(this)"><span class="n">4</span><span class="t">Go live</span><span class="s" id="step-state-golive"></span></a>
     </div>
 
     <!-- DETAILS TAB -->
     <div class="tab-panel active" id="tab-details">
-      <div class="form-row">
-        <label>Event name</label>
-        <input type="text" id="ev-name" class="field-input" placeholder="e.g. Summer Open 2026">
-      </div>
-      <div class="form-row">
-        <label>Date</label>
-        <input type="date" id="ev-date">
-      </div>
-      <!-- Starting mode moved to Groups tab -->
-
-      <!-- Course -->
-      <div class="form-section">
-        <h3>Course</h3>
-        <div class="form-row course-search-wrap">
-          <label>Search courses</label>
-          <input type="text" id="course-search" class="field-input" placeholder="Start typing course name...">
-          <div class="course-results" id="course-results" style="display:none;"></div>
+      <section class="card">
+        <h3>Basics</h3>
+        <div class="sub">What it's called, when, where and how you're scoring.</div>
+        <div class="field">
+          <label for="ev-name">Event name</label>
+          <input type="text" id="ev-name" class="input" placeholder="e.g. Summer Open 2026">
         </div>
-        <div id="course-selected" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">
-            <span id="course-selected-name" style="font-weight:600;"></span>
-            <button class="btn btn-outline btn-sm" onclick="clearCourse()" style="padding:6px 14px;font-size:13px;">Change</button>
+        <div class="field">
+          <label for="ev-date">Date</label>
+          <input type="date" id="ev-date" class="input">
+        </div>
+        <!-- Course -->
+        <div class="field" id="course-field">
+          <label for="course-search">Course</label>
+          <div class="course-search-wrap">
+            <input type="text" id="course-search" class="input" placeholder="Type the course name">
+            <div class="course-results" id="course-results" style="display:none;"></div>
           </div>
-          <div class="form-row">
-            <label>Tee</label>
-            <select id="course-tee-select"></select>
+          <div id="course-selected" style="display:none;">
+            <div class="course-sel"><span id="course-selected-name"></span><a href="#" class="link" onclick="clearCourse();return false">Change</a></div>
+            <div class="field" style="margin-top:var(--s-3)">
+              <label for="course-tee-select">Tees</label>
+              <div class="select-wrap"><select id="course-tee-select" class="select"></select></div>
+              <div class="hint" id="tee-hint"></div>
+            </div>
           </div>
+          <div class="hint">Not in the list? You can add it in a minute.</div>
         </div>
         <div id="course-inline-form" style="display:none;" class="course-inline">
           <h3 style="font-size:15px;margin-bottom:12px;">Add a new course</h3>
-          <div class="form-row"><label>Course name</label><input type="text" id="ci-name" class="field-input"></div>
-          <div class="inline-row">
-            <div class="form-row"><label>Tee colour</label><input type="text" id="ci-tee-colour" class="field-input" placeholder="e.g. White"></div>
-            <div class="form-row"><label>Par total</label><input type="number" id="ci-par" class="field-input" value="72"></div>
+          <div class="field"><label for="ci-name">Course name</label><input type="text" id="ci-name" class="input"></div>
+          <div class="two">
+            <div class="field"><label for="ci-tee-colour">Tee colour</label><input type="text" id="ci-tee-colour" class="input" placeholder="e.g. White"></div>
+            <div class="field"><label for="ci-par">Par total</label><input type="number" id="ci-par" class="input" value="72"></div>
           </div>
-          <div class="inline-row">
-            <div class="form-row"><label>Slope</label><input type="number" id="ci-slope" class="field-input" value="113" step="1"></div>
-            <div class="form-row"><label>Rating</label><input type="number" id="ci-rating" class="field-input" value="72.0" step="0.1"></div>
+          <div class="two">
+            <div class="field"><label for="ci-slope">Slope</label><input type="number" id="ci-slope" class="input" value="113" step="1"></div>
+            <div class="field"><label for="ci-rating">Rating</label><input type="number" id="ci-rating" class="input" value="72.0" step="0.1"></div>
           </div>
           <h3 style="font-size:14px;margin:16px 0 8px;">Holes</h3>
           <div class="holes-grid" id="holes-grid">
             <span class="hg-label">Hole</span><span class="hg-label">Par</span><span class="hg-label">SI</span>
           </div>
           <div style="margin-top:12px;">
-            <button class="btn btn-green btn-sm" onclick="saveCourseInline()">Save course</button>
-            <button class="btn btn-outline btn-sm" onclick="cancelCourseInline()" style="margin-top:8px;">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveCourseInline()">Save course</button>
+            <button class="btn btn-secondary btn-sm" onclick="cancelCourseInline()" style="margin-top:8px;">Cancel</button>
           </div>
         </div>
-      </div>
-
-      <!-- Format -->
-      <div class="form-row">
-        <label>Format</label>
-        <select id="ev-format">
-          <option value="individual_stableford">Individual Stableford</option>
-          <option value="better_ball_pairs">Better ball pairs</option>
-          <option value="better_ball_2from4">Best 2 from 4</option>
-        </select>
-      </div>
-      <div class="disclaimer" id="hcp-disclaimer">
-        Handicaps can't be checked against the WHS. The organiser has the final say.
-      </div>
-
-      <!-- More options (collapsed) -->
-      <details style="margin-top:20px;margin-bottom:16px;">
-        <summary style="font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;padding:10px 0;list-style:none;display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> More options</summary>
-        <div style="padding-top:12px;">
-          <div class="form-row">
-            <label>Handicap allowance</label>
-            <select id="ev-allowance">
+        <!-- Format -->
+        <div class="field" style="margin-bottom:var(--s-2)">
+          <label for="ev-format">Format</label>
+          <div class="select-wrap"><select id="ev-format" class="select">
+            <option value="individual_stableford">Individual Stableford</option>
+            <option value="better_ball_pairs">Better ball pairs</option>
+            <option value="better_ball_2from4">Best 2 from 4</option>
+          </select></div>
+          <div class="hint" id="hcp-disclaimer">We can't check handicaps against the WHS. You have the final say on the day.</div>
+        </div>
+        <!-- More options -->
+        <button class="more-toggle" id="more-opts-toggle" aria-expanded="false" onclick="toggleMoreOpts()"><span>More options</span><span class="r"><span class="txt" id="more-opts-summary"></span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></button>
+        <div id="more-opts-panel" style="display:none;">
+          <div class="two" style="margin-top:var(--s-4)">
+            <div class="field"><label for="ev-allowance">Handicap allowance <span class="tip" data-tip="95% for individual, 85% for pairs is normal" tabindex="0">i</span></label><div class="select-wrap"><select id="ev-allowance" class="select">
               <option value="1.00">100%</option>
               <option value="0.95" selected>95%</option>
               <option value="0.90">90%</option>
               <option value="0.85">85%</option>
               <option value="0.80">80%</option>
-            </select>
+            </select></div></div>
+            <div class="field"><label for="ev-max-hcp">Highest handicap allowed</label><input type="number" id="ev-max-hcp" class="input" inputmode="numeric" value="54" min="0" max="54"></div>
           </div>
-          <div class="inline-row">
-            <div class="form-row">
-              <label>Max handicap</label>
-              <input type="number" id="ev-max-hcp" value="54" min="0" max="54">
-            </div>
-            <div class="form-row">
-              <label>Freeze hole</label>
-              <select id="ev-freeze">
-                <option value="0">Off</option>
-                <option value="6">6</option>
-                <option value="9">9</option>
-                <option value="12" selected>12</option>
-                <option value="15">15</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-section" style="margin-top:12px;">
-            <h3 style="font-size:14px;">Charity (optional)</h3>
-            <div class="form-row"><label>Charity name</label><input type="text" id="ev-charity-name" class="field-input" placeholder="e.g. Macmillan Cancer Support"></div>
-            <div class="form-row"><label>One line</label><input type="text" id="ev-charity-line" class="field-input" placeholder="e.g. Supporting families affected by cancer"></div>
-            <div class="form-row"><label>Donate link</label><input type="text" id="ev-charity-url" class="field-input" placeholder="https://..."></div>
-            <div class="form-row"><label>Charity logo URL</label><input type="text" id="ev-charity-logo" class="field-input" placeholder="https://..."></div>
+          <div class="field" style="margin-bottom:0">
+            <label for="ev-freeze">Hide scores from players after hole</label>
+            <div class="select-wrap"><select id="ev-freeze" class="select">
+              <option value="0">Never hide</option>
+              <option value="6">Hole 6</option>
+              <option value="9">Hole 9</option>
+              <option value="12" selected>Hole 12</option>
+              <option value="15">Hole 15</option>
+            </select></div>
+            <div class="hint">Keeps the finish a surprise. You always see everything.</div>
           </div>
         </div>
-      </details>
+      </section>
 
       <!-- Prizes card -->
-      <div id="details-prizes-card" style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:14px;font-weight:600;" id="details-prizes-label">Prizes: none yet</span>
-          <button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="switchTab(document.querySelector('.step-btn[data-tab=&quot;golive&quot;]'));setTimeout(function(){loadPrizes()},100)">Add prizes</button>
-        </div>
-      </div>
+      <section class="card" id="details-prizes-card">
+        <div class="row between"><div><h3>Prizes</h3><div class="sub" style="margin:0" id="details-prizes-label">None yet. Optional, add any time.</div></div><a href="#" class="btn btn-quiet" onclick="openPrizesSheet();return false" id="prizes-edit-btn">Edit</a></div>
+      </section>
 
-      <button class="btn btn-green" onclick="saveEventDetails()" id="save-details-btn">Save details</button>
+      <!-- Charity card -->
+      <section class="card" id="details-charity-card">
+        <div class="row between"><div><h3>Charity <span class="muted" style="font-weight:400">(optional)</span></h3><div class="sub" style="margin:0" id="details-charity-label">None yet. Add a name, a line and a donation link.</div></div><a href="#" class="btn btn-quiet" id="charity-edit-btn" onclick="openCharityEdit();return false">Add</a></div>
+        <div id="charity-fields" style="display:none;margin-top:var(--s-4);">
+          <div class="field"><label for="ev-charity-name">Charity name</label><input type="text" id="ev-charity-name" class="input" placeholder="e.g. Macmillan Cancer Support"></div>
+          <div class="field"><label for="ev-charity-line">One line</label><input type="text" id="ev-charity-line" class="input" placeholder="e.g. Supporting families affected by cancer"></div>
+          <div class="field"><label for="ev-charity-url">Donate link</label><input type="text" id="ev-charity-url" class="input" placeholder="https://..."></div>
+          <div class="field"><label for="ev-charity-logo">Charity logo URL</label><input type="text" id="ev-charity-logo" class="input" placeholder="https://..."></div>
+        </div>
+      </section>
+
+      <!-- Sticky action -->
+      <div class="sticky-action"><button class="btn btn-primary btn-lg btn-block" onclick="saveEventDetails()" id="save-details-btn">Save and add players</button></div>
     </div>
 
     <!-- PLAYERS TAB -->
     <div class="tab-panel" id="tab-players">
-      <div id="players-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
-        <p style="font-size:15px;margin-bottom:12px;">No players yet. Add them one at a time, paste a list from WhatsApp, or upload a spreadsheet.</p>
+      <!-- Banner: shown when arriving from Details save -->
+      <div class="banner info" id="players-saved-banner" style="display:none;margin-bottom:var(--s-4)"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div id="players-saved-banner-text"></div></div>
+
+      <!-- Empty state -->
+      <div class="empty quiet" id="players-empty-state" style="display:none;">
+        <p>No players yet. Paste a list from WhatsApp or add them one at a time.</p>
       </div>
-      <div class="player-actions">
-        <button class="btn btn-green btn-sm" onclick="showAddPlayersSheet()">Add players</button>
-        <a href="#" onclick="addMeAsPlayer();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;margin-left:8px;">Add me</a>
+
+      <!-- Button row -->
+      <div class="btn-row" style="margin-bottom:var(--s-5)">
+        <button class="btn btn-primary" onclick="showAddPlayersSheet()"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add players</button>
+        <button class="btn btn-secondary" onclick="addMeAsPlayer()">Add me as a player</button>
       </div>
 
       <!-- Inline add player -->
-      <div id="add-player-form" style="display:none;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px;">
+      <div id="add-player-form" style="display:none;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;">
         <div class="inline-row">
-          <div class="form-row"><label>First name</label><input type="text" id="ap-first" class="field-input"></div>
-          <div class="form-row"><label>Last name</label><input type="text" id="ap-last" class="field-input"></div>
+          <div class="field"><label>First name</label><input type="text" id="ap-first" class="input"></div>
+          <div class="field"><label>Last name</label><input type="text" id="ap-last" class="input"></div>
         </div>
-        <div class="form-row">
-          <label>Handicap index (optional)</label>
-          <input type="number" id="ap-index" class="field-input" step="0.1" placeholder="e.g. 18.4">
+        <div class="field">
+          <label>Handicap index <span class="opt">(optional)</span></label>
+          <input type="number" id="ap-index" class="input" step="0.1" placeholder="e.g. 18.4">
         </div>
-        <div id="ap-ph-preview" style="font-size:13px;color:var(--muted);margin-bottom:8px;"></div>
+        <div id="ap-ph-preview" style="font-size:var(--fs-small);color:var(--ink-muted);margin-bottom:var(--s-2);"></div>
+        <div class="two">
+          <div class="field"><label>Email <span class="opt">(optional)</span></label><input type="email" id="ap-email" class="input" placeholder="for results" inputmode="email" autocomplete="email"></div>
+          <div class="field"><label>Mobile <span class="opt">(optional)</span></label><input type="tel" id="ap-mobile" class="input" placeholder="for reminders" inputmode="tel"></div>
+        </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-green btn-sm" onclick="addPlayerSubmit()">Add</button>
-          <button class="btn btn-outline btn-sm" onclick="hideAddPlayer()">Cancel</button>
+          <button class="btn btn-primary btn-sm" onclick="addPlayerSubmit()">Add player</button>
+          <button class="btn btn-secondary btn-sm" onclick="hideAddPlayer()">Cancel</button>
         </div>
       </div>
 
-      <div class="player-count" id="player-count"></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Tap a name to edit their details.</p>
-      <div class="player-item" style="border-bottom:2px solid var(--line);font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;">
-        <span class="pi-name">Name</span>
-        <span class="pi-idx">Index</span>
-        <span class="pi-ph">Plays off</span>
-        <span style="width:36px;"></span>
-      </div>
-      <div id="player-list"></div>
+      <!-- Player list card -->
+      <section class="card flush" id="players-card" style="display:none;">
+        <div style="padding:var(--s-4) var(--s-5) 0">
+          <h3 id="player-count"></h3>
+          <div class="hint" style="margin:var(--s-1) 0 0">Tap a name to change their handicap.</div>
+          <div class="hint" id="players-email-count" style="margin:var(--s-1) 0 var(--s-2)"></div>
+          <div id="players-remind-wrap" style="display:none;margin-bottom:var(--s-3)"><a href="#" class="link small" onclick="nudgeInvited();return false" id="players-remind-link"></a></div>
+        </div>
+        <div class="plist" style="padding:0 var(--s-5)">
+          <div class="hd"><span>Name</span><span>Index</span><span>Plays off</span><span></span></div>
+          <div id="player-list"></div>
+        </div>
+      </section>
     </div>
 
     <!-- GROUPS TAB -->
     <div class="tab-panel" id="tab-groups">
       <!-- Starting mode -->
-      <div class="form-row" style="margin-bottom:16px;">
-        <label>Starting mode</label>
-        <div class="radio-group" id="starting-mode-group" style="flex-direction:row;gap:10px;">
-          <label class="radio-opt selected" data-value="tee_times" style="flex:1;">
-            <input type="radio" name="starting-mode" value="tee_times" checked>
-            <span class="radio-dot"></span>
-            <span>Tee times</span>
-          </label>
-          <label class="radio-opt" data-value="shotgun" style="flex:1;">
-            <input type="radio" name="starting-mode" value="shotgun">
-            <span class="radio-dot"></span>
-            <span>Shotgun</span>
-          </label>
+      <section class="card">
+        <div class="field"><label>How does play start?</label>
+          <div class="seg" id="starting-mode-group">
+            <button class="on" data-value="tee_times" onclick="setStartingMode('tee_times',this)">Tee times</button>
+            <button data-value="shotgun" onclick="setStartingMode('shotgun',this)">Shotgun</button>
+          </div>
         </div>
+        <div class="two" id="tee-time-fields" style="margin-bottom:0">
+          <div class="field" style="margin:0"><label for="first-tee-time">First tee time</label><input id="first-tee-time" class="input" type="time" value="09:00" onchange="fillGroupTimes()"></div>
+          <div class="field" style="margin:0"><label for="tee-gap">Gap between groups</label><div class="select-wrap"><select id="tee-gap" class="select" onchange="fillGroupTimes()"><option value="8">8 minutes</option><option value="10" selected>10 minutes</option><option value="12">12 minutes</option></select></div></div>
+        </div>
+        <div class="hint">Fills every group's time in order. You can still change any one of them.</div>
+      </section>
+
+      <div id="unassigned-section" class="unplaced" style="display:none;margin-top:var(--s-3)">
+        <span id="unassigned-info"></span>
+        <button class="btn btn-sm btn-secondary" onclick="placeUnassigned()">Place</button>
       </div>
 
-      <div id="unassigned-section" style="display:none;margin-bottom:16px;background:#FFF8E1;border:1px solid var(--amber);border-radius:var(--radius);padding:12px 16px;">
-        <div style="font-size:14px;font-weight:600;color:#7A5A00;margin-bottom:8px;" id="unassigned-count"></div>
-        <div id="unassigned-players" style="font-size:13px;color:#7A5A00;"></div>
+      <div id="groups-empty-state" class="empty" style="display:none;">
+        <h3>No groups yet</h3>
+        <p id="groups-empty-text"></p>
       </div>
-      <div id="groups-empty-state" style="display:none;text-align:center;padding:24px 16px;color:var(--muted);">
-        <p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your players into fours, then move anyone you like.</p>
+
+      <div id="groups-header" class="row between" style="margin:var(--s-5) 0 var(--s-2);display:none">
+        <h2 class="section-title" id="groups-count-title" style="margin:0"></h2>
+        <span class="small muted">Tap a player to move or swap them.</span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-        <button class="btn btn-green btn-sm" onclick="autoFillGroups()">Auto-fill unassigned</button>
-        <button class="btn btn-outline btn-sm" onclick="addGroupManual()">+ New group</button>
-        <button class="btn btn-outline btn-sm" onclick="startAgainGroups()" style="color:var(--red);border-color:var(--red);">Start again</button>
+
+      <div class="stack" id="groups-list"></div>
+
+      <div class="btn-row" id="groups-actions" style="margin-top:var(--s-5)">
+        <button class="btn btn-secondary" onclick="addGroupManual()"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New group</button>
+        <button class="btn btn-secondary" onclick="autoFillGroups()">Sort players into groups</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Tap a player to move them between groups.</p>
-      <div id="groups-list"></div>
+      <div id="groups-clear-wrap" style="text-align:center;margin-top:var(--s-5);display:none"><button class="link muted" onclick="startAgainGroups()">Clear all groups</button></div>
+
+      <div class="sticky-action" id="groups-sticky">
+        <button class="btn btn-primary btn-lg" onclick="switchTab(document.querySelector('.step[data-tab=&quot;golive&quot;]'))">Next: go live</button>
+      </div>
     </div>
 
     <!-- PRIZES TAB -->
@@ -1102,104 +1137,176 @@ a { color: inherit; text-decoration: none; }
     <!-- GO LIVE TAB -->
     <div class="tab-panel" id="tab-golive">
       <div id="golive-draft">
-        <div class="card review" style="background:linear-gradient(170deg,rgba(16,52,78,.65),rgba(16,52,78,.5)),url(/img/photos/golfer-swing.jpg) center/cover;color:#fff;border:none;">
-          <h2 style="margin-bottom:10px;color:#fff;">Ready to go live?</h2>
-          <p id="golive-summary" style="color:rgba(255,255,255,.85);"></p>
-          <div class="price-row" style="border-color:rgba(255,255,255,.2);">
-            <span id="golive-breakdown" style="color:rgba(255,255,255,.7);"></span>
-            <span id="golive-price" class="big" style="color:#fff;"></span>
+        <section class="card review">
+          <h2>Ready to go live?</h2>
+          <p id="golive-summary" style="margin-top:var(--s-2)"></p>
+          <div class="fee" id="golive-fee">
+            <div class="r" id="golive-fee-base"><span>For the event</span><span class="num"></span></div>
+            <div class="r" id="golive-fee-players"><span></span><span class="num"></span></div>
+            <div class="r total"><span>To pay</span><span class="num" id="golive-total"></span></div>
           </div>
-          <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;font-size:13px;color:rgba(255,255,255,.7);margin-top:14px;">Handicaps can't be checked against the WHS. You have the final say on the day.</div>
-        </div>
-        <div class="step-next">
-          <button class="btn btn-green btn-block" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
-          <p class="quiet" style="text-align:center;margin-top:10px;">You can still edit players and groups after this.</p>
+          <div id="golive-pro-line" style="display:none" class="r"><span class="chip pro" style="margin-top:2px">Pro</span><div id="golive-pro-text"></div></div>
+          <div class="hint" id="golive-disclaimer" style="margin-top:var(--s-3)">We can't check handicaps against the WHS. You have the final say on the day. Adding a player later costs 99p.</div>
+        </section>
+        <section class="card sunken" id="golive-pro-card" style="display:none">
+          <div class="row" style="align-items:flex-start"><span class="chip pro" style="margin-top:2px">Pro</span><div class="small muted" id="golive-pro-note"></div></div>
+        </section>
+        <div id="golive-blocked" class="why" style="display:none;text-align:center;margin-top:var(--s-3)"></div>
+        <div id="golive-native-block" style="display:none" class="banner warn">This event needs a Play pass. Open outofboundsscoring.netlify.app on a browser to pay and go live.</div>
+        <div class="sticky-action">
+          <button class="btn btn-primary btn-lg" onclick="goLiveAndPay()" id="golive-btn">Go live</button>
+          <div class="why">You can still change players and groups after this.</div>
         </div>
       </div>
 
+      <!-- Live control room header -->
+      <section class="livehead on-dark" id="livehead">
+        <div class="in">
+          <div class="top">
+            <a href="#" class="crumb" onclick="goToDashboard();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> Back to events</a>
+            <span class="upd" style="color:var(--dark-ink-muted)" id="live-updated"><i></i>Updated</span>
+          </div>
+          <h1 id="livehead-title"><span class="chip live">Live</span></h1>
+          <div class="meta" id="livehead-meta"></div>
+          <div class="stats" id="livehead-stats"></div>
+        </div>
+      </section>
+
       <!-- Live state -->
       <div id="golive-live" style="display:none;">
-        <div style="text-align:right;margin-bottom:8px;">
-          <a href="#" onclick="showEditEventFromLive();return false;" style="font-size:13px;color:var(--muted);text-decoration:none;">Edit event details</a>
-        </div>
-        <div id="live-paid-info" style="display:none;background:var(--green-light);border:1px solid var(--green);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--green);">
-        </div>
+       <div class="cols">
+        <div>
+          <!-- Groups status -->
+          <section class="card">
+            <div class="row between" style="margin-bottom:var(--s-3)"><h3>Groups <span class="muted" id="live-groups-scoring" style="font-weight:400"></span></h3></div>
+            <div class="lgrid" id="live-groups-list"></div>
+            <div class="key"><span class="ok"><i></i>Scoring</span><span class="warn"><i></i>Nothing for 45 minutes</span><span class="stop"><i></i>Not started after tee time</span></div>
+            <div class="hint">Tap a group to see or fix scores.</div>
+          </section>
 
-        <!-- Score my round — prominent when organiser is a player -->
-        <div id="live-score-my-round" style="display:none;margin-bottom:16px;">
-          <div class="card" style="background:linear-gradient(135deg, #f0faf3 0%, #e8f5e9 100%);border:1.5px solid var(--green);text-align:center;padding:24px;">
-            <h3 style="font-size:17px;margin-bottom:6px;">You're playing</h3>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Tap to open your scorecard. You can switch back here any time.</p>
-            <a id="score-my-round-link" href="#" class="btn btn-green" style="text-decoration:none;font-size:16px;padding:14px 32px;">Score my round</a>
-          </div>
+          <!-- Leaderboard -->
+          <section class="card">
+            <div class="row between" style="margin-bottom:var(--s-2)"><h3>Leaderboard</h3><span class="upd" id="live-upd"><i></i>Every 30 seconds</span></div>
+            <div id="live-leaderboard"><p class="sub">Nobody has scored yet. This updates every 30 seconds.</p></div>
+          </section>
         </div>
+        <div>
+          <!-- Score my round -->
+          <section class="card" id="live-score-my-round" style="display:none">
+            <div class="playing"><span class="avatar" id="live-my-avatar"></span><div class="grow"><h3 id="live-my-playing"></h3><div class="sub" style="margin:0">Your scorecard is a tap away. You can come back here any time.</div></div></div>
+            <a id="score-my-round-link" href="#" class="btn btn-secondary btn-block" style="margin-top:var(--s-3)">Open my scorecard</a>
+          </section>
 
-        <!-- Leaderboard — front and centre -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Leaderboard</h3>
-          <div id="live-leaderboard"><p style="color:var(--muted);font-size:14px;">Scores will appear here as players save them.</p></div>
-        </div>
-
-        <!-- Groups status -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Groups</h3>
-          <div id="live-groups-list"></div>
-        </div>
-
-        <!-- Share with players -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:4px;">Share with your players</h3>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Scan this or tap it to start scoring.</p>
-          <div class="qr-wrap" id="invite-qr-wrap" onclick="openInviteLink()" style="cursor:pointer;"></div>
-          <div class="invite-url" id="invite-url" onclick="openInviteLink()" style="cursor:pointer;"></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-sm" onclick="shareWhatsApp()" style="background:#25D366;color:#fff;border:none;flex:1;min-width:140px;">WhatsApp</button>
-            <button class="btn btn-outline btn-sm" onclick="copyInviteLink()" style="flex:1;min-width:100px;">Copy link</button>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="copyAllPlayerLinks()" style="margin-top:8px;width:100%;">Copy all individual links</button>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button class="btn btn-outline btn-sm" onclick="downloadQRPoster()" style="flex:1;font-size:12px;">QR poster (A4)</button>
-            <button class="btn btn-outline btn-sm" onclick="copyEmbedSnippet()" style="flex:1;font-size:12px;">Embed snippet</button>
-          </div>
-        </div>
-
-        <!-- Big screen -->
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:8px;">Big screen</h3>
-          <div class="invite-url" id="board-url"></div>
-          <button class="btn btn-outline btn-sm" onclick="copyBoardLink()" style="margin-bottom:8px;">Copy board link</button>
-          <p style="font-size:12px;color:var(--muted);line-height:1.6;">
-            Open this link on the telly's browser. The board keeps the screen awake automatically.
-          </p>
-        </div>
-
-        <!-- Finish -->
-        <div class="card" style="margin-top:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Finish the event</h3>
-          <button class="btn btn-green btn-block" onclick="finishEvent(18)" style="margin-bottom:8px;">Finish and publish results</button>
-          <button onclick="showFinishOptions()" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--muted);cursor:pointer;text-decoration:underline;display:block;text-align:center;width:100%;">Something went wrong?</button>
-          <div id="finish-options" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-              <button class="btn btn-outline btn-sm" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="flex:1;">Count holes 1 to</button>
-              <input type="number" id="finish-hole-n" value="14" min="1" max="17" style="width:56px;padding:8px;border:1.5px solid var(--line);border-radius:8px;font-size:16px;text-align:center;font-family:inherit;">
+          <!-- Big screen -->
+          <section class="card">
+            <h3>Big screen</h3>
+            <div class="sub">Plug a laptop or Fire Stick into the telly and open this link. It stays awake and updates itself.</div>
+            <div class="remote">
+              <a id="board-open-link" href="#" target="_blank" class="btn btn-primary"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Open big screen</a>
+              <button class="btn btn-secondary" onclick="copyBoardLink()"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> Copy link for the telly</button>
             </div>
-            <button class="btn btn-outline btn-sm btn-block" onclick="abandonEvent()" style="color:var(--red);border-color:var(--red);">Abandon — no results</button>
-          </div>
+            <div class="field" style="margin:var(--s-4) 0 0"><label for="board-show">Showing on the telly</label><div class="seg" id="board-show-seg"><button class="on" data-value="leaderboard" onclick="setBoardShow('leaderboard',this)">Leaderboard</button><button data-value="sponsor" onclick="setBoardShow('sponsor',this)">Sponsor</button><button data-value="teetimes" onclick="setBoardShow('teetimes',this)">Tee times</button></div></div>
+          </section>
+
+          <!-- Share with players -->
+          <section class="card">
+            <h3>Share with your players</h3>
+            <div class="sub">Players scan or tap, find their name, and score. One phone per group is enough.</div>
+            <div class="share">
+              <div class="qr" id="invite-qr-wrap" aria-label="QR code for the scoring link"></div>
+              <div class="lnk" id="invite-url"></div>
+              <div class="btn-row">
+                <button class="btn btn-whatsapp" onclick="shareWhatsApp()"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 12 12 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg> Send on WhatsApp</button>
+                <button class="btn btn-secondary" onclick="copyInviteLink()">Copy link</button>
+              </div>
+              <div class="row" style="justify-content:center;gap:var(--s-4)"><button class="link muted small" onclick="downloadQRPoster()">Print a QR poster</button><button class="link muted small" onclick="copyAllPlayerLinks()">Copy a link for each player</button></div>
+            </div>
+          </section>
+
+          <!-- Prizes -->
+          <section class="card">
+            <div class="row between"><div><h3>Prizes</h3><div class="sub" id="live-prizes-sub" style="margin:0"></div></div><button class="btn btn-quiet" onclick="editLivePrizes()">Edit</button></div>
+          </section>
+
+          <!-- Finish -->
+          <section class="card">
+            <h3>Finish the event</h3>
+            <div class="sub">Counts every card in. You can still fix a score afterwards.</div>
+            <button class="btn btn-primary btn-block btn-lg" onclick="finishEvent(18)">Finish and publish results</button>
+            <div style="text-align:center;margin-top:var(--s-4)"><button class="link muted" onclick="showFinishOptions()">Rain stopped play?</button></div>
+            <div id="finish-options" style="display:none;margin-top:var(--s-3);padding-top:var(--s-3);border-top:1px solid var(--line);">
+              <div class="field"><label>Finish early and count holes 1 to</label>
+                <div class="select-wrap"><select id="finish-hole-n" class="select"><option value="9">9</option><option value="12">12</option><option value="15" selected>15</option></select></div>
+              </div>
+              <button class="btn btn-secondary btn-block" onclick="finishEvent(parseInt($('finish-hole-n').value))" style="margin-bottom:var(--s-2)">Finish early</button>
+              <button class="btn btn-danger-quiet btn-block btn-sm" onclick="abandonEvent()">Abandon, no results</button>
+            </div>
+            <div class="hint" id="live-paid-info" style="text-align:center;display:none"></div>
+          </section>
+
+          <div style="text-align:center;margin-top:var(--s-4)"><button class="link muted" onclick="showEditEventFromLive()">Edit set-up</button></div>
         </div>
+       </div>
       </div>
 
       <!-- Finished state -->
       <div id="golive-finished" style="display:none;">
-        <div class="card" style="margin-bottom:16px;">
-          <h3 style="font-size:16px;margin-bottom:12px;">Results</h3>
-          <div id="finished-leaderboard"></div>
+        <!-- Winner hero -->
+        <section class="winner" id="finished-winner" style="display:none">
+          <div class="micro">Final results</div>
+          <h2 id="finished-winner-name"></h2>
+          <div class="pts" id="finished-winner-pts"></div>
+          <div class="sub" id="finished-winner-sub"></div>
+          <div class="podium" id="finished-podium"></div>
+        </section>
+
+        <div class="banner info" id="finished-email-banner" style="margin-bottom:var(--s-4);display:none"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div id="finished-email-banner-text"></div></div>
+
+        <div class="cols" style="margin-top:var(--s-3)">
+        <div>
+          <!-- Share results -->
+          <section class="card">
+            <h3>Share results</h3>
+            <div class="sub">The link opens the full leaderboard. Anyone with it can see it.</div>
+            <div class="wa-preview" id="finished-wa-preview" style="margin-bottom:var(--s-4)"></div>
+            <div class="share side">
+              <div class="qr" id="finished-qr-wrap" aria-label="QR code for the results link"></div>
+              <div>
+                <div class="lnk" id="finished-results-url" style="margin-bottom:var(--s-2)"></div>
+                <div class="btn-row">
+                  <button class="btn btn-whatsapp" onclick="shareFinishedWhatsApp()"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 12 12 0 0 0 4.6 4c1.7.7 2.3.8 3.2.7a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg> Share on WhatsApp</button>
+                  <button class="btn btn-secondary" onclick="copyResultsLink()"><svg class="ico" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg> Copy results link</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Prizes -->
+          <section class="card" id="finished-prizes-card">
+            <h3>Prizes</h3>
+            <div class="sub">Ready to read out. Tap a name to change it.</div>
+            <div id="finished-prizes-list"></div>
+          </section>
         </div>
-        <div id="results-email-note" style="font-size:13px;color:var(--muted);margin:12px 0;"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="btn btn-green btn-sm" onclick="sendResultsEmail()" id="btn-results-email">Email results</button>
-          <button class="btn btn-outline btn-sm" onclick="cloneEvent()">Run it again</button>
-          <button class="btn btn-outline btn-sm" id="btn-csv-export" disabled style="opacity:.45;">Export CSV <span class="chip">Pro</span></button>
-          <button class="btn btn-outline btn-sm" id="btn-archive" onclick="archiveEvent()">Archive</button>
+        <div>
+          <!-- Final leaderboard -->
+          <section class="card">
+            <div class="row between" style="margin-bottom:var(--s-2)"><h3>Final leaderboard</h3><span class="small muted" id="finished-lb-count"></span></div>
+            <div id="finished-leaderboard"></div>
+          </section>
+
+          <!-- What next -->
+          <section class="card">
+            <h3>What next</h3>
+            <div id="results-email-note" class="sub" style="margin-bottom:var(--s-3)"></div>
+            <div class="stack" style="margin-top:var(--s-3)">
+              <button class="btn btn-secondary btn-block" onclick="sendResultsEmail()" id="btn-results-email"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Email results again</button>
+              <button class="btn btn-secondary btn-block" onclick="cloneEvent()"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg> Run it again</button>
+              <button class="btn btn-secondary btn-block" id="btn-csv-export" disabled style="opacity:.45;">Export CSV <span class="chip pro">Pro</span></button>
+            </div>
+            <div style="text-align:center;margin-top:var(--s-4)"><button class="link muted" id="btn-archive" onclick="archiveEvent()">Move to archive</button></div>
+          </section>
+        </div>
         </div>
       </div>
     </div>
@@ -1323,12 +1430,17 @@ Bob Wilson"></textarea>
   };
 
   // ── Helpers ───────────────────────────────────────────────────
+  function pluralise(n, singular, plural) { return n + ' ' + (n === 1 ? singular : (plural || singular + 's')); }
   function $(id) { return document.getElementById(id); }
   function show(id) { $(id).classList.add('active'); }
   function hide(id) { $(id).classList.remove('active'); }
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     $(id).classList.add('active');
+    // Hide shell chrome on auth/loading screens
+    var hideShell = (id === 'screen-signin' || id === 'screen-loading' || id === 'screen-onboard');
+    if ($('oob-appbar')) $('oob-appbar').style.display = hideShell ? 'none' : '';
+    if ($('oob-tabbar')) $('oob-tabbar').style.display = hideShell ? 'none' : '';
   }
 
   function toast(msg) {
@@ -1339,6 +1451,10 @@ Bob Wilson"></textarea>
   }
 
   function api(fn, opts) {
+    opts = opts || {};
+    if (state.authToken && !opts.token) {
+      opts.token = state.authToken;
+    }
     return window.OOB.api(fn, opts);
   }
 
@@ -1407,6 +1523,7 @@ Bob Wilson"></textarea>
       }
       if (res.organiser) {
         state.organiser = res.organiser;
+        setupAppbar(res.organiser, res.organiser.name || '');
         if (!handleHashRoutes()) goToDashboard();
       } else {
         showScreen('screen-onboard');
@@ -1414,7 +1531,7 @@ Bob Wilson"></textarea>
     } catch (err) {
       console.error('Check organiser error:', err);
       showScreen('screen-signin');
-      console.error('Sign-in:', err.message); toast('That didn’t work. Try again.');
+      console.error('Sign-in:', err.message); toast('That didn\u2019t work. Try again.');
     }
   }
 
@@ -1423,7 +1540,7 @@ Bob Wilson"></textarea>
       provider: 'google',
       options: { redirectTo: window.location.origin + '/o/' }
     });
-    if (error) { console.error('Google sign-in:', error.message); toast('That didn’t work. Try again.'); };
+    if (error) { console.error('Google sign-in:', error.message); toast('That didn\u2019t work. Try again.'); };
   };
 
   window.signInApple = async function() {
@@ -1431,7 +1548,7 @@ Bob Wilson"></textarea>
       provider: 'apple',
       options: { redirectTo: window.location.origin + '/o/' }
     });
-    if (error) { console.error('Apple sign-in:', error.message); toast('That didn’t work. Try again.'); };
+    if (error) { console.error('Apple sign-in:', error.message); toast('That didn\u2019t work. Try again.'); };
   };
 
   window.showEmailSignIn = function() {
@@ -1444,13 +1561,14 @@ Bob Wilson"></textarea>
   $('magic-email').addEventListener('input', function() {
     var isReviewer = this.value.trim().toLowerCase() === 'review@outofboundsevents.com';
     $('reviewer-code-row').style.display = isReviewer ? 'block' : 'none';
-    $('magic-btn').textContent = isReviewer ? 'Sign in' : 'Send magic link';
+    $('magic-btn').textContent = isReviewer ? 'Sign in' : 'Send me a code';
     if (isReviewer) $('reviewer-code').focus();
   });
 
   window.sendMagicLink = async function() {
     var email = $('magic-email').value.trim();
-    if (!email) { toast('Enter your email'); return; }
+    $('signin-error').style.display = 'none';
+    if (!email) { $('signin-error').textContent = 'Enter your email address.'; $('signin-error').style.display = ''; return; }
 
     // Reviewer sign-in: code-based, no magic link
     if (email.toLowerCase() === 'review@outofboundsevents.com') {
@@ -1471,21 +1589,64 @@ Bob Wilson"></textarea>
           refresh_token: data.refresh_token
         });
       } catch (err) {
-        console.error('Code error:', err.message); toast('That didn’t work. Try again.');
+        console.error('Code error:', err.message);
+        var errEl = $('signin-error');
+        if (err.message && err.message.indexOf('code') !== -1) {
+          errEl.textContent = 'That code didn\u2019t work. Check it and try again.';
+        } else {
+          errEl.textContent = 'We couldn\u2019t sign you in. Try again in a moment.';
+        }
+        errEl.style.display = '';
         $('magic-btn').disabled = false;
         $('magic-btn').textContent = 'Sign in';
       }
       return;
     }
 
-    var { error } = await sb.auth.signInWithOtp({
-      email: email,
-      options: { emailRedirectTo: window.location.origin + '/o/' }
-    });
-    if (error) {
-      console.error(error.message); toast('That didn’t work. Try again.');
-    } else {
+    $('magic-btn').disabled = true;
+    $('magic-btn').textContent = 'Sending\u2026';
+    try {
+      var res = await fetch('/.netlify/functions/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await res.json();
+      if (!data.ok) throw new Error('Could not send code');
+      state._otpEmail = email;
       $('magic-sent').style.display = 'block';
+      $('magic-btn').style.display = 'none';
+      $('magic-email').readOnly = true;
+      $('otp-code').focus();
+    } catch (err) {
+      console.error(err.message);
+      var errEl = $('signin-error');
+      errEl.textContent = 'We couldn\u2019t send the code. Try again in a moment.';
+      errEl.style.display = '';
+    }
+    $('magic-btn').disabled = false;
+    $('magic-btn').textContent = 'Send me a code';
+  };
+
+  window.verifyOtp = async function() {
+    var code = $('otp-code').value.trim();
+    if (!code || code.length !== 6) { $('signin-error').textContent = 'Enter the 6-digit code from your email.'; $('signin-error').style.display = ''; return; }
+    $('otp-verify-btn').disabled = true;
+    $('otp-verify-btn').textContent = 'Signing in\u2026';
+    $('signin-error').style.display = 'none';
+    try {
+      var { data, error } = await sb.auth.verifyOtp({
+        email: state._otpEmail,
+        token: code,
+        type: 'email'
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('OTP verify error:', err.message);
+      $('signin-error').textContent = 'That code didn\u2019t work. Check it and try again.';
+      $('signin-error').style.display = '';
+      $('otp-verify-btn').disabled = false;
+      $('otp-verify-btn').textContent = 'Sign in';
     }
   };
 
@@ -1498,6 +1659,10 @@ Bob Wilson"></textarea>
     $('auth-buttons').style.display = 'flex';
     $('magic-link-form').style.display = 'none';
     $('magic-sent').style.display = 'none';
+    $('magic-btn').style.display = '';
+    $('magic-email').readOnly = false;
+    $('magic-email').value = '';
+    $('otp-code').value = '';
   };
 
   // ── Delete account ─────────────────────────────────────────────
@@ -1565,7 +1730,7 @@ Bob Wilson"></textarea>
       state.organiser = res.organiser;
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('ob-go').disabled = false;
       $('ob-go').textContent = "Let's go";
     }
@@ -1574,19 +1739,15 @@ Bob Wilson"></textarea>
   // ── Dashboard ─────────────────────────────────────────────────
   function applyBranding() {
     var org = state.organiser || {};
-    if (org.primary_colour) {
-      var s = document.documentElement.style;
-      s.setProperty('--brand', org.primary_colour);
-      s.setProperty('--green', org.primary_colour);
-      s.setProperty('--green-2', org.primary_colour);
-      if (org.text_on_primary) s.setProperty('--text-on-brand', org.text_on_primary);
-      if (org.accent_colour) s.setProperty('--accent', org.accent_colour);
-    }
+    // Org colour paints the appbar and old top-bars only. Never override --brand.
+    // --brand stays as the default navy for chips, steps, pills, and focus rings.
     document.querySelectorAll('.top-bar').forEach(function (el) {
       if (org.primary_colour) {
+        var tbInk = OOBContrast.textColour(org.primary_colour);
+        var tbColour = tbInk.colour === '#000000' ? '#1B2430' : '#FFFFFF';
         el.style.background = org.primary_colour;
-        el.style.color = org.text_on_primary || '#FFFFFF';
-        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = org.text_on_primary || '#FFFFFF'; });
+        el.style.color = tbColour;
+        el.querySelectorAll('.user-pill').forEach(function (p) { p.style.color = tbColour; });
       } else {
         el.style.background = '';
         el.style.color = '';
@@ -1610,20 +1771,71 @@ Bob Wilson"></textarea>
     });
   }
 
-  window.goToDashboard = async function() {
-    // Update user pills with organiser name
-    var name = state.organiser ? (state.organiser.display_name || state.organiser.name) : 'Sign out';
-    var firstName = name.split(' ')[0];
-    var pill1 = $('user-pill');
-    var pill2 = $('user-pill-ev');
-    if (pill1) pill1.textContent = name + ' \u00B7 Sign out';
-    if (pill2) pill2.textContent = name + ' \u00B7 Sign out';
+  function setupAppbar(org, fullName) {
+    var brandName = org.display_name || org.name || '';
+    var markEl = $('appbar-mark');
+    var nameEl = $('appbar-name');
+    // Never show the OB mark. Logo if set, else name as text.
+    markEl.style.display = 'none';
+    if (org.logo_url) {
+      nameEl.innerHTML = '<img src="' + esc(org.logo_url) + '" alt="' + esc(brandName) + '" style="height:28px;max-width:140px;object-fit:contain;display:block;">';
+    } else {
+      nameEl.textContent = brandName;
+    }
+    // Org colour paints the appbar only, never --brand (which stays navy for chips/steps/pills)
+    // Compute --brand-ink from contrast.js: white or ink, whichever clears 4.5:1
+    var appbarEl = $('oob-appbar');
+    if (org.primary_colour) {
+      var ink = OOBContrast.textColour(org.primary_colour);
+      var isDark = ink.colour === '#FFFFFF';
+      var brandInk = isDark ? '#FFFFFF' : '#1B2430';
+      appbarEl.style.background = org.primary_colour;
+      appbarEl.style.setProperty('--brand-ink', brandInk);
+      appbarEl.style.setProperty('--brand-overlay', isDark ? 'rgba(255,255,255,.14)' : 'rgba(27,36,48,.10)');
+      appbarEl.style.setProperty('--brand-border', isDark ? 'rgba(255,255,255,.35)' : 'rgba(27,36,48,.25)');
+    } else {
+      appbarEl.style.background = '';
+      appbarEl.style.removeProperty('--brand-ink');
+      appbarEl.style.removeProperty('--brand-overlay');
+      appbarEl.style.removeProperty('--brand-border');
+    }
+    // Avatar initials from the org name
+    var parts = fullName.split(' ').filter(Boolean);
+    var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : (parts[0] || '?')[0].toUpperCase();
+    $('appbar-avatar').textContent = initials;
+    $('appbar-who').textContent = fullName;
+    // Show the shell
+    $('oob-appbar').style.display = '';
+    $('oob-tabbar').style.display = '';
+  }
 
-    // Greeting
+  window.goToDashboard = async function() {
+    var org = state.organiser || {};
+    var fullName = org.name || '';
+    var firstName = fullName.split(' ')[0];
+
+    // Show shell chrome
+    $('oob-appbar').style.display = '';
+    $('oob-tabbar').style.display = '';
+
+    // Highlight Events tab in appbar and tabbar
+    $('oob-appbar').querySelectorAll('.nav a').forEach(function(a) { a.classList.remove('on'); });
+    $('oob-appbar').querySelector('.nav a').classList.add('on');
+    $('oob-tabbar').querySelectorAll('a').forEach(function(a) { a.classList.remove('on'); });
+    $('tab-events').classList.add('on');
+
+    // Greeting — use first_name from the organiser profile if set
     var hour = new Date().getHours();
     var greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    var firstName = org.first_name || '';
     var greetEl = $('dash-greeting');
-    if (greetEl) greetEl.textContent = greeting + ', ' + firstName;
+    if (greetEl) greetEl.textContent = firstName ? (greeting + ', ' + esc(firstName)) : greeting;
+
+    setupAppbar(org, fullName);
+
+    // Update old user pills for other screens
+    var pill2 = $('user-pill-ev');
+    if (pill2) pill2.textContent = (org.display_name || org.name || 'Sign out') + ' \u00B7 Sign out';
 
     showScreen('screen-dashboard');
     window.location.hash = 'dashboard';
@@ -1655,7 +1867,7 @@ Bob Wilson"></textarea>
       state.events = res.events || [];
       renderEventList();
     } catch (err) {
-      console.error('Events load:', err.message); toast('Couldn’t load your events. Try again.');
+      console.error('Events load:', err.message); toast('Couldn\u2019t load your events. Try again.');
     }
   }
 
@@ -1663,12 +1875,15 @@ Bob Wilson"></textarea>
     var el = $('event-list');
     var showArchived = state.showArchived || false;
 
+    // Empty state
     if (state.events.length === 0) {
-      el.innerHTML = '<div style="border-radius:var(--radius);overflow:hidden;background:linear-gradient(170deg,rgba(16,52,78,.85),rgba(16,52,78,.7)),url(/img/photos/bunker-shot.jpg) center/cover;color:#fff;text-align:center;padding:48px 28px;">' +
-        '<h3 style="font-size:22px;color:#fff;margin-bottom:10px;">Ready to score?</h3>' +
-        '<p style="font-size:15px;color:rgba(255,255,255,.7);max-width:34ch;margin:0 auto 24px;line-height:1.6;">Create your first event, add your players, and go live. Takes about five minutes.</p>' +
-        '<button class="btn btn-green" onclick="newEvent()" style="box-shadow:0 4px 14px rgba(0,0,0,.3);">Create your first event</button>' +
-      '</div>';
+      el.innerHTML =
+        '<div class="empty" style="margin-top:var(--s-8)">' +
+          '<span class="ob-mark size-lg" aria-hidden="true"></span>' +
+          '<h3>Ready to score?</h3>' +
+          '<p>Create your first event, add your players, and go live. About five minutes.</p>' +
+          '<a href="#" class="btn btn-primary btn-lg" onclick="newEvent();return false">Create your first event</a>' +
+        '</div>';
       return;
     }
 
@@ -1679,54 +1894,99 @@ Bob Wilson"></textarea>
 
     function renderCard(ev) {
       var status = ev.archived ? 'finished' : ev.status;
-      var chipClass = status === 'live' ? 'chip live' : status === 'draft' ? 'chip draft' : 'chip';
-      var chipLabel = ev.archived ? 'Archived' : status === 'draft' ? 'Draft' : status === 'live' ? 'Live' : 'Finished';
-      var cardClass = 'event-card ev-' + status;
+      var chipClass, chipLabel;
+      if (ev.archived) { chipClass = 'done'; chipLabel = 'Archived'; }
+      else if (status === 'live') { chipClass = 'live'; chipLabel = 'Live'; }
+      else if (status === 'finished') { chipClass = 'done'; chipLabel = 'Finished'; }
+      else { chipClass = 'draft'; chipLabel = 'Draft'; }
 
-      var action = '';
-      if (status === 'draft') action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Add players</button>';
-      else if (status === 'live') action = '<button class="btn btn-green btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Open</button>';
-      else if (status === 'finished' && !ev.archived) action = '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEvent(\'' + ev.id + '\')">Share results</button>';
+      // Next action text and button
+      var next = '';
+      var btnLabel = '';
+      var btnClass = 'btn-secondary';
+      var btnAction = "event.stopPropagation();openEvent('" + ev.id + "')";
+      var pc = ev.player_count || 0;
+      var gc = ev.group_count || 0;
+      if (status === 'live') {
+        next = ev.live_status || (gc > 0 ? pluralise(gc, 'group') + ' scoring' : 'Scoring in progress');
+        btnLabel = 'Open';
+        btnClass = 'btn-primary';
+      } else if (status === 'draft') {
+        if (pc === 0) {
+          next = 'Add your players.';
+          btnLabel = 'Add players';
+        } else if (gc === 0) {
+          next = pluralise(pc, 'player') + ' added. Next, make your groups.';
+          btnLabel = 'Make groups';
+        } else {
+          next = 'Everything is ready. Go live when you like.';
+          btnLabel = 'Go live';
+          chipClass = 'ready'; chipLabel = 'Ready';
+        }
+        if (!ev.course_id) {
+          next = 'Add your event details and players.';
+          btnLabel = 'Continue setup';
+          chipClass = 'draft'; chipLabel = 'Draft';
+        }
+      } else if (status === 'finished') {
+        next = ev.winner_text || '';
+        btnLabel = 'Share results';
+      }
 
-      return '<div class="' + cardClass + '" onclick="openEvent(\'' + ev.id + '\')">' +
-        '<div class="ev-bar"></div>' +
-        '<div class="ev-body">' +
-          '<div class="ev-name">' + esc(ev.name) + '</div>' +
-          '<div class="ev-meta">' +
-            '<span class="' + chipClass + '">' + chipLabel + '</span>' +
-            (ev.event_date ? '<span>' + formatDate(ev.event_date) + '</span>' : '') +
-          '</div>' +
+      // Meta: date + course + player count — always show what exists
+      var metaParts = [];
+      if (ev.event_date) metaParts.push(formatDate(ev.event_date));
+      if (ev.course_name) metaParts.push(esc(ev.course_name));
+      if (pc > 0) metaParts.push(pluralise(pc, 'player'));
+      var meta = metaParts.join(' \u00B7 ');
+
+      // Fallback status sentence if next is empty
+      if (!next) {
+        if (status === 'draft') next = 'Tap to continue setting up.';
+        else if (status === 'finished') next = 'Event complete.';
+        else if (status === 'live') next = 'Scoring in progress.';
+      }
+
+      return '<article class="event-card ' + esc(status) + '" onclick="openEvent(\'' + ev.id + '\')">' +
+        '<div class="bar"></div>' +
+        '<div class="body">' +
+          '<div class="top"><h3>' + esc(ev.name) + '</h3><span class="chip ' + chipClass + '">' + chipLabel + '</span></div>' +
+          (meta ? '<div class="meta">' + meta + '</div>' : '') +
+          '<div class="next">' + next + '</div>' +
+          '<div class="act"><button class="btn ' + btnClass + '" onclick="' + btnAction + '">' + btnLabel + '</button></div>' +
         '</div>' +
-        (action ? '<div class="ev-act">' + action + '</div>' : '') +
-      '</div>';
+      '</article>';
     }
 
     var html = '';
 
     if (live.length) {
-      html += '<div class="section-title live">Live now</div>';
-      html += live.map(renderCard).join('');
+      html += '<h2 class="section-title live">Live now</h2>';
+      html += '<div class="stack">' + live.map(renderCard).join('') + '</div>';
     }
 
     if (drafts.length) {
-      html += '<div class="section-title">Coming up</div>';
-      html += drafts.map(renderCard).join('');
+      html += '<h2 class="section-title">Coming up</h2>';
+      html += '<div class="stack">' + drafts.map(renderCard).join('') + '</div>';
     }
 
     if (finished.length) {
-      html += '<div class="section-title">Finished</div>';
-      html += finished.map(renderCard).join('');
+      html += '<h2 class="section-title">Finished</h2>';
+      html += '<div class="stack">' + finished.map(renderCard).join('') + '</div>';
     }
 
     if (archived.length) {
-      html += '<div style="margin-top:16px;text-align:center;">';
-      html += '<button class="btn btn-outline btn-sm" style="font-size:12px;" onclick="toggleArchived()">' +
+      html += '<div style="text-align:center;margin-top:var(--s-5);">';
+      html += '<button class="link muted" onclick="toggleArchived()">' +
         (showArchived ? 'Hide' : 'Show') + ' ' + archived.length + ' archived</button>';
       html += '</div>';
       if (showArchived) {
-        html += archived.map(renderCard).join('');
+        html += '<div class="stack">' + archived.map(renderCard).join('') + '</div>';
       }
     }
+
+    // Sticky new-event button (mobile only, hidden at 900px+ by CSS in components)
+    html += '<div class="sticky-action"><a href="#" class="btn btn-primary btn-lg" onclick="newEvent();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New event</a></div>';
 
     el.innerHTML = html;
   }
@@ -1821,7 +2081,7 @@ Bob Wilson"></textarea>
         $('btn-upgrade').textContent = 'Upgrade to Pro';
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('btn-upgrade').disabled = false;
       $('btn-upgrade').textContent = 'Upgrade to Pro';
     }
@@ -1835,7 +2095,7 @@ Bob Wilson"></textarea>
       });
       if (res.url) window.location.href = res.url;
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -1850,7 +2110,7 @@ Bob Wilson"></textarea>
       goToBilling();
       toast('Pro will cancel at the end of your billing period');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -1864,7 +2124,7 @@ Bob Wilson"></textarea>
       goToBilling();
       toast('Pro renewed');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -1884,7 +2144,7 @@ Bob Wilson"></textarea>
       });
       renderAdminList(res.organisers || []);
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -1956,7 +2216,7 @@ Bob Wilson"></textarea>
       toast(orgName + ' deleted');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2072,7 +2332,7 @@ Bob Wilson"></textarea>
 
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2122,7 +2382,7 @@ Bob Wilson"></textarea>
       toast('Free Pro access enabled');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2141,7 +2401,7 @@ Bob Wilson"></textarea>
       toast('Free Pro access removed');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2171,7 +2431,7 @@ Bob Wilson"></textarea>
       toast('Demo rebranded');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2185,7 +2445,7 @@ Bob Wilson"></textarea>
       toast('Demo reset complete');
       goToAdmin();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2226,7 +2486,7 @@ Bob Wilson"></textarea>
         toast('Branding is a Pro feature');
         goToDashboard();
       } else {
-        console.error(err.message); toast('That didn’t work. Try again.');
+        console.error(err.message); toast('That didn\u2019t work. Try again.');
       }
     }
   };
@@ -2353,7 +2613,7 @@ Bob Wilson"></textarea>
       // Reload branding page to show version history
       await goToBranding();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
       $('brand-save-btn').disabled = false;
       $('brand-save-btn').textContent = 'Save branding';
     }
@@ -2391,7 +2651,7 @@ Bob Wilson"></textarea>
       }).join('');
       $('team-list').innerHTML = html || '<div class="empty-state"><h3>No team members</h3><p>Invite organisers and helpers to manage events with you.</p></div>';
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2408,7 +2668,7 @@ Bob Wilson"></textarea>
       toast('Invite sent');
       goToTeam();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2422,7 +2682,7 @@ Bob Wilson"></textarea>
       toast('Removed');
       goToTeam();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2446,7 +2706,7 @@ Bob Wilson"></textarea>
       state.people = res.people || [];
       renderPeopleList();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   }
 
@@ -2509,7 +2769,7 @@ Bob Wilson"></textarea>
       toast(first + ' added');
       await loadPeople();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -2689,7 +2949,7 @@ Bob Wilson"></textarea>
     window.location.hash = 'new-event';
     $('ev-title').textContent = 'New event';
     resetEventForm();
-    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+    switchTab(document.querySelector('.step[data-tab="details"]'));
     updateGoLiveTab();
   };
 
@@ -2713,19 +2973,19 @@ Bob Wilson"></textarea>
       }
     } catch (err) { /* use cached */ }
 
-    $('ev-title').textContent = ev ? ev.name : 'Event';
+    $('ev-title').textContent = ev ? ev.name : 'New event';
     populateEventForm(state.currentEventData);
 
     // Determine which tab set to show based on status
     if (state.currentEventData && state.currentEventData.status === 'live') {
       updateTabsForStatus('live');
-      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step[data-tab="golive"]'));
     } else if (state.currentEventData && state.currentEventData.status === 'finished') {
       updateTabsForStatus('finished');
-      switchTab(document.querySelector('.step-btn[data-tab="golive"]'));
+      switchTab(document.querySelector('.step[data-tab="golive"]'));
     } else {
       updateTabsForStatus('draft');
-      switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+      switchTab(document.querySelector('.step[data-tab="details"]'));
     }
 
     // Load players and groups
@@ -2738,7 +2998,8 @@ Bob Wilson"></textarea>
 
   function updateTabsForStatus(status) {
     var stepStrip = $('ev-tabs');
-    var goliveBtn = document.querySelector('.step-btn[data-tab="golive"]');
+    var goliveStep = document.querySelector('.step[data-tab="golive"]');
+    var goliveLabel = goliveStep ? goliveStep.querySelector('.t') : null;
 
     // Hide step strip for live/finished (they use the live/finished view directly)
     if (status === 'live' || status === 'finished') {
@@ -2746,9 +3007,11 @@ Bob Wilson"></textarea>
     } else {
       if (stepStrip) stepStrip.style.display = '';
     }
-    if (status === 'live') goliveBtn.textContent = 'Live';
-    else if (status === 'finished') goliveBtn.textContent = 'Results';
-    else goliveBtn.textContent = 'Go live';
+    if (goliveLabel) {
+      if (status === 'live') goliveLabel.textContent = 'Live';
+      else if (status === 'finished') goliveLabel.textContent = 'Results';
+      else goliveLabel.textContent = 'Go live';
+    }
   }
 
   function resetEventForm() {
@@ -2759,9 +3022,27 @@ Bob Wilson"></textarea>
     $('ev-max-hcp').value = '54';
     $('ev-freeze').value = '12';
     $('course-search').value = '';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
     $('course-selected').style.display = 'none';
     $('course-inline-form').style.display = 'none';
     $('course-results').style.display = 'none';
+    $('ev-charity-name').value = '';
+    $('ev-charity-line').value = '';
+    $('ev-charity-url').value = '';
+    $('ev-charity-logo').value = '';
+    $('charity-fields').style.display = 'none';
+    $('charity-edit-btn').textContent = 'Add';
+    updateCharityLabel();
+    var teeHint = $('tee-hint');
+    if (teeHint) teeHint.textContent = '';
+    var btn = $('save-details-btn');
+    if (btn) btn.textContent = 'Save and add players';
+    // Close more options panel
+    $('more-opts-panel').style.display = 'none';
+    $('more-opts-toggle').classList.remove('open');
+    $('more-opts-toggle').setAttribute('aria-expanded', 'false');
+    updateMoreOptsSummary();
     selectStartingMode('tee_times');
   }
 
@@ -2775,6 +3056,21 @@ Bob Wilson"></textarea>
     $('ev-freeze').value = ev.leaderboard_freeze_hole != null ? ev.leaderboard_freeze_hole : 12;
     selectStartingMode(ev.starting_mode || 'tee_times');
 
+    // Update save button text for existing events
+    var btn = $('save-details-btn');
+    if (btn && state.currentEvent) btn.textContent = 'Save changes';
+    else if (btn) btn.textContent = 'Save and add players';
+
+    // Populate charity fields
+    if (ev.charity_name) $('ev-charity-name').value = ev.charity_name;
+    if (ev.charity_line) $('ev-charity-line').value = ev.charity_line;
+    if (ev.charity_url) $('ev-charity-url').value = ev.charity_url;
+    if (ev.charity_logo_url) $('ev-charity-logo').value = ev.charity_logo_url;
+    updateCharityLabel();
+
+    // Update more-options summary
+    updateMoreOptsSummary();
+
     // Load course if set
     if (ev.course_id) {
       loadCourseForEvent(ev.course_id, ev.tee_id);
@@ -2785,7 +3081,8 @@ Bob Wilson"></textarea>
     try {
       var res = await api('org-courses', { query: { id: courseId } });
       state.courseData = res;
-      $('course-search').style.display = 'none';
+      var searchWrap = $('course-search').closest('.course-search-wrap');
+      if (searchWrap) searchWrap.style.display = 'none';
       $('course-selected').style.display = 'block';
       $('course-selected-name').textContent = res.course.name;
 
@@ -2793,40 +3090,97 @@ Bob Wilson"></textarea>
       var teeSelect = $('course-tee-select');
       teeSelect.innerHTML = (res.tees || []).map(function(t) {
         var sel = teeId && t.id === teeId ? ' selected' : '';
-        return '<option value="' + t.id + '"' + sel + '>' + t.tee_name +
-          ' (slope ' + t.slope + ', rating ' + t.rating + ', par ' + t.par_total + ')</option>';
+        return '<option value="' + t.id + '"' + sel + '>' + esc(t.tee_name) + ' tees</option>';
       }).join('');
 
-      // Set tee data
+      // Set tee data and update hint
       var selectedTee = teeId ? (res.tees || []).find(function(t) { return t.id === teeId; }) : (res.tees || [])[0];
-      if (selectedTee) state.teeData = selectedTee;
+      if (selectedTee) {
+        state.teeData = selectedTee;
+        updateTeeHint(selectedTee);
+      }
+
+      // Listen for tee changes
+      teeSelect.onchange = function() {
+        var t = (res.tees || []).find(function(t) { return t.id === teeSelect.value; });
+        if (t) { state.teeData = t; updateTeeHint(t); }
+        updateStepStates();
+      };
     } catch (err) {
       console.error('Load course error:', err);
     }
   }
 
+  function updateTeeHint(tee) {
+    var hint = $('tee-hint');
+    if (hint && tee) {
+      hint.textContent = 'Slope ' + tee.slope + ' \u00B7 Rating ' + tee.rating + ' \u00B7 Par ' + tee.par_total;
+    }
+  }
+
   function selectStartingMode(mode) {
     var group = $('starting-mode-group');
-    group.querySelectorAll('.radio-opt').forEach(function(opt) {
-      opt.classList.remove('selected');
-      if (opt.dataset.value === mode) {
-        opt.classList.add('selected');
-        opt.querySelector('input').checked = true;
+    group.querySelectorAll('button').forEach(function(btn) {
+      btn.classList.toggle('on', btn.dataset.value === mode);
+    });
+    var teeFields = $('tee-time-fields');
+    if (teeFields) teeFields.style.display = mode === 'shotgun' ? 'none' : '';
+  }
+
+  window.setStartingMode = function(mode, btn) {
+    selectStartingMode(mode);
+    if (state.currentEventData) state.currentEventData.starting_mode = mode;
+    renderGroupsList();
+  };
+
+  window.fillGroupTimes = function() {
+    if (!state.groups || state.groups.length === 0) return;
+    var firstTee = $('first-tee-time').value || '09:00';
+    var gap = parseInt($('tee-gap').value) || 10;
+    var parts = firstTee.split(':');
+    var h = parseInt(parts[0]); var m = parseInt(parts[1]);
+    state.groups.forEach(function(g, i) {
+      var totalMin = h * 60 + m + (i * gap);
+      var hh = Math.floor(totalMin / 60);
+      var mm = totalMin % 60;
+      g.tee_time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+      updateGroup(g.id, { tee_time: g.tee_time });
+    });
+    renderGroupsList();
+  };
+
+  window.placeUnassigned = function() {
+    autoFillGroups();
+  };
+
+  window.promptGroupTime = function(groupId, currentTime) {
+    oobPrompt('Tee time for this group', currentTime || '09:00').then(function(val) {
+      if (val !== null && val !== undefined) {
+        updateGroup(groupId, { tee_time: val || null });
       }
     });
-  }
+  };
+
+  window.promptGroupHole = function(groupId, currentHole) {
+    oobPrompt('Starting hole for this group', String(currentHole || 1)).then(function(val) {
+      if (val !== null && val !== undefined) {
+        var h = parseInt(val);
+        if (h >= 1 && h <= 18) updateGroup(groupId, { starting_hole: h });
+      }
+    });
+  };
 
   // ── Tab switching ─────────────────────────────────────────────
   window.switchTab = function(btn) {
     if (!btn) return;
     var tab = btn.dataset.tab;
-    document.querySelectorAll('.step-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.step').forEach(function(b) { b.classList.remove('on'); });
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-    btn.classList.add('active');
+    btn.classList.add('on');
     $('tab-' + tab).classList.add('active');
 
     if (tab === 'players') renderPlayerList();
-    if (tab === 'groups') renderGroupsList();
+    if (tab === 'groups') { cleanupGroups(); renderGroupsList(); }
     if (tab === 'golive') updateGoLiveTab();
     if (tab === 'prizes') loadPrizes();
 
@@ -2845,37 +3199,52 @@ Bob Wilson"></textarea>
 
     // Details step
     var ds = $('step-state-details');
-    var db = document.querySelector('.step-btn[data-tab="details"]');
-    if (ds) ds.textContent = detailsDone ? (evd.name || '') : '';
-    if (db) { if (detailsDone) db.classList.add('done'); else db.classList.remove('done'); }
+    var db = document.querySelector('.step[data-tab="details"]');
+    var detailsSub = '';
+    if (detailsDone) {
+      var courseName = state.courseData ? state.courseData.course.name : '';
+      var teeName = state.teeData ? state.teeData.tee_name : '';
+      detailsSub = courseName + (teeName ? ', ' + teeName.toLowerCase() : '');
+    }
+    if (ds) ds.textContent = detailsSub || '';
+    if (db) {
+      if (detailsDone) { db.classList.add('done'); db.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { db.classList.remove('done'); db.querySelector('.n').textContent = '1'; }
+    }
 
     // Players step
     var ps = $('step-state-players');
-    var pb = document.querySelector('.step-btn[data-tab="players"]');
+    var pb = document.querySelector('.step[data-tab="players"]');
     if (ps) {
       if (playerCount > 0) {
-        var txt = playerCount + ' player' + (playerCount !== 1 ? 's' : '');
-        if (missingHcp > 0) txt += ', ' + missingHcp + ' handicap missing';
+        var txt = pluralise(playerCount, 'player');
+        if (missingHcp > 0) txt += ' \u00B7 ' + pluralise(missingHcp, 'handicap') + ' missing';
         ps.textContent = txt;
       } else {
-        ps.textContent = '';
+        ps.textContent = 'Not added yet';
       }
     }
-    if (pb) { if (playersDone) pb.classList.add('done'); else pb.classList.remove('done'); }
+    if (pb) {
+      if (playersDone) { pb.classList.add('done'); pb.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { pb.classList.remove('done'); pb.querySelector('.n').textContent = '2'; }
+    }
 
     // Groups step
     var gs = $('step-state-groups');
-    var gb = document.querySelector('.step-btn[data-tab="groups"]');
+    var gb = document.querySelector('.step[data-tab="groups"]');
     if (gs) {
       if (groupCount > 0) {
-        var gtxt = groupCount + ' group' + (groupCount !== 1 ? 's' : '');
-        if (unassigned > 0) gtxt += ', ' + unassigned + ' unassigned';
+        var gtxt = pluralise(groupCount, 'group');
+        if (unassigned > 0) gtxt += ' \u00B7 ' + unassigned + ' not placed';
         gs.textContent = gtxt;
       } else {
-        gs.textContent = '';
+        gs.textContent = 'Not made yet';
       }
     }
-    if (gb) { if (groupsDone) gb.classList.add('done'); else gb.classList.remove('done'); }
+    if (gb) {
+      if (groupsDone) { gb.classList.add('done'); gb.querySelector('.n').innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>'; }
+      else { gb.classList.remove('done'); gb.querySelector('.n').textContent = '3'; }
+    }
 
     // Go live step
     var ls = $('step-state-golive');
@@ -2885,23 +3254,83 @@ Bob Wilson"></textarea>
       else if (detailsDone && playersDone && groupsDone) ls.textContent = 'Ready';
       else ls.textContent = '';
     }
+
+    // Sub-status line: contextual to the active tab
+    var headSub = $('ev-head-sub');
+    var activeTab = document.querySelector('.step.on');
+    var activeTabName = activeTab ? activeTab.dataset.tab : 'details';
+    var subText = '';
+    if (activeTabName === 'details' && detailsDone) {
+      subText = detailsSub + '. Next, add players.';
+    } else if (activeTabName === 'players' && playerCount > 0) {
+      subText = pluralise(playerCount, 'player') + '. Next, make groups.';
+    } else if (activeTabName === 'groups' && groupCount > 0) {
+      var firstTee = (state.groups[0] && state.groups[0].tee_time) ? state.groups[0].tee_time.slice(0, 5) : '';
+      subText = pluralise(groupCount, 'group') + (firstTee ? ', first tee ' + firstTee : '') + '. Next, go live.';
+    }
+    // Go live and fallback: no line. Show under h1 only.
+    if (headSub) headSub.textContent = subText;
+
+    // Update more-options summary
+    updateMoreOptsSummary();
   }
 
-  // Add "Next" buttons to each panel
+  // Add "Next" sticky-action buttons to non-details panels
   function addNextButtons() {
     var steps = [
-      { tab: 'details', next: 'players', label: 'Next: Players' },
-      { tab: 'players', next: 'groups', label: 'Next: Groups' },
-      { tab: 'groups', next: 'golive', label: 'Next: Go live' }
+      { tab: 'players', next: 'groups', label: 'Next: make groups' },
+      { tab: 'groups', next: 'golive', label: 'Next: go live' }
     ];
     steps.forEach(function (s) {
       var panel = $('tab-' + s.tab);
-      if (!panel || panel.querySelector('.step-next')) return;
+      if (!panel || panel.querySelector('.sticky-action')) return;
       var div = document.createElement('div');
-      div.className = 'step-next';
-      div.innerHTML = '<button class="btn btn-green" onclick="switchTab(document.querySelector(\'.step-btn[data-tab=&quot;' + s.next + '&quot;]\'))">' + s.label + '</button>';
+      div.className = 'sticky-action';
+      div.innerHTML = '<button class="btn btn-primary btn-lg btn-block" onclick="switchTab(document.querySelector(\'.step[data-tab=&quot;' + s.next + '&quot;]\'))">' + s.label + '</button>';
       panel.appendChild(div);
     });
+  }
+
+  // ── More options toggle ─────────────────────────────────────
+  window.toggleMoreOpts = function() {
+    var panel = $('more-opts-panel');
+    var toggle = $('more-opts-toggle');
+    var open = panel.style.display === 'none';
+    panel.style.display = open ? '' : 'none';
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', open);
+  };
+
+  function updateMoreOptsSummary() {
+    var el = $('more-opts-summary');
+    if (!el) return;
+    var parts = [];
+    var al = $('ev-allowance');
+    if (al) { var pct = Math.round(parseFloat(al.value) * 100); if (pct !== 95) parts.push(pct + '% allowance'); }
+    var fz = $('ev-freeze');
+    if (fz && fz.value !== '0') parts.push('hide after ' + fz.value);
+    el.textContent = parts.join(' \u00B7 ') || '';
+  }
+
+  // ── Charity card toggle ────────────────────────────────────
+  window.openCharityEdit = function() {
+    var fields = $('charity-fields');
+    var btn = $('charity-edit-btn');
+    if (fields.style.display === 'none') {
+      fields.style.display = '';
+      btn.textContent = 'Done';
+    } else {
+      fields.style.display = 'none';
+      btn.textContent = $('ev-charity-name').value.trim() ? 'Edit' : 'Add';
+      updateCharityLabel();
+    }
+  };
+
+  function updateCharityLabel() {
+    var label = $('details-charity-label');
+    var name = $('ev-charity-name').value.trim();
+    if (name) label.textContent = name;
+    else label.textContent = 'None yet. Add a name, a line and a donation link.';
   }
 
   // ── Format change → default allowance ────────────────────────
@@ -2951,20 +3380,26 @@ Bob Wilson"></textarea>
     state.courseData = null;
     state.teeData = null;
     $('course-selected').style.display = 'none';
-    $('course-search').style.display = 'block';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
     $('course-search').value = '';
+    var teeHint = $('tee-hint');
+    if (teeHint) teeHint.textContent = '';
+    updateStepStates();
   };
 
   window.showCourseInline = function() {
     $('course-results').style.display = 'none';
-    $('course-search').style.display = 'none';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = 'none';
     $('course-inline-form').style.display = 'block';
     buildHolesGrid();
   };
 
   window.cancelCourseInline = function() {
     $('course-inline-form').style.display = 'none';
-    $('course-search').style.display = 'block';
+    var searchWrap = $('course-search').closest('.course-search-wrap');
+    if (searchWrap) searchWrap.style.display = '';
   };
 
   function buildHolesGrid() {
@@ -3056,7 +3491,7 @@ Bob Wilson"></textarea>
       $('course-inline-form').style.display = 'none';
       await loadCourseForEvent(res.course.id, res.tee.id);
     } catch (err) {
-      console.error('Course save:', err.message); toast('Couldn’t save the course. Try again.');
+      console.error('Course save:', err.message); toast('Couldn\u2019t save the course. Try again.');
     }
   };
 
@@ -3066,10 +3501,11 @@ Bob Wilson"></textarea>
     if (!name) { toast('Enter event name'); return; }
 
     var btn = $('save-details-btn');
+    var isNew = !state.currentEvent;
+    btn.classList.add('is-loading');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>';
 
-    var modeEl = document.querySelector('#starting-mode-group .radio-opt.selected');
+    var modeEl = document.querySelector('#starting-mode-group button.on');
     var mode = modeEl ? modeEl.dataset.value : 'tee_times';
 
     var teeId = $('course-tee-select').value || null;
@@ -3099,7 +3535,7 @@ Bob Wilson"></textarea>
         payload.id = state.currentEvent;
         res = await api('org-events', { method: 'PATCH', body: payload });
         state.currentEventData = res.event;
-        toast('Event saved');
+        toast('Saved');
       } else {
         // Create — then switch to Players tab
         res = await api('org-events', { method: 'POST', body: payload });
@@ -3107,16 +3543,24 @@ Bob Wilson"></textarea>
         state.currentEventData = res.event;
         window.location.hash = 'event-' + res.event.id;
         $('ev-title').textContent = name;
-        switchTab(document.querySelector('.step-btn[data-tab="players"]'));
-        toast('Event created — add your players');
+        switchTab(document.querySelector('.step[data-tab="players"]'));
+        // Show the saved banner on the Players tab
+        var banner = $('players-saved-banner');
+        var bannerText = $('players-saved-banner-text');
+        if (banner && bannerText) {
+          bannerText.textContent = esc(name) + ' is saved. Now add your players.';
+          banner.style.display = '';
+        }
       }
       $('ev-title').textContent = name;
+      updateStepStates();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\'t work. Try again.');
     }
 
+    btn.classList.remove('is-loading');
     btn.disabled = false;
-    btn.textContent = 'Save details';
+    btn.textContent = isNew && !state.currentEvent ? 'Save and add players' : 'Save changes';
   };
 
   // ── Players ───────────────────────────────────────────────────
@@ -3135,38 +3579,57 @@ Bob Wilson"></textarea>
   function renderPlayerList() {
     var el = $('player-list');
     var countEl = $('player-count');
-
+    var cardEl = $('players-card');
     var emptyEl = $('players-empty-state');
+    var remindWrap = $('players-remind-wrap');
+    var remindLink = $('players-remind-link');
+
     if (state.players.length === 0) {
       el.innerHTML = '';
-      countEl.textContent = '';
+      countEl.innerHTML = '';
+      if (cardEl) cardEl.style.display = 'none';
       if (emptyEl) emptyEl.style.display = '';
       return;
     }
     if (emptyEl) emptyEl.style.display = 'none';
+    if (cardEl) cardEl.style.display = '';
 
     var confirmed = state.players.filter(function(p) { return p.player_status === 'confirmed'; }).length;
     var invited = state.players.length - confirmed;
     var missing = state.players.filter(function(p) { return p.handicap_index == null; }).length;
 
-    var countHtml = state.players.length + ' player' + (state.players.length !== 1 ? 's' : '');
-    if (state.currentEventData && state.currentEventData.status === 'live') {
-      countHtml += ' &middot; <strong>' + confirmed + ' of ' + state.players.length + ' confirmed</strong>';
-    }
+    // Header: "N players · M handicaps missing"
+    var countHtml = pluralise(state.players.length, 'player');
     if (missing > 0) {
-      countHtml += ' &middot; <span class="warn">' + missing + ' handicap' + (missing !== 1 ? 's' : '') + ' missing</span>';
+      countHtml += ' <span class="muted" style="font-weight:400">&middot; ' + pluralise(missing, 'handicap') + ' missing</span>';
     }
+    countEl.innerHTML = countHtml;
+
+    // "Results will be sent to N of M players"
+    var emailCountEl = $('players-email-count');
+    if (emailCountEl) {
+      var withEmail = state.players.filter(function(p) { return p.email; }).length;
+      if (withEmail > 0) {
+        emailCountEl.textContent = 'Results will be sent to ' + withEmail + ' of ' + state.players.length + ' players.';
+        emailCountEl.style.display = '';
+      } else {
+        emailCountEl.textContent = 'No players have an email yet. Add one when you add a player, or they can add their own.';
+        emailCountEl.style.display = '';
+      }
+    }
+
+    // "Remind N who haven't tapped in" link
     if (invited > 0 && state.currentEventData && state.currentEventData.status === 'live') {
       var invitedNames = state.players
         .filter(function(p) { return p.player_status !== 'confirmed'; })
         .map(function(p) { return p.first_name; })
         .join(', ');
-      countHtml += '<br><button class="btn btn-outline btn-sm" style="margin-top:8px;font-size:12px;" onclick="nudgeInvited()">' +
-        'Nudge ' + invited + ' invited</button>';
-      // Store for nudge
       state._invitedNames = invitedNames;
+      if (remindWrap) remindWrap.style.display = '';
+      if (remindLink) remindLink.textContent = 'Remind ' + invited + ' who haven\'t tapped in';
+    } else {
+      if (remindWrap) remindWrap.style.display = 'none';
     }
-    countEl.innerHTML = countHtml;
 
     // Compute PH on display from current tee data
     var tee = state.teeData;
@@ -3175,26 +3638,38 @@ Bob Wilson"></textarea>
     var cap = parseInt(evd.max_handicap) || 54;
 
     el.innerHTML = state.players.map(function(p) {
-      var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '-';
-      var phStr = '-';
+      var idxStr = p.handicap_index != null ? p.handicap_index.toFixed(1) : '';
+      var phStr = '';
       if (p.handicap_index != null && tee) {
         phStr = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
       } else if (p.playing_handicap != null) {
         phStr = p.playing_handicap;
       }
-      var statusDot = '';
-      if (state.currentEventData && state.currentEventData.status === 'live') {
-        statusDot = p.player_status === 'confirmed'
-          ? '<span style="color:var(--green);font-size:8px;margin-right:10px;flex-shrink:0;" title="Confirmed">&#9679;</span>'
-          : '<span style="color:var(--amber);font-size:8px;margin-right:10px;flex-shrink:0;" title="Invited">&#9675;</span>';
+
+      var isClaimed = p.player_status === 'confirmed';
+      var hasHandicap = p.handicap_index != null;
+
+      // Build meta line
+      var metaParts = [];
+      if (p.pair_key) metaParts.push('<span class="chip pair" style="height:18px;font-size:11px;padding:0 6px;">Pair ' + esc(p.pair_key) + '</span>');
+      if (isClaimed) {
+        if (metaParts.length) metaParts.push('<span>&middot;</span>');
+        metaParts.push('<span class="in">Tapped in</span>');
       }
-      return '<div class="player-item">' +
-        statusDot +
-        '<span class="pi-name" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Tap to edit">' + esc(p.display_name) + '</span>' +
-        '<span class="pi-idx" onclick="editPlayer(\'' + p.id + '\')" style="cursor:pointer;" title="Click to edit">' + idxStr + '</span>' +
-        '<span class="pi-ph">' + phStr + '</span>' +
-        '<button class="pi-del" onclick="deletePlayer(\'' + p.id + '\')" title="Remove">&times;</button>' +
-      '</div>';
+      var metaHtml = metaParts.length ? '<span class="m">' + metaParts.join('') + '</span>' : '';
+
+      // Handicap columns or "Add handicap" tag
+      var handicapHtml = hasHandicap
+        ? '<span class="idx num">' + esc(idxStr) + '</span><span class="off num">' + esc(String(phStr)) + '</span>'
+        : '<span class="add">Add handicap</span>';
+
+      return '<button class="prow' + (isClaimed ? ' claimed' : '') + '" onclick="editPlayer(\'' + p.id + '\')">' +
+        '<span class="nm"><span class="n">' + esc(p.display_name) + '</span>' + metaHtml + '</span>' +
+        handicapHtml +
+        '<span class="x" onclick="event.stopPropagation();deletePlayer(\'' + p.id + '\')" aria-label="Remove ' + esc(p.display_name) + '">' +
+          '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
+        '</span>' +
+      '</button>';
     }).join('');
   }
 
@@ -3249,6 +3724,8 @@ Bob Wilson"></textarea>
     $('ap-first').value = '';
     $('ap-last').value = '';
     $('ap-index').value = '';
+    if ($('ap-email')) $('ap-email').value = '';
+    if ($('ap-mobile')) $('ap-mobile').value = '';
     $('ap-ph-preview').textContent = '';
   };
 
@@ -3273,14 +3750,19 @@ Bob Wilson"></textarea>
 
     var idx = $('ap-index').value.trim();
     var idxNum = idx ? parseFloat(idx) : null;
+    var email = $('ap-email') ? $('ap-email').value.trim() : '';
+    var mobile = $('ap-mobile') ? $('ap-mobile').value.trim() : '';
 
     try {
+      var playerData = { first_name: first, last_name: last, handicap_index: idxNum };
+      if (email) playerData.email = email;
+      if (mobile) playerData.mobile = mobile;
       var res = await api('org-players', {
         method: 'POST',
         body: {
           event_id: state.currentEvent,
           organiser_id: state.organiser.id,
-          players: [{ first_name: first, last_name: last, handicap_index: idxNum }]
+          players: [playerData]
         }
       });
       await loadPlayers();
@@ -3299,7 +3781,7 @@ Bob Wilson"></textarea>
         toast('Player added');
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3324,7 +3806,7 @@ Bob Wilson"></textarea>
       loadPlayers().then(renderPlayerList);
       toast('Updated');
     }).catch(function (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     });
   };
 
@@ -3360,7 +3842,7 @@ Bob Wilson"></textarea>
       renderPlayerList();
       toast('Player removed');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3392,9 +3874,9 @@ Bob Wilson"></textarea>
       await loadPlayers();
       renderPlayerList();
       closePasteModal();
-      toast(res.count + ' player' + (res.count !== 1 ? 's' : '') + ' added');
+      toast(pluralise(res.count, 'player') + ' added');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3431,7 +3913,7 @@ Bob Wilson"></textarea>
       renderPlayerList();
       toast('You have been added');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3450,6 +3932,45 @@ Bob Wilson"></textarea>
     }
   }
 
+  function cleanupGroups() {
+    if (!state.groups || state.groups.length === 0) return;
+    // 1. Delete empty groups (no members)
+    var playerGroupIds = {};
+    (state.players || []).forEach(function(p) { if (p.group_id) playerGroupIds[p.group_id] = true; });
+    var before = state.groups.length;
+    state.groups = state.groups.filter(function(g) { return playerGroupIds[g.id]; });
+    // Delete removed groups on server
+    if (state.groups.length < before) {
+      var allGroupIds = state.groups.map(function(g) { return g.id; });
+      // Server-side cleanup will happen on next save
+    }
+
+    // 2. Renumber 1..N
+    state.groups.sort(function(a, b) { return (a.group_number || 0) - (b.group_number || 0); });
+    state.groups.forEach(function(g, i) { g.group_number = i + 1; });
+
+    // 3. Fill tee times from first tee + gap for groups without one
+    var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+    if (startingMode !== 'shotgun') {
+      var firstTee = $('first-tee-time') ? $('first-tee-time').value : '09:00';
+      var gap = $('tee-gap') ? parseInt($('tee-gap').value) : 10;
+      var parts = firstTee.split(':');
+      var baseH = parseInt(parts[0]); var baseM = parseInt(parts[1]);
+      var needsFill = state.groups.some(function(g) { return !g.tee_time; });
+      if (needsFill) {
+        state.groups.forEach(function(g, i) {
+          if (!g.tee_time) {
+            var totalMin = baseH * 60 + baseM + (i * gap);
+            var hh = Math.floor(totalMin / 60);
+            var mm = totalMin % 60;
+            g.tee_time = (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+            updateGroup(g.id, { tee_time: g.tee_time });
+          }
+        });
+      }
+    }
+  }
+
   function renderGroupsList() {
     if (!state.groups) state.groups = [];
     if (!state.players) state.players = [];
@@ -3457,33 +3978,47 @@ Bob Wilson"></textarea>
     var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
     var isShotgun = startingMode === 'shotgun';
 
+    // Update seg toggle
+    var segBtns = document.querySelectorAll('#starting-mode-group button');
+    segBtns.forEach(function(b) { b.classList.toggle('on', b.dataset.value === startingMode); });
+
+    // Show/hide tee time fields vs shotgun
+    var teeFields = $('tee-time-fields');
+    if (teeFields) teeFields.style.display = isShotgun ? 'none' : '';
+
     // Unassigned section at top
     var unassigned = state.players.filter(function(p) { return !p.group_id; });
     var unEl = $('unassigned-section');
     if (unassigned.length > 0) {
       unEl.style.display = '';
-      $('unassigned-count').textContent = unassigned.length + ' not in a group';
-      $('unassigned-players').innerHTML = unassigned.map(function (p) {
-        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">' +
-          '<span>' + esc(p.display_name) + '</span>' +
-          '<button class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 8px;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">Add to group</button>' +
-        '</div>';
-      }).join('');
+      var names = unassigned.map(function(p) { return esc(p.display_name); }).join(', ');
+      $('unassigned-info').innerHTML = pluralise(unassigned.length, 'player') + ' not placed yet: ' + names;
     } else {
       unEl.style.display = 'none';
     }
 
+    // Groups header and clear link
+    var hdr = $('groups-header');
+    var clearWrap = $('groups-clear-wrap');
     var groupsEmpty = $('groups-empty-state');
+
     if (state.groups.length === 0) {
       el.innerHTML = '';
+      if (hdr) hdr.style.display = 'none';
+      if (clearWrap) clearWrap.style.display = 'none';
       if (groupsEmpty) {
         var pCount = state.players ? state.players.length : 0;
-        groupsEmpty.innerHTML = '<p style="font-size:15px;margin-bottom:12px;">No groups yet. Autofill will sort your ' + pCount + ' player' + (pCount !== 1 ? 's' : '') + ' into fours, then move anyone you like.</p>';
+        $('groups-empty-text').textContent = 'We\u2019ll sort your ' + pCount + ' player' + (pCount !== 1 ? 's' : '') + ' into fours, then you can move anyone.';
         groupsEmpty.style.display = '';
       }
       return;
     }
     if (groupsEmpty) groupsEmpty.style.display = 'none';
+    if (hdr) {
+      hdr.style.display = '';
+      $('groups-count-title').textContent = state.groups.length + ' group' + (state.groups.length !== 1 ? 's' : '');
+    }
+    if (clearWrap) clearWrap.style.display = '';
 
     // Compute PH for display
     var tee = state.teeData;
@@ -3491,49 +4026,53 @@ Bob Wilson"></textarea>
     var allowance = parseFloat(evd.handicap_allowance) || 0.95;
     var cap = parseInt(evd.max_handicap) || 54;
 
+    // SVG icons
+    var gripSvg = '<svg viewBox="0 0 24 24"><path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"/></svg>';
+    var upSvg = '<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    var downSvg = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+
     el.innerHTML = state.groups.map(function(g, idx) {
       var members = state.players.filter(function(p) { return p.group_id === g.id; });
-      var membersHtml = members.map(function(p) {
-        var ph = '-';
+
+      // Members markup
+      var membersHtml = members.length > 0 ? members.map(function(p) {
+        var ph = '';
         if (p.handicap_index != null && tee) {
           ph = OOB.playingHandicap(p.handicap_index, parseFloat(tee.slope), parseFloat(tee.rating), tee.par_total, allowance, cap);
         }
-        return '<div class="gc-player" style="cursor:pointer;" onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')" title="Tap to move">' +
-          '<span class="gcp-name">' + esc(p.display_name) + '</span>' +
-          '<span class="gcp-ph">' + ph + '</span>' +
-        '</div>';
-      }).join('');
+        return '<button onclick="showMoveSheet(\'' + p.id + '\',\'' + esc(p.display_name) + '\')">' +
+          '<span class="grip">' + gripSvg + '</span>' +
+          '<span>' + esc(p.display_name) + '</span>' +
+          '<span class="off num">' + (ph !== '' ? ph : '') + '</span>' +
+        '</button>';
+      }).join('') : '<div class="none">No players yet</div>';
 
-      var timeInput = '';
+      // Time button or shotgun hole
+      var timeBtn = '';
       if (isShotgun) {
-        timeInput = '<input type="number" min="1" max="18" value="' + (g.starting_hole || 1) + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{starting_hole:parseInt(this.value)})" ' +
-          'style="width:50px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;text-align:center;" title="Start hole">';
+        timeBtn = '<button class="time" onclick="promptGroupHole(\'' + g.id + '\',' + (g.starting_hole || 1) + ')">Hole ' + (g.starting_hole || 1) + '<small>change</small></button>';
       } else {
-        timeInput = '<input type="time" value="' + (g.tee_time || '') + '" ' +
-          'onchange="updateGroup(\'' + g.id + '\',{tee_time:this.value||null})" ' +
-          'style="width:90px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;font-size:12px;" title="Tee time">';
+        var displayTime = g.tee_time ? g.tee_time.slice(0, 5) : '--:--';
+        timeBtn = '<button class="time" onclick="promptGroupTime(\'' + g.id + '\',\'' + (g.tee_time || '') + '\')">' + displayTime + '<small>change</small></button>';
       }
 
       // Reorder arrows
-      var arrows = '<div style="display:flex;gap:2px;">';
-      if (idx > 0) arrows += '<button onclick="moveGroupUp(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move up">&uarr;</button>';
-      if (idx < state.groups.length - 1) arrows += '<button onclick="moveGroupDown(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:14px;color:var(--muted);" title="Move down">&darr;</button>';
+      var arrows = '<div class="tools">';
+      arrows += '<button aria-label="Move group up"' + (idx === 0 ? ' disabled style="opacity:.3"' : '') + ' onclick="moveGroupUp(\'' + g.id + '\')">' + upSvg + '</button>';
+      arrows += '<button aria-label="Move group down"' + (idx === state.groups.length - 1 ? ' disabled style="opacity:.3"' : '') + ' onclick="moveGroupDown(\'' + g.id + '\')">' + downSvg + '</button>';
       arrows += '</div>';
 
-      var emptyBtn = members.length === 0
-        ? '<button onclick="deleteGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--red);">Delete</button>'
-        : '<button onclick="emptyGroup(\'' + g.id + '\')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--muted);">Empty</button>';
-
-      return '<div class="group-card">' +
-        '<div class="gc-header">' +
-          arrows +
-          '<span class="gc-num">Group ' + g.group_number + '</span>' +
-          timeInput +
-          emptyBtn +
-        '</div>' +
-        '<div class="gc-members">' + (membersHtml || '<span style="font-size:13px;color:var(--muted);">Empty</span>') + '</div>' +
+      // Footer
+      var footer = '<div class="gf">' +
+        '<button class="btn btn-quiet neutral btn-sm" onclick="emptyGroup(\'' + g.id + '\')">Remove all</button>' +
+        '<button class="btn btn-danger-quiet btn-sm" onclick="deleteGroup(\'' + g.id + '\')">Delete group</button>' +
       '</div>';
+
+      return '<article class="gcard">' +
+        '<div class="gh"><span class="pill">Group ' + g.group_number + '</span>' + timeBtn + arrows + '</div>' +
+        '<div class="gm">' + membersHtml + '</div>' +
+        footer +
+      '</article>';
     }).join('');
   }
 
@@ -3551,10 +4090,13 @@ Bob Wilson"></textarea>
         }
       });
       await loadGroups();
+      // Auto-fill tee times if in tee times mode and groups have no times
+      var startingMode = state.currentEventData ? state.currentEventData.starting_mode : 'tee_times';
+      if (startingMode !== 'shotgun') fillGroupTimes();
       renderGroupsList();
       toast(res.message || 'Groups filled');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3572,7 +4114,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3592,7 +4134,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -3664,7 +4206,7 @@ Bob Wilson"></textarea>
       }
       await loadGroups();
       renderGroupsList();
-    } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.swapPlayers = async function(playerAId, playerBId) {
@@ -3684,7 +4226,7 @@ Bob Wilson"></textarea>
       await loadGroups();
       renderGroupsList();
       toast('Swapped ' + playerA.first_name + ' and ' + playerB.first_name);
-    } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.emptyGroup = async function(groupId) {
@@ -3704,7 +4246,7 @@ Bob Wilson"></textarea>
       // For now, we can't delete groups via the API easily. Empty groups are harmless.
       // TODO: add delete_group action to org-groups
       toast('Empty groups are removed on auto-fill');
-    } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   async function reorderGroups(groupId, direction) {
@@ -3755,7 +4297,7 @@ Bob Wilson"></textarea>
   window.moveGroupDown = function(groupId) { reorderGroups(groupId, 'down'); };
 
   window.startAgainGroups = async function() {
-    if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Start again'))) return;
+    if (!(await oobConfirm('Remove all players from all groups? Your groups stay, players go back to unassigned.', 'Clear all'))) return;
     for (var i = 0; i < state.players.length; i++) {
       if (state.players[i].group_id) {
         await api('org-groups', { method: 'POST', body: { action: 'assign', event_id: state.currentEvent, organiser_id: state.organiser.id, player_id: state.players[i].id, group_id: null } });
@@ -3774,19 +4316,23 @@ Bob Wilson"></textarea>
       await api('org-groups', { method: 'PATCH', body: updates });
       toast('Group updated');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
   // ── Go Live tab ───────────────────────────────────────────────
   function updateGoLiveTab() {
     var ev = state.currentEventData;
+    // Always hide livehead and restore page-head/crumb/strip unless we're going live
+    var lh = $('livehead'); if (lh) lh.classList.remove('show');
+    var ec = $('ev-crumb'); if (ec) ec.style.display = '';
+    var ph = $('ev-page-head'); if (ph) ph.style.display = '';
+    var et = $('ev-tabs'); if (et) et.style.display = '';
+
     if (!ev) {
       $('golive-draft').style.display = 'block';
       $('golive-live').style.display = 'none';
       $('golive-finished').style.display = 'none';
-      $('golive-breakdown').textContent = 'Save your event first.';
-      $('golive-price').textContent = '';
       $('golive-btn').style.display = 'none';
       return;
     }
@@ -3803,10 +4349,18 @@ Bob Wilson"></textarea>
         body: { action: 'count', event_id: state.currentEvent, organiser_id: state.organiser.id }
       }).then(function (r) {
         var note = $('results-email-note');
+        var banner = $('finished-email-banner');
+        var bannerText = $('finished-email-banner-text');
         if (r.with_email > 0) {
-          note.textContent = 'Results will be emailed to ' + r.with_email + ' of ' + r.total + ' players (the ones with an email).';
+          var noEmail = r.total - r.with_email;
+          var bannerMsg = 'Results published and emailed to ' + r.with_email + ' player' + (r.with_email !== 1 ? 's' : '') + '.';
+          if (noEmail === 1) bannerMsg += ' One player didn\'t give an email.';
+          else if (noEmail > 1) bannerMsg += ' ' + noEmail + ' players didn\'t give an email.';
+          if (banner) { bannerText.textContent = bannerMsg; banner.style.display = ''; }
+          note.textContent = r.with_email + ' player' + (r.with_email !== 1 ? 's' : '') + ' gave an email and will get the results.';
         } else {
-          note.textContent = 'No players have an email address.';
+          if (banner) banner.style.display = 'none';
+          note.textContent = 'No players gave an email.';
         }
       }).catch(function () {});
       return;
@@ -3830,33 +4384,82 @@ Bob Wilson"></textarea>
     var gn = state.groups ? state.groups.length : 0;
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
 
-    // Build review summary
-    var summary = '<strong>' + esc(ev.name || 'Your event') + '</strong>';
-    if (ev.event_date) summary += ' on ' + formatDate(ev.event_date);
-    summary += '. ' + n + ' player' + (n !== 1 ? 's' : '') + ' in ' + gn + ' group' + (gn !== 1 ? 's' : '') + '.';
+    // Build review summary - richer version per go-live.html
+    var courseName = state.courseData ? state.courseData.course.name : '';
+    var teeName = state.teeData ? state.teeData.tee_name : '';
+    var formatLabel = ev.format ? ev.format.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }) : '';
+    var allowance = ev.handicap_allowance != null ? Math.round(ev.handicap_allowance * 100) + '%' : '95%';
+    var firstTee = '';
+    if (state.groups && state.groups.length > 0 && state.groups[0].tee_time) firstTee = state.groups[0].tee_time;
+
+    var summary = esc(ev.name || 'Your event');
+    if (ev.event_date) summary += ', ' + formatDate(ev.event_date);
+    if (courseName) summary += ' at ' + esc(courseName);
+    if (teeName) summary += ', ' + esc(teeName).toLowerCase() + ' tees';
+    summary += '. ' + esc(formatLabel);
+    if (allowance) summary += ', ' + allowance + ' allowance';
+    summary += '. ' + n + ' player' + (n !== 1 ? 's' : '') + ' in ' + gn + ' group' + (gn !== 1 ? 's' : '');
+    if (firstTee) summary += ', first tee ' + firstTee;
+    summary += '.';
     var summaryEl = $('golive-summary');
     if (summaryEl) summaryEl.innerHTML = summary;
 
+    // Fee or Pro display
+    var feeEl = $('golive-fee');
+    var proCard = $('golive-pro-card');
+    var blockedEl = $('golive-blocked');
+    var nativeBlock = $('golive-native-block');
+
+    // Check native
+    var isNative = false;
+    try { isNative = window.Capacitor && window.Capacitor.isNativePlatform(); } catch(e) {}
+
     if (orgIsPro) {
-      $('golive-breakdown').innerHTML = n + ' player' + (n !== 1 ? 's' : '') + ' ready to go';
-      $('golive-price').textContent = 'Included with Pro';
-      $('golive-price').style.fontSize = '20px';
+      feeEl.style.display = 'none';
+      if (proCard) {
+        proCard.style.display = '';
+        $('golive-pro-note').innerHTML = '<b style="color:var(--ink)">' + n + ' player' + (n !== 1 ? 's' : '') + ' ready \u00b7 Included with Pro</b>';
+      }
       $('golive-btn').textContent = 'Go live';
+      if (nativeBlock) nativeBlock.style.display = 'none';
+    } else if (isNative) {
+      // Native: no payment in-app
+      feeEl.style.display = 'none';
+      if (proCard) proCard.style.display = 'none';
+      if (nativeBlock) nativeBlock.style.display = '';
+      $('golive-btn').style.display = 'none';
     } else {
+      feeEl.style.display = '';
+      if (proCard) {
+        proCard.style.display = '';
+        $('golive-pro-note').innerHTML = 'On Pro this step says <b style="color:var(--ink)">' + n + ' player' + (n !== 1 ? 's' : '') + ' ready \u00b7 Included with Pro</b> and the button is simply "Go live". Your logo and colours go on every screen.';
+      }
+      if (nativeBlock) nativeBlock.style.display = 'none';
       var base = 999;
       var perPlayer = 99;
       var total = base + (n * perPlayer);
-      $('golive-breakdown').innerHTML = formatPrice(base) + ' + ' + formatPrice(perPlayer) + ' &times; ' + n + ' player' + (n !== 1 ? 's' : '');
-      $('golive-price').textContent = formatPrice(total);
-      $('golive-price').style.fontSize = '';
-      $('golive-btn').textContent = 'Go live and pay';
+      // Fee rows
+      $('golive-fee-base').querySelector('span:last-child').textContent = formatPrice(base);
+      var playersRow = $('golive-fee-players');
+      playersRow.querySelector('span:first-child').textContent = '99p for each of ' + n + ' player' + (n !== 1 ? 's' : '');
+      playersRow.querySelector('span:last-child').textContent = formatPrice(n * perPlayer);
+      $('golive-total').textContent = formatPrice(total);
+      $('golive-btn').textContent = 'Pay ' + formatPrice(total) + ' and go live';
     }
 
-    if (n === 0) {
-      $('golive-breakdown').innerHTML = 'Add players before going live.';
-      $('golive-price').textContent = '';
+    // Blocked states
+    var hasNoCourse = !state.courseData || !state.teeData;
+    if (hasNoCourse && n === 0) {
+      if (blockedEl) { blockedEl.textContent = 'Choose a course and tees to go live. Add at least one player to go live.'; blockedEl.style.display = ''; }
+      $('golive-btn').disabled = true;
+    } else if (hasNoCourse) {
+      if (blockedEl) { blockedEl.textContent = 'Choose a course and tees to go live.'; blockedEl.style.display = ''; }
+      $('golive-btn').disabled = true;
+    } else if (n === 0) {
+      if (blockedEl) { blockedEl.textContent = 'Add at least one player to go live.'; blockedEl.style.display = ''; }
       $('golive-btn').disabled = true;
     } else {
+      if (blockedEl) blockedEl.style.display = 'none';
       $('golive-btn').disabled = false;
     }
   }
@@ -3886,15 +4489,21 @@ Bob Wilson"></textarea>
       if (res.url) {
         window.location.href = res.url;
       } else {
-        toast('No checkout URL returned');
+        toast('Couldn\u2019t start payment. Try again.');
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('Couldn\u2019t start payment. Try again.');
     }
 
     $('golive-btn').disabled = false;
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
-    $('golive-btn').textContent = orgIsPro ? 'Go live' : 'Go live and pay';
+    if (orgIsPro) {
+      $('golive-btn').textContent = 'Go live';
+    } else {
+      var n2 = state.players ? state.players.length : 0;
+      var total2 = 999 + (n2 * 99);
+      $('golive-btn').textContent = 'Pay ' + formatPrice(total2) + ' and go live';
+    }
   };
 
   // ── Live view ─────────────────────────────────────────────────
@@ -3902,23 +4511,59 @@ Bob Wilson"></textarea>
     try {
     await loadPlayers();
     await loadGroups();
+    await loadPrizes();
+
+    // Dark livehead control room header
+    var evd = state.currentEventData || {};
+    var lh = $('livehead');
+    if (lh) {
+      lh.classList.add('show');
+      // Title with LIVE pill
+      $('livehead-title').innerHTML = esc(evd.name || '') + ' <span class="chip live">Live</span>';
+      // Meta: course, players, format
+      var courseName = state.courseData ? state.courseData.course.name : '';
+      var playerCount = state.players ? state.players.length : 0;
+      var formatLabel = { individual_stableford: 'Individual Stableford', better_ball_pairs: 'Better ball Stableford', better_ball_2from4: 'Best 2 from 4' }[evd.format] || evd.format || '';
+      $('livehead-meta').innerHTML = '<span>' + esc(courseName) + ' \u00B7 ' + playerCount + ' players \u00B7 ' + esc(formatLabel) + '</span><a onclick="switchTab(document.querySelector(\'.step[data-tab=details]\'));return false">Edit set-up</a>';
+      // Updated time
+      var now = new Date();
+      $('live-updated').innerHTML = '<i></i>Updated ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      // Stats tiles — computed after leaderboard loads (updated in renderLiveLeaderboard)
+      var groupCount = state.groups ? state.groups.length : 0;
+      var scoringCount = state.groups ? state.groups.filter(function(g) { return g.scorer_player_id; }).length : 0;
+      $('livehead-stats').innerHTML =
+        '<div class="stat"><b class="num">' + scoringCount + '<span style="font-size:var(--fs-ui);color:var(--dark-ink-muted);font-weight:600"> of ' + groupCount + '</span></b><span>' + (groupCount === 1 ? 'group' : 'groups') + ' scoring</span></div>' +
+        '<div class="stat"><b class="num" id="livehead-leader-pts">--</b><span id="livehead-leader-label">leading</span></div>' +
+        '<div class="stat"><b class="num" id="livehead-finished">0</b><span>finished</span></div>';
+    }
+    // Hide the page-head, crumb and strip for live view (livehead replaces them)
+    var evCrumb = $('ev-crumb'); if (evCrumb) evCrumb.style.display = 'none';
+    var pageHead = $('ev-page-head'); if (pageHead) pageHead.style.display = 'none';
+    var evTabs = $('ev-tabs'); if (evTabs) evTabs.style.display = 'none';
 
     // Show paid info
     var paidEl = $('live-paid-info');
     var evd = state.currentEventData || {};
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
     if (orgIsPro) {
-      paidEl.style.display = 'block';
-      paidEl.innerHTML = '<strong>Included with Pro</strong>';
+      paidEl.style.display = '';
+      paidEl.textContent = 'Included with Pro';
     } else if (evd.paid && evd.paid_amount_pence) {
       var paidDate = evd.paid_at ? new Date(evd.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-      paidEl.style.display = 'block';
-      paidEl.innerHTML = '<strong>Paid ' + formatPrice(evd.paid_amount_pence) + '</strong>' + (paidDate ? ' on ' + paidDate : '');
+      paidEl.style.display = '';
+      paidEl.textContent = 'Paid ' + formatPrice(evd.paid_amount_pence) + (paidDate ? ' on ' + paidDate : '');
     } else {
       paidEl.style.display = 'none';
     }
 
-    // "Score my round" — find the organiser's player by email or name match
+    // Prizes sub line
+    var prizesSub = $('live-prizes-sub');
+    if (prizesSub) {
+      var prizeNames = (state.prizeData && state.prizeData.prizes) ? state.prizeData.prizes.map(function(p) { return p.category; }).join(', ') : '';
+      prizesSub.textContent = prizeNames ? prizeNames + '. Winners fill in when you finish.' : 'Winners fill in when you finish.';
+    }
+
+    // "Score my round" -- find the organiser's player by email or name match
     var orgEmail = (state.organiser && state.organiser.contact_email ? state.organiser.contact_email : '').toLowerCase();
     var orgName = (state.organiser ? state.organiser.name : '').toLowerCase();
     var myPlayer = state.players.find(function (p) {
@@ -3934,6 +4579,11 @@ Bob Wilson"></textarea>
       $('score-my-round-link').onclick = function () {
         localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
       };
+      // Find group for player
+      var myGroup = state.groups.find(function(g) { return g.id === myPlayer.group_id; });
+      var initials = (myPlayer.display_name || '').split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+      $('live-my-avatar').textContent = initials;
+      $('live-my-playing').textContent = 'You\u2019re playing as ' + esc(myPlayer.display_name) + (myGroup ? ', Group ' + myGroup.group_number : '');
       scoreEl.style.display = '';
     } else {
       scoreEl.style.display = 'none';
@@ -3945,13 +4595,13 @@ Bob Wilson"></textarea>
     var evSlug = state.currentEventData ? state.currentEventData.slug : '';
 
     if (!orgSlug || !evSlug) {
-      $('invite-url').textContent = 'Event link not available — check event details are saved.';
-      $('invite-qr-wrap').innerHTML = '<p style="color:var(--muted);font-size:13px;">Save your event details to generate the QR code.</p>';
+      $('invite-url').textContent = 'Link not available yet';
+      $('invite-qr-wrap').innerHTML = '';
     } else {
       var inviteUrl = baseUrl + '/p/' + orgSlug + '/' + evSlug;
       $('invite-url').textContent = inviteUrl;
 
-      // Generate QR code — render inline as img
+      // Generate QR code
       var qrEl = $('invite-qr-wrap');
       qrEl.innerHTML = '';
       try {
@@ -3974,23 +4624,19 @@ Bob Wilson"></textarea>
         }
         var img = document.createElement('img');
         img.src = c.toDataURL();
-        img.width = 220; img.height = 220;
-        img.style.cssText = 'border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);display:block;margin:0 auto;';
-        img.alt = 'QR code — scan to score';
+        img.style.cssText = 'width:100%;height:auto;display:block;';
+        img.alt = 'QR code for the scoring link';
         qrEl.appendChild(img);
-        var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-size:13px;color:var(--muted);margin-top:8px;text-align:center;';
-        lbl.textContent = 'Scan to find your name';
-        qrEl.appendChild(lbl);
       } catch (e) {
-        qrEl.innerHTML = '<p style="color:var(--red);font-size:13px;">QR failed: ' + e.message + '</p>';
+        qrEl.innerHTML = '';
       }
     }
 
     // Board URL
     if (orgSlug && evSlug) {
       var boardUrl = baseUrl + '/board/#/' + orgSlug + '/' + evSlug;
-      $('board-url').textContent = boardUrl;
+      var boardLink = $('board-open-link');
+      if (boardLink) boardLink.href = boardUrl;
     }
 
     // Render group cards with status
@@ -4023,25 +4669,92 @@ Bob Wilson"></textarea>
   function renderLiveGroups() {
     var el = $('live-groups-list');
     if (state.groups.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No groups</p></div>';
+      el.innerHTML = '<div class="empty quiet"><h3>No groups yet</h3><p>Edit set-up to make them.</p></div>';
+      var scoringEl = $('live-groups-scoring');
+      if (scoringEl) scoringEl.textContent = '';
       return;
     }
 
+    // Build group status from leaderboard entries if available
+    var entries = state.liveEntries || [];
+    var now = Date.now();
+
+    var scoringCount = 0;
+    var totalGroups = state.groups.length;
+
     el.innerHTML = state.groups.map(function(g) {
       var members = state.players.filter(function(p) { return p.group_id === g.id; });
-      var scorer = members.find(function(p) { return p.id === g.scorer_player_id; });
-      var scorerName = scorer ? scorer.display_name : 'No scorer';
-      // Determine status dot based on scorer
-      var dotClass = scorer ? 'green' : 'red';
+      var surnames = members.map(function(p) {
+        var parts = (p.display_name || '').split(' ');
+        return esc(parts[parts.length - 1]);
+      }).join(', ');
 
-      return '<div class="live-group-card" onclick="editGroupScores(\'' + g.id + '\')">' +
-        '<div class="lgc-row">' +
-          '<span class="lgc-group">Group ' + g.group_number + '</span>' +
-          '<span class="status-dot ' + dotClass + '"></span>' +
-        '</div>' +
-        '<div class="lgc-meta">Scorer: ' + esc(scorerName) + ' &middot; ' + members.length + ' players</div>' +
-      '</div>';
+      // Determine group status from entries
+      var maxThru = 0;
+      var lastSaved = 0;
+      members.forEach(function(p) {
+        entries.forEach(function(e) {
+          // Match by name
+          if (e.names && e.names.indexOf(p.display_name) >= 0) {
+            if (e.thru > maxThru) maxThru = e.thru;
+            if (e.last_saved) {
+              var t = new Date(e.last_saved).getTime();
+              if (t > lastSaved) lastSaved = t;
+            }
+          }
+        });
+      });
+
+      var statusClass = '';
+      var statusText = '';
+      var thruText = '';
+      var holes = state.courseData ? state.courseData.holes.length : 18;
+
+      if (maxThru >= holes) {
+        // Finished
+        statusClass = 'done';
+        thruText = 'F';
+        statusText = 'Finished';
+        scoringCount++;
+      } else if (maxThru > 0) {
+        scoringCount++;
+        var minAgo = lastSaved ? Math.round((now - lastSaved) / 60000) : 0;
+        if (minAgo >= 45) {
+          statusClass = 'warn';
+          thruText = 'Thru ' + maxThru;
+          statusText = minAgo + ' min ago, give them a ring';
+        } else {
+          statusClass = 'ok';
+          thruText = 'Thru ' + maxThru;
+          statusText = minAgo <= 1 ? 'just now' : minAgo + ' min ago';
+        }
+      } else {
+        // Not started
+        var teeTime = g.tee_time;
+        if (teeTime) {
+          var parts = teeTime.split(':');
+          var teeDate = new Date();
+          teeDate.setHours(parseInt(parts[0]), parseInt(parts[1]), 0, 0);
+          if (now > teeDate.getTime()) {
+            statusClass = 'stop';
+            statusText = 'Not started. Tee time was ' + teeTime;
+          } else {
+            statusText = 'Tee time ' + teeTime;
+          }
+        } else {
+          statusText = 'Not started yet';
+        }
+      }
+
+      return '<button class="lg ' + statusClass + '" onclick="editGroupScores(\'' + g.id + '\')">' +
+        '<span class="g">Group ' + g.group_number + (thruText ? '<span class="thru">' + thruText + '</span>' : '') + '</span>' +
+        '<span class="st">' + statusText + '</span>' +
+        '<span class="who">' + surnames + '</span>' +
+      '</button>';
     }).join('');
+
+    var scoringEl = $('live-groups-scoring');
+    if (scoringEl) scoringEl.textContent = '\u00b7 ' + scoringCount + ' of ' + totalGroups + ' scoring';
   }
 
   async function renderLiveLeaderboard() {
@@ -4063,6 +4776,22 @@ Bob Wilson"></textarea>
       });
       if (scoresRes && scoresRes.entries) {
         renderLeaderboardTable($('live-leaderboard'), scoresRes.entries);
+        // Update livehead stats
+        var leaderPts = $('livehead-leader-pts');
+        var leaderLabel = $('livehead-leader-label');
+        var finishedEl = $('livehead-finished');
+        if (leaderPts && scoresRes.entries.length > 0) {
+          var top = scoresRes.entries[0];
+          leaderPts.textContent = top.points || 0;
+          leaderLabel.textContent = 'leading, thru ' + (top.thru || 0);
+        }
+        if (finishedEl) {
+          var finCount = scoresRes.entries.filter(function(e) { return e.thru >= 18; }).length;
+          finishedEl.textContent = finCount;
+        }
+        // Update timestamp
+        var updEl = $('live-updated');
+        if (updEl) updEl.innerHTML = '<i></i>Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
         return;
       }
     } catch (err) {
@@ -4088,28 +4817,62 @@ Bob Wilson"></textarea>
     });
   }
 
-  function renderLeaderboardTable(el, standings) {
+  function renderLeaderboardTable(el, standings, isFinished) {
     if (!standings || standings.length === 0) {
-      el.innerHTML = '<div class="empty-state"><p>No scores yet.</p></div>';
+      el.innerHTML = '<p class="sub">Nobody has scored yet. This updates every 30 seconds.</p>';
       return;
     }
 
-    var html = '<table class="lb-table"><thead><tr>' +
-      '<th class="lb-pos">#</th><th class="lb-name">Player</th><th class="lb-thru">Thru</th><th class="lb-pts">Pts</th>' +
+    // Store entries for live groups to use
+    if (!isFinished) state.liveEntries = standings;
+
+    var ev = state.currentEventData || {};
+    var isTeam = ev.format && ev.format.indexOf('better_ball') >= 0;
+    var freezeHole = ev.leaderboard_freeze_hole || null;
+    var holes = state.courseData ? state.courseData.holes.length : 18;
+
+    var html = '<table class="lb"><thead><tr>' +
+      '<th class="pos">Pos</th><th>' + (isTeam ? 'Team' : 'Player') + '</th><th></th><th class="thru">Thru</th><th class="pts" style="text-align:right">Pts</th>' +
       '</tr></thead><tbody>';
 
     var pos = 0;
     var lastPts = -1;
+    var frozenInserted = false;
+
     standings.forEach(function(s, i) {
       if (s.points !== lastPts) {
         pos = i + 1;
         lastPts = s.points;
       }
-      html += '<tr>' +
-        '<td class="lb-pos">' + (s.hasPlayed ? pos : '-') + '</td>' +
-        '<td class="lb-name">' + esc(s.names) + (s.countback ? '<div class="lb-cb">' + s.countback + '</div>' : '') + '</td>' +
-        '<td class="lb-thru">' + (s.thru || '-') + '</td>' +
-        '<td class="lb-pts">' + s.points + '</td>' +
+
+      // Insert frozen line if applicable
+      if (freezeHole && !frozenInserted && s.thru && s.thru < freezeHole) {
+        frozenInserted = true;
+        html += '<tr class="frozen-line"><td colspan="5"><div class="frozen">Players see down to here</div></td></tr>';
+      }
+
+      var rowClass = i === 0 && s.hasPlayed !== false ? 'leader' : '';
+      var thruDisplay = '';
+      if (s.thru >= holes) {
+        thruDisplay = '<span class="fin">F</span>';
+      } else {
+        thruDisplay = s.thru || '-';
+      }
+
+      // Movement arrow
+      var mvHtml = '<td class="mv"></td>';
+      if (s.movement === 'up') {
+        mvHtml = '<td class="mv up"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 5l7 8h-4v6H9v-6H5z"/></svg></td>';
+      } else if (s.movement === 'down') {
+        mvHtml = '<td class="mv down"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 19l-7-8h4V5h6v6h4z"/></svg></td>';
+      }
+
+      html += '<tr class="' + rowClass + '">' +
+        '<td class="pos">' + (s.hasPlayed !== false ? pos : '-') + '</td>' +
+        '<td class="name">' + esc(s.names) + '</td>' +
+        mvHtml +
+        '<td class="thru num">' + thruDisplay + '</td>' +
+        '<td class="pts num">' + s.points + '</td>' +
       '</tr>';
     });
 
@@ -4200,7 +4963,7 @@ Bob Wilson"></textarea>
       await renderLiveLeaderboard();
       toast('Scores saved');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4271,7 +5034,7 @@ Bob Wilson"></textarea>
         toast('Event finished — results published');
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4284,7 +5047,40 @@ Bob Wilson"></textarea>
       var res = await api('org-prizes', { query: { event_id: state.currentEvent } });
       state.prizeData = res;
       renderPrizesTab();
+      renderFinishedPrizes();
     } catch (err) { /* silent */ }
+  }
+
+  function renderFinishedPrizes() {
+    var el = $('finished-prizes-list');
+    if (!el) return;
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+    var players = (state.prizeData && state.prizeData.players) || [];
+    if (prizes.length === 0) {
+      el.innerHTML = '<p class="sub">No prizes set up.</p>';
+      return;
+    }
+    var medalMap = { '1st': 'gold', '2nd': 'silver', '3rd': 'bronze' };
+    el.innerHTML = prizes.map(function(p) {
+      var winnerName = '';
+      if (p.player_id) {
+        var found = players.find(function(pl) { return pl.id === p.player_id; });
+        winnerName = found ? found.display_name : '';
+      }
+      var cat = p.category || '';
+      var medalClass = medalMap[cat] || '';
+      var shortLabel = cat.substring(0, 2).toUpperCase();
+      if (cat.toLowerCase().indexOf('nearest') >= 0) shortLabel = 'NP';
+      if (cat.toLowerCase().indexOf('longest') >= 0) shortLabel = 'LD';
+      var ptsHtml = p.points ? '<span class="pts num">' + p.points + '</span>' : '';
+      var whoClass = winnerName ? 'who' : 'who pick';
+      var whoText = winnerName ? esc(winnerName) : 'Pick a player';
+      return '<div class="prize">' +
+        '<span class="medal' + (medalClass ? ' ' + medalClass : '') + '">' + shortLabel + '</span>' +
+        '<div><div class="' + whoClass + '">' + whoText + '</div>' +
+        (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '<div class="what">' + esc(cat) + '</div>') +
+        '</div>' + ptsHtml + '</div>';
+    }).join('');
   }
 
   function renderPrizesTab() {
@@ -4336,18 +5132,34 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'seed' }
       });
-      loadPrizes();
-      toast('Standard prizes added');
-    } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+      await loadPrizes();
+      openPrizesSheet();
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
   };
 
   window.addCustomPrize = async function() {
+    closePrizesSheet();
     var cat = await oobPrompt('Prize name (e.g. Sweep, Best dressed)', 'Add');
     if (!cat) return;
-    api('org-prizes', {
-      method: 'POST',
-      body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'add', category: cat }
-    }).then(loadPrizes).catch(function (err) { console.error(err.message); toast('That didn’t work. Try again.'); });
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'add', category: cat }
+      });
+      await loadPrizes();
+      openPrizesSheet();
+    } catch (err) { console.error(err.message); }
+  };
+
+  window.removePrize = async function(prizeId) {
+    try {
+      await api('org-prizes', {
+        method: 'POST',
+        body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'delete', prize_id: prizeId }
+      });
+      await loadPrizes();
+      openPrizesSheet();
+    } catch (err) { console.error(err.message); }
   };
 
   window.savePrizeWinner = async function(prizeId, playerId) {
@@ -4356,39 +5168,100 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id, action: 'save', prize_id: prizeId, player_id: playerId || null }
       });
-    } catch (err) { console.error(err.message); toast('That didn’t work. Try again.'); }
+    } catch (err) { console.error(err.message); toast('That didn\u2019t work. Try again.'); }
+  };
+
+  window.openPrizesSheet = async function() {
+    if (!state.currentEvent) return;
+    await loadPrizes();
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+
+    var html = '<h2>Prizes</h2><p>Optional. Winners fill in from the leaderboard when you finish.</p>';
+    if (prizes.length === 0) {
+      html += '<div class="actions">' +
+        '<button class="btn btn-primary btn-block" onclick="seedPrizes();closePrizesSheet()">Add standard prizes</button>' +
+        '<button class="btn btn-quiet" onclick="addCustomPrize();closePrizesSheet()">+ Custom prize</button>' +
+      '</div>';
+    } else {
+      html += '<div style="margin-bottom:var(--s-4);">';
+      prizes.forEach(function (p, idx) {
+        html += '<div class="prize"><div class="medal">' + esc(p.category.substring(0, 2)) + '</div>' +
+          '<div class="grow"><div class="who">' + esc(p.category) + '</div>' +
+          (p.prize_text ? '<div class="what">' + esc(p.prize_text) + '</div>' : '') + '</div>' +
+          '<button class="btn-danger-quiet" style="padding:0 8px;min-height:36px;font-size:13px;" onclick="removePrize(&quot;' + p.id + '&quot;)">Remove</button></div>';
+      });
+      html += '</div>';
+      html += '<div class="actions">' +
+        '<button class="btn btn-quiet" onclick="addCustomPrize();closePrizesSheet()">+ Custom prize</button>' +
+        '<button class="btn btn-secondary btn-block" onclick="closePrizesSheet()">Done</button>' +
+      '</div>';
+    }
+
+    var wrap = document.createElement('div');
+    wrap.id = 'prizes-sheet-wrap';
+    wrap.className = 'sheet-wrap';
+    wrap.onclick = function (e) { if (e.target === wrap) closePrizesSheet(); };
+    var sheet = document.createElement('div');
+    sheet.className = 'sheet';
+    sheet.innerHTML = '<div class="grab"></div>' + html;
+    wrap.appendChild(sheet);
+    document.body.appendChild(wrap);
+  };
+
+  window.closePrizesSheet = function () {
+    var wrap = $('prizes-sheet-wrap');
+    if (wrap) wrap.remove();
+    // Update the prizes label on the details card
+    var prizes = (state.prizeData && state.prizeData.prizes) || [];
+    var label = $('details-prizes-label');
+    if (label) {
+      if (prizes.length > 0) {
+        label.textContent = pluralise(prizes.length, 'prize') + ': ' + prizes.map(function (p) { return p.category; }).join(', ');
+      } else {
+        label.textContent = 'None yet. Optional, add any time.';
+      }
+    }
   };
 
   window.sendResultsEmail = async function() {
-    if (!(await oobConfirm('Send results to all players with an email address?', 'Send'))) return;
+    var emailCount = 0;
+    try {
+      var countRes = await api('results-email', {
+        method: 'POST',
+        body: { action: 'count', event_id: state.currentEvent, organiser_id: state.organiser.id }
+      });
+      emailCount = countRes.with_email || 0;
+    } catch(e) {}
+    if (!(await oobConfirm('Email the results to ' + emailCount + ' player' + (emailCount !== 1 ? 's' : '') + '?', 'Send'))) return;
     var btn = $('btn-results-email');
     btn.disabled = true;
-    btn.textContent = 'Sending…';
+    btn.classList.add('is-loading');
     try {
       var res = await api('results-email', {
         method: 'POST',
         body: { event_id: state.currentEvent, organiser_id: state.organiser.id }
       });
+      btn.classList.remove('is-loading');
       if (res.failed > 0) {
-        btn.textContent = 'Sent to ' + res.sent + ', ' + res.failed + ' failed';
+        btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Retry ' + res.failed;
         btn.disabled = false;
-        toast(res.failed + ' email' + (res.failed === 1 ? '' : 's') + ' failed — try again');
       } else if (res.sent === 0) {
-        btn.textContent = 'No players have an email';
+        btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> No players gave an email';
         btn.disabled = true;
       } else {
-        btn.textContent = 'Sent to ' + res.sent + ' of ' + res.with_email + ' players';
+        btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Sent to ' + res.sent + ' player' + (res.sent !== 1 ? 's' : '');
         btn.disabled = true;
       }
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
+      btn.classList.remove('is-loading');
       btn.disabled = false;
-      btn.textContent = 'Email results to players';
+      btn.innerHTML = '<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg> Email results again';
     }
   };
 
   window.showEditEventFromLive = function() {
-    switchTab(document.querySelector('.step-btn[data-tab="details"]'));
+    switchTab(document.querySelector('.step[data-tab="details"]'));
   };
 
   window.archiveEvent = async function() {
@@ -4400,15 +5273,16 @@ Bob Wilson"></textarea>
         method: 'POST',
         body: { action: action, event_id: state.currentEvent, organiser_id: state.organiser.id }
       });
-      toast(isArchived ? 'Unarchived' : 'Archived');
+      toast(isArchived ? 'Back in your events' : 'Moved to archive');
       goToDashboard();
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
   window.abandonEvent = async function() {
-    if (!(await oobConfirm('Abandon this event? No results will be published. This cannot be undone.', 'Abandon'))) return;
+    var evName = state.currentEventData ? state.currentEventData.name : 'this event';
+    if (!(await oobConfirm('Abandon ' + evName + '? No results will be published and this can\u2019t be undone.', 'Abandon'))) return;
     try {
       await api('org-events', {
         method: 'POST',
@@ -4422,7 +5296,7 @@ Bob Wilson"></textarea>
       updateGoLiveTab();
       toast('Event abandoned');
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
@@ -4432,13 +5306,98 @@ Bob Wilson"></textarea>
       var res = await api('leaderboard', {
         query: { event: state.currentEvent }
       });
-      if (res && res.entries) {
-        renderLeaderboardTable($('finished-leaderboard'), res.entries);
+      if (res && res.entries && res.entries.length > 0) {
+        renderLeaderboardTable($('finished-leaderboard'), res.entries, true);
+
+        // Count display
+        var countEl = $('finished-lb-count');
+        if (countEl) countEl.textContent = res.entries.length + (res.entries.length === 1 ? ' entry' : ' entries');
+
+        // Winner card
+        var winner = res.entries[0];
+        var winnerCard = $('finished-winner');
+        if (winnerCard && winner) {
+          winnerCard.style.display = '';
+          $('finished-winner-name').textContent = winner.names;
+          $('finished-winner-pts').innerHTML = winner.points + '<small>pts</small>';
+          var ev = state.currentEventData || {};
+          var formatLabel = ev.format ? ev.format.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); }) : '';
+          var allowance = ev.handicap_allowance != null ? Math.round(ev.handicap_allowance * 100) + '%' : '';
+          $('finished-winner-sub').textContent = formatLabel + (allowance ? ', ' + allowance + ' allowance' : '');
+
+          // Podium (2nd and 3rd)
+          var podiumEl = $('finished-podium');
+          var podiumHtml = '';
+          if (res.entries[1]) podiumHtml += '<div><b class="num">' + res.entries[1].points + '</b><span>2nd \u00b7 ' + esc(res.entries[1].names) + '</span></div>';
+          if (res.entries[2]) podiumHtml += '<div><b class="num">' + res.entries[2].points + '</b><span>3rd \u00b7 ' + esc(res.entries[2].names) + '</span></div>';
+          podiumEl.innerHTML = podiumHtml;
+
+          // Share section
+          var orgSlug = state.organiser ? state.organiser.slug : '';
+          var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+          if (orgSlug && evSlug) {
+            var resultsUrl = window.location.origin + '/r/' + orgSlug + '/' + evSlug;
+            $('finished-results-url').textContent = resultsUrl;
+            // WhatsApp preview
+            $('finished-wa-preview').innerHTML = 'Results from <b>' + esc(ev.name || '') + '</b>: ' + esc(winner.names) + ' win' + (winner.names.indexOf('&') >= 0 ? '' : 's') + ' with ' + winner.points + ' pts. Full leaderboard: ' + esc(resultsUrl);
+            // QR
+            var qrEl = $('finished-qr-wrap');
+            qrEl.innerHTML = '';
+            try {
+              var qr = qrcode(0, 'L');
+              qr.addData(resultsUrl);
+              qr.make();
+              var modules = qr.getModuleCount();
+              var cellSize = Math.max(4, Math.floor(200 / (modules + 8)));
+              var quietZone = cellSize * 4;
+              var canvasSize = cellSize * modules + quietZone * 2;
+              var c = document.createElement('canvas');
+              c.width = canvasSize; c.height = canvasSize;
+              var cx = c.getContext('2d');
+              cx.fillStyle = '#fff'; cx.fillRect(0, 0, canvasSize, canvasSize);
+              cx.fillStyle = '#000';
+              for (var r = 0; r < modules; r++) {
+                for (var col = 0; col < modules; col++) {
+                  if (qr.isDark(r, col)) cx.fillRect(quietZone + col * cellSize, quietZone + r * cellSize, cellSize, cellSize);
+                }
+              }
+              var img = document.createElement('img');
+              img.src = c.toDataURL();
+              img.style.cssText = 'width:100%;height:auto;display:block;';
+              img.alt = 'QR code for the results link';
+              qrEl.appendChild(img);
+            } catch (e) { /* QR failed silently */ }
+          }
+        }
+      } else {
+        $('finished-leaderboard').innerHTML = '<p class="sub">No scores were saved for this event.</p>';
       }
     } catch (err) {
-      $('finished-leaderboard').innerHTML = '<div class="empty-state"><p>Could not load results.</p></div>';
+      $('finished-leaderboard').innerHTML = '<p class="sub">Couldn\u2019t load results. Try again.</p>';
     }
   }
+
+  window.shareFinishedWhatsApp = function() {
+    var ev = state.currentEventData || {};
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = ev.slug || '';
+    var resultsUrl = window.location.origin + '/r/' + orgSlug + '/' + evSlug;
+    var entries = state.liveEntries || [];
+    var winner = entries[0];
+    var text = 'Results from ' + (ev.name || 'the event');
+    if (winner) text += ': ' + winner.names + ' win' + (winner.names.indexOf('&') >= 0 ? '' : 's') + ' with ' + winner.points + ' pts';
+    text += '. Full leaderboard: ' + resultsUrl;
+    var waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
+    var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (isMobile) { window.open(waUrl); } else { window.open(waUrl, 'oob-share'); }
+  };
+
+  window.copyResultsLink = function() {
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+    var url = window.location.origin + '/r/' + orgSlug + '/' + evSlug;
+    navigator.clipboard.writeText(url).then(function () { toast('Copied'); });
+  };
 
   // ── Clone event ───────────────────────────────────────────────
   window.cloneEvent = async function() {
@@ -4451,19 +5410,23 @@ Bob Wilson"></textarea>
           organiser_id: state.organiser.id
         }
       });
-      toast('Event cloned');
+      toast('Copied. Here\u2019s your new event, set the date.');
       await loadEvents();
       openEvent(res.event.id);
     } catch (err) {
-      console.error(err.message); toast('That didn’t work. Try again.');
+      console.error(err.message); toast('That didn\u2019t work. Try again.');
     }
   };
 
   // ── Invite link / QR ─────────────────────────────────────────
+  window.editLivePrizes = function() {
+    openPrizesSheet();
+  };
+
   window.shareWhatsApp = function() {
     var evName = state.currentEventData ? state.currentEventData.name : 'the event';
     var url = $('invite-url').textContent;
-    var text = "You're playing in " + evName + "! Tap your name and confirm your handicap: " + url;
+    var text = 'Scoring for ' + evName + ' is on your phone. Tap the link, find your name and you\u2019re in: ' + url;
     var waUrl = 'https://wa.me/?text=' + encodeURIComponent(text);
     // On mobile: open normally. On desktop: reuse a named window so repeat taps don't pile up tabs.
     var isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
@@ -4556,16 +5519,26 @@ Bob Wilson"></textarea>
   };
 
   window.copyBoardLink = function() {
-    var url = $('board-url').textContent;
-    navigator.clipboard.writeText(url).then(function () { toast('Board link copied'); });
+    var orgSlug = state.organiser ? state.organiser.slug : '';
+    var evSlug = state.currentEventData ? state.currentEventData.slug : '';
+    var url = window.location.origin + '/board/#/' + orgSlug + '/' + evSlug;
+    navigator.clipboard.writeText(url).then(function () { toast('Big screen link copied'); });
+  };
+
+  window.setBoardShow = function(mode, btn) {
+    var seg = $('board-show-seg');
+    if (seg) {
+      var btns = seg.querySelectorAll('button');
+      btns.forEach(function(b) { b.classList.toggle('on', b === btn); });
+    }
+    // Store the board display mode for the big screen
+    if (state.currentEventData) {
+      state.currentEventData.board_display = mode;
+    }
   };
 
   window.openInviteLink = function() {
-    var url = $('invite-url').textContent;
-    if (url) {
-      localStorage.setItem('oob-organiser-return', '/o/#event-' + state.currentEvent);
-      window.location.href = url;
-    }
+    // No longer navigates away -- removed per audit #21
   };
 
   window.copyInviteLink = function() {
@@ -4954,7 +5927,7 @@ Bob Wilson"></textarea>
     } catch (err) {
       $('help-send-btn').disabled = false;
       $('help-send-btn').textContent = 'Send';
-      console.error('Help send:', err.message); toast('Couldn’t send. Email hello@outofboundsevents.com instead.');
+      console.error('Help send:', err.message); toast('Couldn\u2019t send. Email hello@outofboundsevents.com instead.');
     }
   };
 

@@ -1,6 +1,10 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
+  command = "true"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 [functions]
   # Default 10s is too tight for vision API calls
