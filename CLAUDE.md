@@ -149,6 +149,12 @@ the staged diff for secret patterns: `re_`, `sk_test_`, `sk_live_`,
 `whsec_`, `sk-ant-`, `sbp_`, `eyJhbGci`, and runs of asterisks
 followed by alphanumerics. Redact any hit before committing.
 
+## Apple App Store releases
+
+Version 1.0 is authorised for release on
+PENDING_DEVELOPER_RELEASE. Future versions need Karla's explicit
+word before releasing.
+
 ## Commit messages
 
 One feature or fix per commit. Describe the "what" and "why" in
