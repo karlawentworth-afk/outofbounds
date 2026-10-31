@@ -291,7 +291,12 @@ body{font-family:Inter,system-ui,sans-serif;color:var(--ink);background:var(--of
       }
 
       // Promo
-      html += '<div class="promo"><p>Scored with <strong>Out of Bounds</strong>.<br>Run your own for \u00A39.99. <a href="https://outofboundsevents.com/#pricing">Find out more</a></p></div>';
+      var _native = /[?&]native=1/.test(location.search) || (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+      if (_native) {
+        html += '<div class="promo"><p>Scored with <strong>Out of Bounds</strong></p></div>';
+      } else {
+        html += '<div class="promo"><p>Scored with <strong>Out of Bounds</strong>.<br>Run your own for \u00A39.99. <a href="https://outofboundsevents.com/#pricing">Find out more</a></p></div>';
+      }
 
       document.getElementById('content').innerHTML = html;
 

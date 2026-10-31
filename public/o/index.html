@@ -2810,7 +2810,9 @@ Bob Wilson"></textarea>
     }
 
     var html = '';
-    html += settingsRow(icons.billing, 'Billing', isPro ? 'Pro plan' : 'Play plan', 'goToBilling()');
+    if (typeof isNativeApp !== 'function' || !isNativeApp()) {
+      html += settingsRow(icons.billing, 'Billing', isPro ? 'Pro plan' : 'Play plan', 'goToBilling()');
+    }
     html += settingsRow(icons.branding, 'Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Logo, colours, display name', isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature\')', { dim: !isPro });
     html += settingsRow(icons.team, 'Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Organisers and helpers', isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')', { dim: !isPro });
     if (org.is_superadmin) {
@@ -2843,7 +2845,7 @@ Bob Wilson"></textarea>
         if (brandTag) brandTag.style.display = 'none';
       } else {
         brandBtn.style.opacity = '.5';
-        brandBtn.onclick = function() { toast('Branding is a Pro feature. Upgrade in Billing.'); };
+        brandBtn.onclick = function() { toast(typeof isNativeApp === 'function' && isNativeApp() ? 'Branding is a Pro feature. Manage your account on the web.' : 'Branding is a Pro feature. Upgrade in Billing.'); };
         if (brandTag) brandTag.style.display = '';
       }
     }
@@ -3769,8 +3771,8 @@ Bob Wilson"></textarea>
       renderPlayerList();
       hideAddPlayer();
 
-      // If live event on Play, the server flags that a 99p top-up is needed
-      if (res.top_up_required) {
+      // If live event on Play, the server flags that a top-up is needed
+      if (res.top_up_required && !(typeof isNativeApp === 'function' && isNativeApp())) {
         toast('Player added — 99p top-up required');
         var topUp = await api('stripe-checkout', {
           method: 'POST',
