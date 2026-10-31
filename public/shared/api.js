@@ -60,6 +60,11 @@
    */
   function showTestBanner(testMode) {
     if (!testMode) return;
+    // Never show in native (Apple review reads it as "takes payments")
+    if (typeof isNativeApp === 'function' && isNativeApp()) return;
+    if (/[?&]native=1/.test(location.search)) return;
+    // On web, only show for superadmins
+    if (localStorage.getItem('oob-superadmin') !== 'true') return;
     if (document.getElementById('test-mode-banner')) return;
     var banner = document.createElement('div');
     banner.id = 'test-mode-banner';
