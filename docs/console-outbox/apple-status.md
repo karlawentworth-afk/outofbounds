@@ -10,4 +10,10 @@ Submitted 2026-10-18, build 8. Release type: AFTER_APPROVAL.
 
 Resolution Center messages not available via ASC API. Karla should check App Store Connect for the rejection reason.
 
-Per brief 010: REJECTED means do not resubmit or retry. Polling stopped until new brief.
+## 2026-10-31 17:38 UTC
+
+Reply posted to Resolution Center. Submission ef7b9800-5ba3-436c-8a27-f0b539fa0b37 resubmitted.
+
+**Version 1.0: WAITING_FOR_REVIEW**
+
+Hourly poll resumed per brief 010.
