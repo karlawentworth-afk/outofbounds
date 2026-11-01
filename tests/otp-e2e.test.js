@@ -1,5 +1,5 @@
 'use strict';
-// OTP end-to-end test: request code, read from mailinator, sign in
+// OTP end-to-end test: sign in via the UI, read code from mailinator
 // Usage: TEST_URL=https://score.outofboundsevents.com node tests/otp-e2e.test.js
 
 var fs = require('fs');
@@ -8,7 +8,6 @@ var https = require('https');
 var { chromium } = require('playwright');
 
 var BASE = process.env.TEST_URL || 'https://score.outofboundsevents.com';
-var HOST = new URL(BASE).hostname;
 var SB_HOST = 'ahutmswadskdkqhnrhhh.supabase.co';
 var SB_KEY = (function () {
   try {
@@ -59,57 +58,54 @@ async function main() {
   var mailbox = 'oob-otp-' + ts;
   var email = mailbox + '@mailinator.com';
 
-  // 1. Request OTP via send-otp
-  var otpRes = await httpReq('POST', HOST, '/.netlify/functions/send-otp', { email: email });
-  step('send-otp accepted', otpRes.status === 200 && otpRes.data && otpRes.data.ok === true,
-    'status=' + otpRes.status + ' ok=' + (otpRes.data ? otpRes.data.ok : '?'));
-
-  if (otpRes.status !== 200 || !otpRes.data || !otpRes.data.ok) {
-    console.log('Cannot continue without OTP sent.');
-    process.exit(1);
-  }
-
-  // 2. Wait for email at mailinator (up to 3 minutes)
   var browser = await chromium.launch();
+  var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  var page = await ctx.newPage();
+
+  // 1. Load sign-in and enter email via the UI
+  await page.goto(BASE + '/o/', { waitUntil: 'load', timeout: 30000 });
+  for (var w = 0; w < 20; w++) {
+    await sleep(500);
+    var s = await page.evaluate(function () {
+      var si = document.getElementById('screen-signin');
+      return si && si.offsetHeight > 0 ? 'signin' : 'waiting';
+    });
+    if (s === 'signin') break;
+  }
+  step('Sign-in screen loaded', s === 'signin', 'screen=' + s);
+
+  await page.locator('button:has-text("with email")').click();
+  await sleep(500);
+  await page.fill('#magic-email', email);
+  await sleep(500);
+
+  // 2. Click "Send me a code" — this calls send-otp
+  await page.click('#magic-btn');
+
+  // Wait for the OTP code field to appear (up to 30s for cold start)
+  var otpVisible = false;
+  for (var ow = 0; ow < 30; ow++) {
+    await sleep(1000);
+    otpVisible = await page.evaluate(function () {
+      var el = document.getElementById('magic-sent');
+      return el && el.offsetHeight > 0;
+    });
+    if (otpVisible) break;
+  }
+  step('Code field appears after send', otpVisible, 'visible=' + otpVisible);
+
+  // 3. Read the code from mailinator (up to 3 minutes)
   var code = '';
-
-  console.log('  Waiting for email at ' + mailbox + '@mailinator.com...');
-  for (var attempt = 0; attempt < 18; attempt++) {
-    await sleep(10000);
-    // Try mailinator API
-    try {
-      var mailRes = await httpReq('GET', 'www.mailinator.com',
-        '/api/v2/domains/public/inboxes/' + mailbox,
-        null, {});
-      if (mailRes.data && mailRes.data.msgs && mailRes.data.msgs.length > 0) {
-        var msgId = mailRes.data.msgs[0].id;
-        var msgRes = await httpReq('GET', 'www.mailinator.com',
-          '/api/v2/domains/public/inboxes/' + mailbox + '/messages/' + msgId,
-          null, {});
-        if (msgRes.data && msgRes.data.parts) {
-          var bodyText = '';
-          msgRes.data.parts.forEach(function (p) {
-            if (p.body) bodyText += p.body;
-          });
-          // Extract 6-digit code from email body
-          var codeMatch = bodyText.match(/\b(\d{6})\b/);
-          if (codeMatch) {
-            code = codeMatch[1];
-            step('Email received with 6-digit code', true, 'code length=' + code.length);
-            break;
-          }
-        }
-      }
-    } catch (e) { /* retry */ }
-
-    // Also try Playwright approach to read mailinator
-    if (attempt === 5 || attempt === 10) {
+  if (otpVisible) {
+    console.log('  Waiting for email at ' + email + '...');
+    for (var attempt = 0; attempt < 18; attempt++) {
+      await sleep(10000);
       try {
+        // Try Playwright to read mailinator
         var mailCtx = await browser.newContext();
         var mailPage = await mailCtx.newPage();
         await mailPage.goto('https://www.mailinator.com/v4/public/inboxes.jsp?to=' + mailbox, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await sleep(3000);
-        // Click the first message if any
         var hasMsg = await mailPage.evaluate(function () {
           var rows = document.querySelectorAll('tr.ng-scope');
           if (rows.length > 0) { rows[0].click(); return true; }
@@ -118,91 +114,48 @@ async function main() {
         if (hasMsg) {
           await sleep(3000);
           var emailBody = await mailPage.evaluate(function () {
-            var iframe = document.querySelector('#msg_body');
+            var iframe = document.getElementById('msg_body');
             if (iframe && iframe.contentDocument) return iframe.contentDocument.body.innerText;
             return document.body.innerText;
           });
           var cm = emailBody.match(/\b(\d{6})\b/);
           if (cm) {
             code = cm[1];
-            step('Email received with 6-digit code', true, 'code length=' + code.length);
             await mailCtx.close();
             break;
           }
         }
         await mailCtx.close();
-      } catch (e) { /* ignore playwright errors */ }
+      } catch (e) { /* retry */ }
     }
-
-    if (attempt === 17) {
-      step('Email received with 6-digit code', false, 'no email after 3 minutes');
-    }
+    step('Email received with 6-digit code', code.length === 6, 'length=' + code.length);
   }
 
-  step('Code is exactly 6 digits', code.length === 6, 'length=' + code.length);
-
-  // 3. Sign in with the code in Playwright
+  // 4. Enter the code and sign in
   if (code) {
-    var ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-    var page = await ctx.newPage();
-    await page.goto(BASE + '/o/', { waitUntil: 'load', timeout: 30000 });
+    await page.fill('#otp-code', code);
+    await sleep(300);
+    await page.click('#otp-verify-btn');
 
-    // Wait for sign-in screen
-    for (var w = 0; w < 20; w++) {
-      await sleep(500);
-      var s = await page.evaluate(function () {
-        var si = document.getElementById('screen-signin');
-        return si && si.offsetHeight > 0 ? 'signin' : 'waiting';
-      });
-      if (s === 'signin') break;
-    }
-
-    // Click email sign-in, enter the test email
-    await page.locator('button:has-text("with email")').click();
-    await sleep(500);
-    await page.fill('#magic-email', email);
-    await sleep(1000);
-
-    // Click send and wait for OTP code field (send-otp cold start can take 10s)
-    await page.click('#magic-btn');
-    var otpVisible = false;
-    for (var ow = 0; ow < 30; ow++) {
+    var signedIn = false;
+    for (var dw = 0; dw < 20; dw++) {
       await sleep(1000);
-      otpVisible = await page.evaluate(function () {
-        var el = document.getElementById('magic-sent');
-        return el && el.offsetHeight > 0;
+      var screen = await page.evaluate(function () {
+        var dash = document.getElementById('screen-dashboard');
+        var onboard = document.getElementById('screen-onboard');
+        if (dash && dash.offsetHeight > 0) return 'dashboard';
+        if (onboard && onboard.offsetHeight > 0) return 'onboard';
+        return 'waiting';
       });
-      if (otpVisible) break;
+      if (screen === 'dashboard' || screen === 'onboard') { signedIn = true; break; }
     }
-    step('OTP code field visible after send', otpVisible, 'visible=' + otpVisible);
-
-    if (otpVisible) {
-      await page.fill('#otp-code', code);
-      await sleep(300);
-      await page.click('#otp-verify-btn');
-
-      // Wait for dashboard or onboard screen
-      var signedIn = false;
-      for (var dw = 0; dw < 20; dw++) {
-        await sleep(1000);
-        var screen = await page.evaluate(function () {
-          var dash = document.getElementById('screen-dashboard');
-          var onboard = document.getElementById('screen-onboard');
-          if (dash && dash.offsetHeight > 0) return 'dashboard';
-          if (onboard && onboard.offsetHeight > 0) return 'onboard';
-          return 'waiting';
-        });
-        if (screen === 'dashboard' || screen === 'onboard') { signedIn = true; break; }
-      }
-      step('Sign-in reached dashboard or onboard', signedIn, 'screen=' + screen);
-    }
-
-    await ctx.close();
+    step('Sign-in reached dashboard or onboard', signedIn, 'screen=' + screen);
   }
 
+  await ctx.close();
   await browser.close();
 
-  // Cleanup: delete the test user from Supabase
+  // Cleanup: delete the test user
   try {
     var users = await httpReq('GET', SB_HOST, '/auth/v1/admin/users?filter=' + encodeURIComponent(email),
       null, { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY });
