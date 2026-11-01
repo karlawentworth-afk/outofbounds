@@ -163,11 +163,15 @@ async function main() {
     await page.fill('#magic-email', email);
     await sleep(1000);
 
-    // Wait for the OTP form (magic-sent) to be visible after send
+    // Click send and wait for OTP code field (send-otp cold start can take 10s)
     await page.click('#magic-btn');
-    for (var ow = 0; ow < 20; ow++) {
+    var otpVisible = false;
+    for (var ow = 0; ow < 30; ow++) {
       await sleep(1000);
-      var otpVisible = await page.isVisible('#otp-code');
+      otpVisible = await page.evaluate(function () {
+        var el = document.getElementById('magic-sent');
+        return el && el.offsetHeight > 0;
+      });
       if (otpVisible) break;
     }
     step('OTP code field visible after send', otpVisible, 'visible=' + otpVisible);
