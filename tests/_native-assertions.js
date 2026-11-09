@@ -185,6 +185,12 @@ async function runReviewerLiveTest() {
   await sleep(300);
   await page.click('#magic-btn');
   for (var d = 0; d < 30; d++) { await sleep(1000); var hasCards = await page.evaluate(function () { return document.querySelectorAll('.event-card').length >= 3; }); if (hasCards) break; }
+  // If demo-reset cleared events, reload after a delay
+  if (!hasCards) {
+    await sleep(10000);
+    await page.reload({ waitUntil: 'load' });
+    for (var d2 = 0; d2 < 20; d2++) { await sleep(1000); hasCards = await page.evaluate(function () { return document.querySelectorAll('.event-card').length >= 3; }); if (hasCards) break; }
+  }
 
   // Open the live event (Spring Charity Classic)
   var clickedLive = await page.evaluate(function () {

@@ -109,14 +109,17 @@ async function capture(width, height, dpr, dir) {
     }
     return false;
   });
-  // Wait for the live leaderboard to render (leader pts not --)
-  for (var lw = 0; lw < 25; lw++) {
+  // Wait for the live view to fully render: groups with "Thru" and leaderboard with pts
+  for (var lw = 0; lw < 30; lw++) {
     await sleep(1000);
-    var lbReady = await page.evaluate(function () {
-      var el = document.getElementById('livehead-leader-pts');
-      return el && el.textContent.trim() !== '--';
+    var liveReady = await page.evaluate(function () {
+      var pts = document.getElementById('livehead-leader-pts');
+      var ptsOk = pts && pts.textContent.trim() !== '--';
+      var groupsList = document.getElementById('live-groups-list');
+      var groupsOk = groupsList && groupsList.textContent.indexOf('Thru') !== -1;
+      return ptsOk && groupsOk;
     });
-    if (lbReady) break;
+    if (liveReady) break;
   }
   await sleep(1000);
   // Scroll to show the livehead (dark header with stats and leaderboard)
@@ -126,7 +129,7 @@ async function capture(width, height, dpr, dir) {
   });
   await sleep(500);
   await page.screenshot({ path: path.join(outDir, '04.png'), type: 'png' });
-  console.log('  04 Spring Charity Classic live: ' + clickedSCC + ' lbReady=' + lbReady);
+  console.log('  04 Spring Charity Classic live: ' + clickedSCC + ' ready=' + liveReady);
 
   // Go back to dashboard
   await page.evaluate(function () { if (typeof goToDashboard === 'function') goToDashboard(); });
