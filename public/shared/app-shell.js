@@ -123,6 +123,10 @@
   // Remove store badges
   document.querySelectorAll('#store-android, #store-apple, .store-badges').forEach(function (el) { el.remove(); });
 
+  // Team description: remove "No extra charge." in native
+  var teamDesc = document.getElementById('team-desc');
+  if (teamDesc) teamDesc.textContent = teamDesc.textContent.replace(' No extra charge.', '');
+
   // ── Ongoing: sanitise dynamic content after render ──
   // Watch for new tier/plan text injected by JS after page load
   function sanitiseNative() {

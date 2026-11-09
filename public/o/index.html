@@ -613,7 +613,7 @@ a { color: inherit; text-decoration: none; }
       </div>
       <a href="#" class="btn btn-primary" onclick="newEvent();return false"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New event</a>
     </div>
-    <div id="event-list"></div>
+    <div id="event-list"><p id="event-list-loading" class="sub" style="text-align:center;padding:32px 0;">Loading your events&hellip;</p></div>
   </main>
 </div>
 
@@ -887,7 +887,7 @@ a { color: inherit; text-decoration: none; }
   <div class="container">
     <button class="back-btn" onclick="goToDashboard()">&#8592; Back to events</button>
     <h2 style="font-size:20px;margin-bottom:8px;">Team</h2>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Up to 3 organisers (can edit) and unlimited helpers (view only). No extra charge.</p>
+    <p id="team-desc" style="color:var(--muted);font-size:14px;margin-bottom:20px;">Up to 3 organisers (can edit) and unlimited helpers (view only). No extra charge.</p>
     <div id="team-list" style="margin-bottom:20px;"></div>
     <div style="background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:16px;">
       <h3 style="font-size:15px;margin-bottom:12px;">Invite someone</h3>
@@ -1345,7 +1345,7 @@ Bob Wilson"></textarea>
 </div>
 
 <!-- Generic confirm/prompt sheet -->
-<div id="oob-sheet-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:flex-end;justify-content:center;">
+<div id="oob-sheet-overlay" onclick="if(event.target===this)closeSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:500;align-items:flex-end;justify-content:center;">
   <div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px;padding-bottom:max(28px,env(safe-area-inset-bottom));width:100%;max-width:500px;text-align:center;">
     <div id="oob-sheet-text" style="font-size:17px;font-weight:600;color:var(--ink);margin-bottom:12px;line-height:1.5;"></div>
     <div id="oob-sheet-input-wrap" style="display:none;margin-bottom:16px;">
@@ -2985,8 +2985,13 @@ Bob Wilson"></textarea>
       }
     } catch (err) { /* use cached */ }
 
-    $('ev-title').textContent = ev ? ev.name : 'New event';
-    populateEventForm(state.currentEventData);
+    if (!state.currentEventData && eventId) {
+      // Event data not loaded yet — show loading, not the empty wizard
+      $('ev-title').textContent = 'Loading\u2026';
+    } else {
+      $('ev-title').textContent = ev ? ev.name : 'New event';
+    }
+    if (state.currentEventData) populateEventForm(state.currentEventData);
 
     // Determine which tab set to show based on status
     if (state.currentEventData && state.currentEventData.status === 'live') {
