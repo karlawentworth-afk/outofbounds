@@ -258,8 +258,7 @@ button.link { min-height: var(--tap); display: inline-flex; align-items: center;
 .unplaced { background: var(--warning-soft); border: 1px solid transparent; border-radius: var(--r-lg); padding: var(--s-4); display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); color: var(--warning-ink); font-weight: 500; }
 
 /* ---------- Live group card ---------- */
-.lgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-2); }
-@media (min-width: 600px) { .lgrid { grid-template-columns: repeat(3, 1fr); } }
+.lgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--s-2); }
 .lg { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); text-align: left; position: relative; min-height: 84px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
 .lg::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--line-strong); }
 .lg.ok::before { background: var(--success); }

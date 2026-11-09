@@ -295,7 +295,7 @@ a { color: inherit; text-decoration: none; }
 .note { background: var(--paper); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--muted); margin-top: 14px; }
 
 /* Live control room — groups grid */
-.groups-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.groups-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 @media (max-width: 520px) { .groups-grid { grid-template-columns: repeat(2, 1fr); } }
 .g-card {
   background: #fff; border: 1px solid var(--line); border-radius: 12px;
