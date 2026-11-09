@@ -1611,6 +1611,17 @@ Bob Wilson"></textarea>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email })
       });
+      if (res.status === 429) {
+        var retryData = await res.json().catch(function () { return {}; });
+        var errEl = $('signin-error');
+        errEl.textContent = 'Too many sign-in emails right now. Please try again in a few minutes.';
+        errEl.style.display = '';
+        console.error('send-otp 429', retryData);
+        $('magic-btn').disabled = true;
+        setTimeout(function () { $('magic-btn').disabled = false; }, 60000);
+        $('magic-btn').textContent = 'Send me a code';
+        return;
+      }
       var data = await res.json();
       if (!data.ok) throw new Error('Could not send code');
       state._otpEmail = email;

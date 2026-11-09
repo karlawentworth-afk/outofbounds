@@ -76,16 +76,24 @@ exports.handler = async function (event) {
     { email: email, create_user: true, gotrue_meta_security: {} }
   );
 
+  var responseBody = {
+    ok: result.status < 300,
+    origin: origin,
+    redirectTo: redirectTo
+  };
+
+  // Pass through rate limit info
+  if (result.status === 429) {
+    responseBody.retry_after = 60;
+    responseBody.error = 'rate_limited';
+  }
+
   return {
     statusCode: result.status < 300 ? 200 : result.status,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
     },
-    body: JSON.stringify({
-      ok: result.status < 300,
-      origin: origin,
-      redirectTo: redirectTo
-    })
+    body: JSON.stringify(responseBody)
   };
 };

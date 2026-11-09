@@ -411,9 +411,11 @@ async function seed() {
       starting_mode: 'tee_times',
       leaderboard_freeze_hole: 12,
       status: ev.status,
-      paid: ev.status !== 'draft' || ev.isReady,
-      paid_at: (ev.status !== 'draft' || ev.isReady) ? new Date().toISOString() : null
+      paid: ev.status !== 'draft' && !ev.isReady,
+      paid_at: (ev.status !== 'draft' && !ev.isReady) ? new Date().toISOString() : null
     };
+
+    if (ev.nineHole) eventRow.counted_holes = 9;
 
     if (ev.status === 'finished') {
       eventRow.locked_at = new Date().toISOString();

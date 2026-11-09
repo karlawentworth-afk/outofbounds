@@ -55,7 +55,7 @@ exports.handler = async function (event) {
     try {
       var events = await sb.sbGet(
         'events?organiser_id=eq.' + organiserId +
-        '&select=id,name,slug,event_date,format,status,starting_mode,paid,paid_at,paid_amount_pence,created_at,archived,course_id,tee_id,courses!events_course_id_fkey(name)' +
+        '&select=id,name,slug,event_date,format,status,starting_mode,paid,paid_at,paid_amount_pence,created_at,archived,course_id,tee_id,counted_holes,courses!events_course_id_fkey(name)' +
         '&order=created_at.desc'
       );
 
@@ -116,7 +116,8 @@ exports.handler = async function (event) {
           if (s.picked_up) pickedUpMap[s.player_id][s.hole_number] = true;
           else if (s.gross_score != null) scoreMap[s.player_id][s.hole_number] = s.gross_score;
         });
-        return engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes, players: players, groups: groups, format: ev.format, maxHole: 18 });
+        var maxH = ev.counted_holes || 18;
+        return engine.buildStandings({ scores: scoreMap, pickedUp: pickedUpMap, holes: holes, players: players, groups: groups, format: ev.format, maxHole: maxH });
       }
 
       // Compute winners for finished events

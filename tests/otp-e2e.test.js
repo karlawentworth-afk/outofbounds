@@ -1,6 +1,14 @@
 'use strict';
-// OTP end-to-end test: sign in via the UI, read code from mailinator
-// Usage: TEST_URL=https://score.outofboundsevents.com node tests/otp-e2e.test.js
+// OTP end-to-end test: sign in via the UI, read code from mailinator.
+// Sends a REAL email — run only when tagging or explicitly asked.
+// Usage: OTP_E2E=1 TEST_URL=https://score.outofboundsevents.com node tests/otp-e2e.test.js
+//
+// Without OTP_E2E=1 the test exits 0 with a skip message.
+
+if (!process.env.OTP_E2E) {
+  console.log('OTP end-to-end test skipped (set OTP_E2E=1 to run)');
+  process.exit(0);
+}
 
 var fs = require('fs');
 var path = require('path');
