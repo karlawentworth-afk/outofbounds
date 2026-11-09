@@ -25,6 +25,11 @@
       headers: { 'Content-Type': 'application/json' }
     };
 
+    // Native app marker — server uses this to allow free go-live
+    if (typeof isNativeApp === 'function' && isNativeApp()) {
+      fetchOpts.headers['X-OOB-Native'] = '1';
+    }
+
     if (opts.body) {
       fetchOpts.body = JSON.stringify(opts.body);
     }

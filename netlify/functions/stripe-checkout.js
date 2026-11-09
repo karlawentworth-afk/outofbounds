@@ -162,6 +162,34 @@ exports.handler = async function (event) {
       return sb.respond(200, { free: true });
     }
 
+    // Native app: go live free (no Stripe session, no charge)
+    var isNativeRequest = (event.headers['x-oob-native'] === '1');
+    if (isNativeRequest && !body.top_up) {
+      await sb.sbPatch('events?id=eq.' + body.event_id, {
+        paid: true,
+        paid_at: new Date().toISOString(),
+        paid_source: 'native_free',
+        status: 'live'
+      });
+      var nativePlayers = await sb.sbGet('players?event_id=eq.' + body.event_id + '&select=id,player_token');
+      if (nativePlayers) {
+        var crypto = require('crypto');
+        for (var np = 0; np < nativePlayers.length; np++) {
+          if (!nativePlayers[np].player_token) {
+            await sb.sbPatch('players?id=eq.' + nativePlayers[np].id, {
+              player_token: crypto.randomBytes(16).toString('hex')
+            });
+          }
+        }
+      }
+      return sb.respond(200, { free: true });
+    }
+
+    // Native top-ups: allow free (no Stripe charge)
+    if (isNativeRequest && body.top_up) {
+      return sb.respond(200, { free: true, top_up: true });
+    }
+
     if (ev.paid && !body.top_up) {
       return sb.respond(400, { error: 'Event already paid' });
     }

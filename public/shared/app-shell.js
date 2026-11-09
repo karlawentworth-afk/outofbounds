@@ -116,9 +116,9 @@
   // Remove promo pricing links
   document.querySelectorAll('.promo a[href*="outofboundsevents.com"]').forEach(function (a) { a.remove(); });
 
-  // Neutral native go-live message
+  // Remove native block entirely — native go-live is now free
   var nativeBlock = document.getElementById('golive-native-block');
-  if (nativeBlock) nativeBlock.textContent = "This event isn\u2019t active yet. Manage your account on the web.";
+  if (nativeBlock) nativeBlock.remove();
 
   // Remove store badges
   document.querySelectorAll('#store-android, #store-apple, .store-badges').forEach(function (el) { el.remove(); });

@@ -4428,10 +4428,16 @@ Bob Wilson"></textarea>
     var nativeBlock = $('golive-native-block');
 
     // Check native
-    var isNative = false;
-    try { isNative = window.Capacitor && window.Capacitor.isNativePlatform(); } catch(e) {}
+    var isNative = typeof isNativeApp === 'function' && isNativeApp();
 
-    if (orgIsPro) {
+    if (isNative) {
+      // Native: simple go-live, no fees, no Pro card
+      if (feeEl) feeEl.style.display = 'none';
+      if (proCard) proCard.style.display = 'none';
+      if (nativeBlock) nativeBlock.style.display = 'none';
+      $('golive-btn').textContent = 'Go live';
+      $('golive-btn').style.display = '';
+    } else if (orgIsPro) {
       feeEl.style.display = 'none';
       if (proCard) {
         proCard.style.display = '';
