@@ -171,6 +171,12 @@ exports.handler = async function (event) {
       return sb.respond(500, { error: 'Could not create session' });
     }
 
+    // Trigger demo reset in the background (don't wait for it)
+    try {
+      var demoReset = require('./demo-reset');
+      demoReset.handler({ httpMethod: 'POST', body: '{}', headers: {} }).catch(function () {});
+    } catch (e) { /* ignore */ }
+
     return sb.respond(200, {
       access_token: verifyRes.data.access_token,
       refresh_token: verifyRes.data.refresh_token

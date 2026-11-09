@@ -233,14 +233,16 @@ function nextMonthStr() {
 }
 
 var EVENTS = [
-  { name: 'Spring Charity Classic', date: dateStr(4, 18), format: 'better_ball_2from4', playerCount: 72, courseIdx: 0, teeIdx: 1, status: 'finished', sponsorSlides: true },
-  { name: 'May Society Day', date: dateStr(5, 10), format: 'individual_stableford', playerCount: 24, courseIdx: 1, teeIdx: 0, status: 'finished' },
-  { name: 'Corporate Challenge', date: dateStr(6, 14), format: 'better_ball_2from4', playerCount: 48, courseIdx: 2, teeIdx: 0, status: 'finished', mixedField: true },
-  { name: 'Summer Club Open', date: dateStr(7, 5), format: 'individual_stableford', playerCount: 60, courseIdx: 3, teeIdx: 0, status: 'finished' },
-  { name: 'Pairs Better Ball', date: dateStr(8, 9), format: 'better_ball_pairs', playerCount: 32, courseIdx: 4, teeIdx: 0, status: 'finished' },
+  // 3 finished with full scores and real winners
+  { name: 'Autumn Invitational', date: dateStr(9, 23), format: 'individual_stableford', playerCount: 36, courseIdx: 0, teeIdx: 1, status: 'finished', sponsorSlides: true },
+  { name: 'Summer Club Open', date: dateStr(7, 5), format: 'individual_stableford', playerCount: 48, courseIdx: 3, teeIdx: 0, status: 'finished' },
   { name: 'Thursday Evening 9', date: dateStr(8, 22), format: 'individual_stableford', playerCount: 16, courseIdx: 3, teeIdx: 0, status: 'finished', nineHole: true },
-  { name: 'Autumn Invitational', date: todayStr(), format: 'better_ball_2from4', playerCount: 36, courseIdx: 0, teeIdx: 1, status: 'live', sponsorSlides: true, isLive: true },
-  { name: 'Winter Warm-Up', date: nextMonthStr(), format: 'individual_stableford', playerCount: 40, courseIdx: 1, teeIdx: 0, status: 'draft', isDraft: true }
+  // 1 live with 10 groups, 6 through hole 9
+  { name: 'Spring Charity Classic', date: todayStr(), format: 'individual_stableford', playerCount: 40, courseIdx: 0, teeIdx: 1, status: 'live', sponsorSlides: true, isLive: true },
+  // 1 ready (paid, not yet live)
+  { name: 'Winter Warm-Up', date: nextMonthStr(), format: 'individual_stableford', playerCount: 40, courseIdx: 1, teeIdx: 0, status: 'draft', isReady: true },
+  // 1 draft
+  { name: 'May Society Day 2027', date: dateStr(5, 10), format: 'individual_stableford', playerCount: 0, courseIdx: 1, teeIdx: 0, status: 'draft', isDraft: true }
 ];
 
 // ── Main seed ─────────────────────────────────────────────────
@@ -401,8 +403,8 @@ async function seed() {
       starting_mode: 'tee_times',
       leaderboard_freeze_hole: 12,
       status: ev.status,
-      paid: ev.status !== 'draft',
-      paid_at: ev.status !== 'draft' ? new Date().toISOString() : null
+      paid: ev.status !== 'draft' || ev.isReady,
+      paid_at: (ev.status !== 'draft' || ev.isReady) ? new Date().toISOString() : null
     };
 
     if (ev.status === 'finished') {
@@ -505,14 +507,11 @@ async function seed() {
         var playerTee = player.tee;
         var maxHole = holeCount;
 
-        // Live event: score holes 1-11, with gaps
+        // Live event: 6 of 10 groups through hole 9, rest trailing
         if (ev.isLive) {
-          if (player.groupIdx >= 7) maxHole = 8; // trailing groups
-          else if (player.groupIdx >= 5) maxHole = 10;
-          else maxHole = 11;
-
-          // One group amber (no score for 45 min) — group 5
-          // One group red (missing hole) — group 6
+          if (player.groupIdx < 6) maxHole = 9;      // groups 0-5: through 9
+          else if (player.groupIdx < 8) maxHole = 6;  // groups 6-7: through 6
+          else maxHole = 3;                            // groups 8-9: through 3
         }
 
         for (var h = 1; h <= maxHole; h++) {
