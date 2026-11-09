@@ -277,11 +277,19 @@ async function seed() {
     await sbDelete('course_holes?course_id=in.(' + COURSES.map(function(c){return c.id;}).join(',') + ')').catch(function(){});
     await sbDelete('course_tees?course_id=in.(' + COURSES.map(function(c){return c.id;}).join(',') + ')').catch(function(){});
     await sbDelete('courses?contributed_by=eq.' + oldId).catch(function(){});
+    // Null out any remaining FK references to this org
+    await sbPatch('courses?contributed_by=eq.' + oldId, { contributed_by: null }).catch(function(){});
+    await sbDelete('activity_log?organiser_id=eq.' + oldId).catch(function(){});
+    await sbDelete('organiser_users?organiser_id=eq.' + oldId).catch(function(){});
+    await sbDelete('series?organiser_id=eq.' + oldId).catch(function(){});
+    await sbDelete('prizes?event_id=in.(' + (oldEvents||[]).map(function(e){return e.id;}).join(',') + ')').catch(function(){});
     await sbDelete('organisers?id=eq.' + oldId);
     console.log('  Deleted organiser ' + oldId);
   }
 
-  // Also clean up fixed-ID data
+  // Also clean up fixed-ID data (null out FKs first)
+  var allCourseIds = COURSES.map(function(c){return c.id;}).join(',');
+  await sbPatch('events?course_id=in.(' + allCourseIds + ')', { course_id: null, tee_id: null }).catch(function(){});
   for (var ci = 0; ci < COURSES.length; ci++) {
     var c = COURSES[ci];
     await sbDelete('course_holes?course_id=eq.' + c.id).catch(function(){});
