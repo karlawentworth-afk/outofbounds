@@ -160,11 +160,105 @@ async function runViewport(width, height, dpr, label) {
   await browser.close();
 }
 
+async function runReviewerLiveTest() {
+  console.log('\n=== Reviewer live/finished screen test (440x956) ===');
+  var REVIEWER_CODE = process.env.REVIEWER_CODE || '479649';
+  var browser = await chromium.launch();
+  var ctx = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  var page = await ctx.newPage();
+
+  // Collect console errors
+  var consoleErrors = [];
+  page.on('console', function (msg) {
+    if (msg.type() === 'error') consoleErrors.push(msg.text());
+  });
+
+  // Sign in as reviewer
+  await page.goto(BASE + '/o/?native=1', { waitUntil: 'load', timeout: 30000 });
+  for (var w = 0; w < 20; w++) { await sleep(500); if (await page.evaluate(function () { var el = document.getElementById('native-welcome'); return el && el.offsetHeight > 0; })) break; }
+  await page.locator('#native-welcome button').click();
+  await sleep(500);
+  await page.fill('#magic-email', 'review@outofboundsevents.com');
+  await sleep(800);
+  for (var cw = 0; cw < 10; cw++) { await sleep(500); if (await page.isVisible('#reviewer-code')) break; }
+  await page.fill('#reviewer-code', REVIEWER_CODE);
+  await sleep(300);
+  await page.click('#magic-btn');
+  for (var d = 0; d < 30; d++) { await sleep(1000); var hasCards = await page.evaluate(function () { return document.querySelectorAll('.event-card').length >= 3; }); if (hasCards) break; }
+
+  // Open the live event (Spring Charity Classic)
+  var clickedLive = await page.evaluate(function () {
+    var cards = document.querySelectorAll('.event-card');
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].textContent.indexOf('Spring') !== -1) { cards[i].click(); return true; }
+    }
+    return false;
+  });
+  await sleep(8000); // Wait for live view to fully render
+
+  // Check: group buttons rendered
+  var groupCount = await page.evaluate(function () {
+    var el = document.getElementById('live-groups-list');
+    return el ? el.querySelectorAll('.group-card, button, .card').length : 0;
+  });
+  step('Live: group buttons rendered', groupCount >= 5, 'count=' + groupCount);
+
+  // Check: leaderboard has rows with points
+  var lbRows = await page.evaluate(function () {
+    var el = document.getElementById('live-leaderboard');
+    if (!el) return 0;
+    var rows = el.querySelectorAll('tr, .lb-row, .entry');
+    return rows.length;
+  });
+  step('Live: leaderboard has rows', lbRows >= 5, 'rows=' + lbRows);
+
+  // Check: leader shows a number not "--"
+  var leaderPts = await page.evaluate(function () {
+    var el = document.getElementById('livehead-leader-pts');
+    return el ? el.textContent.trim() : '--';
+  });
+  step('Live: leader shows points', leaderPts !== '--' && leaderPts !== '0', 'pts=' + leaderPts);
+
+  // Check: no renderLiveView errors
+  var liveErrors = consoleErrors.filter(function (e) { return e.indexOf('renderLiveView') !== -1; });
+  step('Live: no renderLiveView errors', liveErrors.length === 0, liveErrors.length ? liveErrors[0] : 'clean');
+
+  // Check forbidden text on live screen
+  var liveText = await page.evaluate(function () { return document.body.innerText; });
+  var liveHits = checkForbidden(liveText, 'live');
+  step('Live: no forbidden text', liveHits.length === 0, liveHits.length ? liveHits.join(', ') : 'clean');
+
+  // Go back and check a finished event
+  await page.evaluate(function () { if (typeof goToDashboard === 'function') goToDashboard(); });
+  await sleep(3000);
+  var clickedFinished = await page.evaluate(function () {
+    var cards = document.querySelectorAll('.event-card');
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].textContent.indexOf('Autumn') !== -1) { cards[i].click(); return true; }
+    }
+    return false;
+  });
+  await sleep(5000);
+  var finishedText = await page.evaluate(function () { return document.body.innerText; });
+  var finishedHits = checkForbidden(finishedText, 'finished');
+  step('Finished: no forbidden text', finishedHits.length === 0, finishedHits.length ? finishedHits.join(', ') : 'clean');
+
+  // Zero console errors across the walk
+  var criticalErrors = consoleErrors.filter(function (e) {
+    return e.indexOf('renderLive') !== -1 || e.indexOf('TypeError') !== -1 || e.indexOf('ReferenceError') !== -1;
+  });
+  step('Zero critical console errors', criticalErrors.length === 0, criticalErrors.length ? criticalErrors.length + ' errors: ' + criticalErrors[0] : 'clean');
+
+  await ctx.close();
+  await browser.close();
+}
+
 (async function () {
   console.log('=== Native Assertions ===');
   console.log('Target: ' + BASE);
   await runViewport(440, 956, 3, 'iPhone 17 Pro Max');
   await runViewport(820, 1180, 2, 'iPad Air 11-inch');
+  await runReviewerLiveTest();
 
   console.log('\n=== Summary ===');
   console.log(passed + ' of ' + total + ' steps passed');

@@ -4578,19 +4578,21 @@ Bob Wilson"></textarea>
     var pageHead = $('ev-page-head'); if (pageHead) pageHead.style.display = 'none';
     var evTabs = $('ev-tabs'); if (evTabs) evTabs.style.display = 'none';
 
-    // Show paid info
+    // Show paid info (element may be removed by app-shell in native mode)
     var paidEl = $('live-paid-info');
-    var evd = state.currentEventData || {};
-    var orgIsPro = state.organiser && state.organiser.plan === 'pro';
-    if (orgIsPro) {
-      paidEl.style.display = '';
-      paidEl.textContent = 'Included with Pro';
-    } else if (evd.paid && evd.paid_amount_pence) {
-      var paidDate = evd.paid_at ? new Date(evd.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-      paidEl.style.display = '';
-      paidEl.textContent = 'Paid ' + formatPrice(evd.paid_amount_pence) + (paidDate ? ' on ' + paidDate : '');
-    } else {
-      paidEl.style.display = 'none';
+    if (paidEl && !(typeof isNativeApp === 'function' && isNativeApp())) {
+      var evd2 = state.currentEventData || {};
+      var orgIsPro2 = state.organiser && state.organiser.plan === 'pro';
+      if (orgIsPro2) {
+        paidEl.style.display = '';
+        paidEl.textContent = 'Included with Pro';
+      } else if (evd2.paid && evd2.paid_amount_pence) {
+        var paidDate = evd2.paid_at ? new Date(evd2.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+        paidEl.style.display = '';
+        paidEl.textContent = 'Paid ' + formatPrice(evd2.paid_amount_pence) + (paidDate ? ' on ' + paidDate : '');
+      } else {
+        paidEl.style.display = 'none';
+      }
     }
 
     // Prizes sub line
@@ -4677,10 +4679,10 @@ Bob Wilson"></textarea>
     }
 
     // Render group cards with status
-    renderLiveGroups();
+    try { renderLiveGroups(); } catch (ge) { console.error('renderLiveGroups error:', ge); }
 
     // Render leaderboard
-    await renderLiveLeaderboard();
+    try { await renderLiveLeaderboard(); } catch (le) { console.error('renderLiveLeaderboard error:', le); }
 
     // Poll every 30s while the live view is open
     stopLivePoll();
@@ -4689,8 +4691,8 @@ Bob Wilson"></textarea>
         stopLivePoll();
         return;
       }
-      renderLiveGroups();
-      renderLiveLeaderboard();
+      try { renderLiveGroups(); } catch (ge) { console.error('poll renderLiveGroups error:', ge); }
+      try { renderLiveLeaderboard(); } catch (le) { console.error('poll renderLiveLeaderboard error:', le); }
     }, 30000);
 
     } catch (err) {
