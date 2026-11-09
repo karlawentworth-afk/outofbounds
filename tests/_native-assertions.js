@@ -31,7 +31,7 @@ function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 var FORBIDDEN = [
   'Pro', 'Play plan', 'Play pass', 'PLAN', 'upgrade', 'Upgrade',
   'billing', 'Billing', '£', 'paid', 'Paid', 'included with',
-  'trial', 'subscription', 'Test mode'
+  'trial', 'subscription', 'Test mode', 'No extra charge', 'charge'
 ];
 
 function checkForbidden(text, screenName) {
