@@ -2813,9 +2813,19 @@ Bob Wilson"></textarea>
     if (typeof isNativeApp !== 'function' || !isNativeApp()) {
       html += settingsRow(icons.billing, 'Billing', isPro ? 'Pro plan' : 'Play plan', 'goToBilling()');
     }
-    html += settingsRow(icons.branding, 'Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Logo, colours, display name', isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature\')', { dim: !isPro });
-    html += settingsRow(icons.team, 'Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Organisers and helpers', isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')', { dim: !isPro });
-    if (org.is_superadmin) {
+    var _native = typeof isNativeApp === 'function' && isNativeApp();
+    // In native: show gated features only if the org has them (no label, no toast)
+    if (_native) {
+      if (isPro) {
+        html += settingsRow(icons.branding, 'Branding', 'Logo, colours, display name', 'goToBranding()');
+        html += settingsRow(icons.team, 'Team', 'Organisers and helpers', 'goToTeam()');
+      }
+      // Non-pro: omit Branding and Team rows entirely
+    } else {
+      html += settingsRow(icons.branding, 'Branding' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Logo, colours, display name', isPro ? 'goToBranding()' : 'toast(\'Branding is a Pro feature. Upgrade in Billing.\')', { dim: !isPro });
+      html += settingsRow(icons.team, 'Team' + (isPro ? '' : ' <span class="pro-label">Pro</span>'), 'Organisers and helpers', isPro ? 'goToTeam()' : 'toast(\'Team is a Pro feature\')', { dim: !isPro });
+    }
+    if (org.is_superadmin && !_native) {
       html += settingsRow(icons.admin, 'Admin', 'All organisers, activity, demo', 'goToAdmin()');
     }
     html += '<div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--line);">';
@@ -2845,7 +2855,7 @@ Bob Wilson"></textarea>
         if (brandTag) brandTag.style.display = 'none';
       } else {
         brandBtn.style.opacity = '.5';
-        brandBtn.onclick = function() { toast(typeof isNativeApp === 'function' && isNativeApp() ? 'Branding is a Pro feature. Manage your account on the web.' : 'Branding is a Pro feature. Upgrade in Billing.'); };
+        brandBtn.onclick = function() { toast('Branding is a Pro feature. Upgrade in Billing.'); };
         if (brandTag) brandTag.style.display = '';
       }
     }

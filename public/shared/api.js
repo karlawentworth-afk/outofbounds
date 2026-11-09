@@ -38,7 +38,14 @@
         clearTimeout(timer);
         if (!res.ok) {
           return res.json().catch(function () { return { error: res.statusText }; }).then(function (body) {
-            var err = new Error(body.error || 'Request failed');
+            var msg = body.error || 'Request failed';
+            // In native: strip tier/plan language from API errors
+            if (typeof isNativeApp === 'function' && isNativeApp()) {
+              if (msg.indexOf('Play plan') !== -1 || msg.indexOf('Upgrade to Pro') !== -1 || msg.indexOf('limited to') !== -1) {
+                msg = 'This event has reached its player limit.';
+              }
+            }
+            var err = new Error(msg);
             err.status = res.status;
             throw err;
           });

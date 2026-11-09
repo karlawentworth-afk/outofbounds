@@ -57,15 +57,16 @@
     /* Safe area on top bar — add inset to existing padding */
     '.native-app .top-bar { padding-top: calc(16px + env(safe-area-inset-top, 0px)); min-height: calc(60px + env(safe-area-inset-top, 0px)); }',
     '.native-app .step-strip { margin-top: 0; }',
-    /* Prevent iOS overscroll and horizontal scroll */
-    '.native-app html { height: 100%; overflow: hidden; }',
-    '.native-app body { height: 100%; overflow: hidden; overflow-x: hidden; }',
+    /* Full-height shell: use dvh (dynamic viewport) with vh fallback */
+    '.native-app html { height: 100vh; height: 100dvh; overflow-x: hidden; }',
+    '.native-app body { height: 100vh; height: 100dvh; overflow-x: hidden; }',
     '.native-app .screen.active { overflow-x: hidden; }',
     /* Hide dashboard People/Settings buttons — bottom tab bar handles these */
     '.native-app .dash-header .btn-outline { display: none !important; }',
-    '.native-app .screen.active { height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }',
-    '.native-app .top-bar { position: fixed; top: 0; left: 0; right: 0; }',
-    '.native-app .screen.active { padding-top: calc(60px + env(safe-area-inset-top, 0px)); }',
+    /* Screens scroll independently; pad for top bar and bottom tab bar + safe area */
+    '.native-app .screen.active { height: 100vh; height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; }',
+    '.native-app .top-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; }',
+    '.native-app .screen.active { padding-top: calc(60px + env(safe-area-inset-top, 0px)); padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }',
     /* Player view: pad for safe areas */
     '.native-app .hole-bar { padding-left: max(12px, env(safe-area-inset-left, 12px)); padding-right: max(12px, env(safe-area-inset-right, 12px)); }',
     '.native-app .player-rows { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
@@ -73,8 +74,8 @@
     '.native-app .keypad { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }',
     '.native-app .status-line { padding-left: max(16px, env(safe-area-inset-left, 16px)); padding-right: max(16px, env(safe-area-inset-right, 16px)); }',
 
-    /* Pad content for bottom tab bar */
-    '.native-app .container { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }',
+    /* Pad content inside containers for bottom tab bar */
+    '.native-app .container { padding-bottom: 24px; }',
 
     /* Sign-in: replace web version with native welcome */
     '.native-app #screen-signin .logo-big,',
@@ -87,21 +88,24 @@
   ].join('\n');
   document.head.appendChild(css);
 
-  // ── Remove purchase/pricing/billing/marketing elements from the DOM ──
-  // Apple guideline 3.1.1: no references to external purchases
-  var removeIds = [
-    'billing-upgrade', 'btn-upgrade', 'billing-manage',
-    'billing-cancelling', 'screen-billing',
-    'golive-fee', 'golive-pro-card'
-  ];
-  removeIds.forEach(function (id) {
+  // ── Remove ALL purchase/pricing/billing/tier/plan elements from the DOM ──
+  // Apple guidelines 3.1.1 and 4.0: no tier names, prices, billing or marketing
+
+  // Remove entire billing screen, upgrade panels, fee rows, pricing elements
+  ['billing-upgrade', 'btn-upgrade', 'billing-manage', 'billing-cancelling',
+   'screen-billing', 'golive-fee', 'golive-pro-card', 'golive-disclaimer',
+   'golive-fee-base', 'golive-fee-players', 'golive-total', 'billing-save-hint',
+   'live-paid-info', 'golive-pro-line', 'btn-csv-export'
+  ].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.remove();
   });
+  document.querySelectorAll('.price-row, .pro-label, .chip.pro').forEach(function (el) {
+    el.remove();
+  });
 
-  // Remove any links to outofboundsevents.com (marketing site)
+  // Remove non-mailto outofboundsevents.com links
   document.querySelectorAll('a[href*="outofboundsevents.com"]').forEach(function (a) {
-    // Keep mailto: links (support), remove web links
     if (a.href && a.href.indexOf('mailto:') === -1) {
       a.removeAttribute('href');
       a.removeAttribute('onclick');
@@ -109,26 +113,27 @@
     }
   });
 
-  // Remove price text nodes: £ amounts, "99p", "Upgrade", pricing hints
-  document.querySelectorAll('#golive-disclaimer, #golive-fee-base, #golive-fee-players, #golive-total, .price-row, #billing-save-hint').forEach(function (el) {
-    el.remove();
-  });
+  // Remove promo pricing links
+  document.querySelectorAll('.promo a[href*="outofboundsevents.com"]').forEach(function (a) { a.remove(); });
 
-  // Remove "Scored with Out of Bounds" promo links (keep plain text version)
-  document.querySelectorAll('.promo a[href*="outofboundsevents.com"]').forEach(function (a) {
-    a.remove();
-  });
-
-  // Update the native go-live block message (no URL)
+  // Neutral native go-live message
   var nativeBlock = document.getElementById('golive-native-block');
-  if (nativeBlock) {
-    nativeBlock.textContent = "This event isn\u2019t active yet. Manage your account on the web.";
-  }
+  if (nativeBlock) nativeBlock.textContent = "This event isn\u2019t active yet. Manage your account on the web.";
 
-  // Remove store badges from settings/footer
-  document.querySelectorAll('#store-android, #store-apple, .store-badges').forEach(function (el) {
-    el.remove();
-  });
+  // Remove store badges
+  document.querySelectorAll('#store-android, #store-apple, .store-badges').forEach(function (el) { el.remove(); });
+
+  // ── Ongoing: sanitise dynamic content after render ──
+  // Watch for new tier/plan text injected by JS after page load
+  function sanitiseNative() {
+    // Remove any pro-label or chip.pro that appeared dynamically
+    document.querySelectorAll('.pro-label, .chip.pro').forEach(function (el) { el.remove(); });
+    // Hide paid info if it reappears
+    var paidEl = document.getElementById('live-paid-info');
+    if (paidEl) paidEl.style.display = 'none';
+  }
+  var sanitiseObserver = new MutationObserver(sanitiseNative);
+  sanitiseObserver.observe(document.body, { childList: true, subtree: true });
 
   // ── Native welcome screen (email only, no Google/Apple) ──
   var signin = document.getElementById('screen-signin');
