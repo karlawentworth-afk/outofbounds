@@ -32,7 +32,7 @@ var FORBIDDEN = [
   'Pro', 'Play plan', 'Play pass', 'PLAN', 'upgrade', 'Upgrade',
   'billing', 'Billing', '£', 'paid', 'Paid', 'included with',
   'trial', 'subscription', 'Test mode', 'No extra charge', 'charge',
-  'website'
+  'website', 'Pay ', 'and go live'
 ];
 
 function checkForbidden(text, screenName) {

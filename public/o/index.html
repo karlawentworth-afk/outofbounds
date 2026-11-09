@@ -4526,12 +4526,15 @@ Bob Wilson"></textarea>
         toast('Couldn\u2019t start payment. Try again.');
       }
     } catch (err) {
-      console.error(err.message); toast('Couldn\u2019t start payment. Try again.');
+      var _native = typeof isNativeApp === 'function' && isNativeApp();
+      console.error(err.message);
+      toast(_native ? 'Couldn\u2019t go live. Try again in a moment.' : 'Couldn\u2019t start payment. Try again.');
     }
 
     $('golive-btn').disabled = false;
+    var _native2 = typeof isNativeApp === 'function' && isNativeApp();
     var orgIsPro = state.organiser && state.organiser.plan === 'pro';
-    if (orgIsPro) {
+    if (_native2 || orgIsPro) {
       $('golive-btn').textContent = 'Go live';
     } else {
       var n2 = state.players ? state.players.length : 0;

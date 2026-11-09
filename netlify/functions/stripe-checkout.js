@@ -168,7 +168,7 @@ exports.handler = async function (event) {
       await sb.sbPatch('events?id=eq.' + body.event_id, {
         paid: true,
         paid_at: new Date().toISOString(),
-        paid_source: 'native_free',
+        paid_amount_pence: 0,
         status: 'live'
       });
       var nativePlayers = await sb.sbGet('players?event_id=eq.' + body.event_id + '&select=id,player_token');
