@@ -194,7 +194,15 @@ async function runReviewerLiveTest() {
     }
     return false;
   });
-  await sleep(8000); // Wait for live view to fully render
+  // Wait for live view to fully render (leaderboard is async)
+  for (var lw = 0; lw < 20; lw++) {
+    await sleep(1000);
+    var leaderReady = await page.evaluate(function () {
+      var el = document.getElementById('livehead-leader-pts');
+      return el && el.textContent.trim() !== '--';
+    });
+    if (leaderReady) break;
+  }
 
   // Check: group buttons rendered
   var groupCount = await page.evaluate(function () {

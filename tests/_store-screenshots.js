@@ -109,10 +109,24 @@ async function capture(width, height, dpr, dir) {
     }
     return false;
   });
-  await sleep(5000);
-  // The live event should show the Live tab by default
+  // Wait for the live leaderboard to render (leader pts not --)
+  for (var lw = 0; lw < 25; lw++) {
+    await sleep(1000);
+    var lbReady = await page.evaluate(function () {
+      var el = document.getElementById('livehead-leader-pts');
+      return el && el.textContent.trim() !== '--';
+    });
+    if (lbReady) break;
+  }
+  await sleep(1000);
+  // Scroll to show the livehead (dark header with stats and leaderboard)
+  await page.evaluate(function () {
+    var lh = document.getElementById('livehead');
+    if (lh) lh.scrollIntoView({ block: 'start' });
+  });
+  await sleep(500);
   await page.screenshot({ path: path.join(outDir, '04.png'), type: 'png' });
-  console.log('  04 Spring Charity Classic live: ' + clickedSCC);
+  console.log('  04 Spring Charity Classic live: ' + clickedSCC + ' lbReady=' + lbReady);
 
   // Go back to dashboard
   await page.evaluate(function () { if (typeof goToDashboard === 'function') goToDashboard(); });
