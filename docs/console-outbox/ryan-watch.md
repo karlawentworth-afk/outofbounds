@@ -1,5 +1,7 @@
 # Ryan watch log
 
+SNAG [18/11/2026, 08:39:26] Event "Winter Series #1  - Cavendish GC" has 4 player(s) with no group
+SNAG [18/11/2026, 08:39:26] Event "Winter Series #1  - Cavendish GC" live for 22h with no scores
 SNAG [17/11/2026, 14:06:53] Event "Winter Series #1  - Cavendish GC" has 4 player(s) with no group
 SNAG [17/11/2026, 14:06:53] Event "Winter Series #1  - Cavendish GC" live for 3h with no scores
 [17/11/2026, 14:06:53] Activity — event_created: Winter Series #1  - Cavendish GC
